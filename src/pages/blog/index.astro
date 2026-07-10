@@ -1,0 +1,218 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { extractFirstMedia, resolveBlogMediaUrl } from '../../lib/blog-media.js';
+
+const base = import.meta.env.BASE_URL;
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+const mediaByPost = new Map(posts.map((post) => [post.id, extractFirstMedia(post.body)]));
+const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
+const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+---
+<Base title="블로그" active="blog">
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">학습 기록</p>
+      <div class="blog-heading">
+        <h1 class="page-title">블로그</h1>
+        <div class="blog-heading__actions">
+          <label class="blog-search"><span class="sr-only">글 검색</span>
+            <input class="search" id="f-search" type="search" placeholder="글 검색" aria-controls="post-grid" />
+          </label>
+          <a
+            class="btn btn--primary blog-write-link"
+            href="https://github.com/OSSCA-thorvg/site/discussions/new?category=blog"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="GitHub Discussion에서 새 블로그 글쓰기 (새 창)"
+          >글쓰기</a>
+        </div>
+      </div>
+      <p class="lede">ThorVG 학습 내용과 오픈소스 기여 경험, 그리고 다양한 이야기를 나눕니다.</p>
+
+      <nav class="blog-categories" aria-label="블로그 카테고리">
+        <span class="blog-categories__label">카테고리</span>
+        <button class="blog-category is-selected" type="button" data-tag="" aria-pressed="true">전체</button>
+        {tags.map((tag) => <button class="blog-category" type="button" data-tag={tag} aria-pressed="false">{tag}</button>)}
+      </nav>
+      <span class="result-count blog-result-count" id="b-count" role="status" aria-live="polite" aria-atomic="true">{posts.length}개 글</span>
+
+      <div class="card-grid" id="post-grid">
+        {posts.map((p) => {
+          const media = mediaByPost.get(p.id);
+          return (
+          <article
+            class="post-card"
+            data-date={p.data.date.getTime()}
+            data-year={p.data.date.getUTCFullYear()}
+            data-tags={JSON.stringify(p.data.tags)}
+            data-search={[
+              p.data.title,
+              p.data.summary,
+              ...p.data.tags,
+              p.data.github,
+            ].join(' ').toLowerCase()}
+          >
+            <a
+              class="post-card__link"
+              href={base + 'blog/' + p.id}
+              aria-label={`${p.data.title} 읽기`}
+            ></a>
+            <div class={`post-card__media ${media ? `post-card__media--${media.type}` : 'post-card__media--fallback'}`}>
+              {media ? (
+                media.type === 'lottie' ? (
+                  <lottie-player
+                    src={resolveBlogMediaUrl(media.src, p.id, base)}
+                    data-blog-lottie
+                    autoplay
+                    loop
+                    aria-label={media.alt || '블로그 Lottie 대표 이미지'}
+                  ></lottie-player>
+                ) : (
+                  <img
+                    src={resolveBlogMediaUrl(media.src, p.id, base)}
+                    alt={media.alt}
+                    width="640"
+                    height="360"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )
+              ) : (
+                <img class="post-card__fallback-mark" src={base + 'thorvg-mark.svg'} alt="" width="96" height="96" />
+              )}
+            </div>
+            <div class="post-card__meta">
+              <a
+                class="post-card__author"
+                href={`https://github.com/${p.data.github}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`@${p.data.github} GitHub 프로필 (새 창)`}
+              >
+                <img
+                  class="author-avatar"
+                  src={`https://github.com/${p.data.github}.png?size=80`}
+                  alt=""
+                  width="32"
+                  height="32"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                />
+                <span class="post-card__author-copy">
+                  <span class="post-card__author-name">@{p.data.github}</span>
+                </span>
+              </a>
+              <time datetime={p.data.date.toISOString()}>{fmt(p.data.date)}</time>
+            </div>
+            <h2 class="post-card__heading">
+              <span class="post-card__title">{p.data.title}</span>
+            </h2>
+          </article>
+          );
+        })}
+      </div>
+      <p class="empty-state" id="b-empty" hidden>조건에 맞는 글이 없습니다.</p>
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const players = [...document.querySelectorAll('[data-blog-lottie]')];
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      const pauseWhenReady = (player) => {
+        const pause = () => {
+          if (player.totalFrame > 0) {
+            player.pause();
+            player.removeAttribute('autoplay');
+            return true;
+          }
+          return false;
+        };
+        if (pause()) return;
+        const started = Date.now();
+        const timer = window.setInterval(() => {
+          if (pause() || Date.now() - started > 5000) window.clearInterval(timer);
+        }, 50);
+      };
+
+      players.forEach((player) => {
+        const src = player.getAttribute('src');
+        if (src) player.setAttribute('src', new URL(src, document.baseURI).href);
+
+        const card = player.closest('.post-card');
+        if (!card) return;
+
+        card.addEventListener('mouseenter', () => player.play());
+        card.addEventListener('mouseleave', () => player.pause());
+        card.addEventListener('focusin', () => player.play());
+        card.addEventListener('focusout', () => player.pause());
+        if (reduceMotion) player.removeAttribute('autoplay');
+      });
+
+      if (!reduceMotion && window.customElements) {
+        window.customElements.whenDefined('lottie-player').then(() => {
+          players.forEach(pauseWhenReady);
+        });
+      }
+
+      if (reduceMotion && window.customElements) {
+        window.customElements.whenDefined('lottie-player').then(() => {
+          players.forEach((player) => {
+            player.setAttribute('autoplay', '');
+            player.play();
+            pauseWhenReady(player);
+          });
+        });
+      }
+    })();
+  </script>
+
+  <script>
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('.post-card'));
+    const search = document.getElementById('f-search') as HTMLInputElement;
+    const categories = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tag]'));
+    const count = document.getElementById('b-count')!;
+    const empty = document.getElementById('b-empty')!;
+
+    function apply() {
+      const q = search.value.trim().toLowerCase();
+      const selectedTag = categories.find((category) => category.getAttribute('aria-pressed') === 'true')?.dataset.tag || '';
+      let shown = 0;
+
+      for (const card of cards) {
+        const matchesSearch = !q || (card.dataset.search || '').includes(q);
+        const matchesTag = !selectedTag || JSON.parse(card.dataset.tags || '[]').includes(selectedTag);
+        const matches = matchesSearch && matchesTag;
+
+        card.hidden = !matches;
+        if (matches) shown++;
+      }
+
+      count.textContent = shown === 0
+        ? '0개 글 · 조건에 맞는 글이 없습니다.'
+        : `${shown}개 글`;
+      empty.hidden = shown !== 0;
+    }
+
+    search.addEventListener('input', apply);
+    categories.forEach((category) => category.addEventListener('click', () => {
+      categories.forEach((item) => {
+        const selected = item === category;
+        item.classList.toggle('is-selected', selected);
+        item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+      apply();
+    }));
+    apply();
+  </script>
+</Base>

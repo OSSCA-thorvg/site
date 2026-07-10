@@ -1,0 +1,139 @@
+---
+import Base from '../layouts/Base.astro';
+import issuesRaw from '../data/issues.csv?raw';
+import liveIssues from '../data/live-issues.json';
+import { parseCsv } from '../lib/csv.js';
+
+const rows = liveIssues.issues.length ? liveIssues.issues : parseCsv(issuesRaw);
+const projects = [...new Set(rows.map((row) => row.repo).filter(Boolean))].sort();
+const statusLabels: Record<string, string> = {
+  todo: '대기',
+  'in-progress': '진행 중',
+  done: '완료',
+  open: '열림',
+  merged: '병합',
+  closed: '닫힘',
+  draft: '초안',
+};
+const difficultyLabels: Record<string, string> = {
+  beginner: '입문',
+  intermediate: '중급',
+  advanced: '심화',
+};
+const issueUrl = (row: Record<string, string>) =>
+  `https://github.com/${row.repo}/issues/${row.number}`;
+---
+<Base title="이슈" active="issues">
+  <section class="section">
+    <div class="container">
+      <p class="eyebrow">기여 이슈</p>
+      <div class="issue-heading">
+        <h1 class="page-title">ThorVG 이슈 찾기</h1>
+        <label class="issue-search"><span class="sr-only">이슈 검색</span>
+          <input class="search" id="issue-search" type="search" placeholder="이슈 검색" aria-controls="issue-list" autocomplete="off" />
+        </label>
+      </div>
+      <p class="lede">기여할 이슈를 찾아보세요.</p>
+      <nav class="issue-categories" aria-label="프로젝트 카테고리">
+        <span class="issue-categories__label">프로젝트</span>
+        <button class="issue-category is-selected" type="button" data-project="" aria-pressed="true">전체</button>
+        {projects.map((project) => <button class="issue-category" type="button" data-project={project} aria-pressed="false">{project}</button>)}
+      </nav>
+      <span class="result-count issue-result-count" id="issue-count" role="status" aria-live="polite" aria-atomic="true">{rows.length}개 이슈</span>
+
+      <div class="issue-list" id="issue-list">
+        {rows.map((row) => {
+          const searchText = [
+            row.title,
+            row.labels,
+            row.repo,
+            row.number,
+            row.assignee,
+            row.area,
+          ].join(' ').toLowerCase();
+          return (
+            <a
+              class="issue-row"
+              href={issueUrl(row)}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-search={searchText}
+              data-project={row.repo}
+            >
+              <span class="issue-row__num">
+                {`${row.repo.split('/')[1]} #${row.number}`}
+              </span>
+              <span class="issue-row__main">
+                <span class="issue-row__title">{row.title}</span>
+                <span class="issue-row__meta">
+                  {row.recommended === 'true' && <span class="recommendation">입문 추천</span>}
+                  {row.difficulty && (
+                    <span class={`difficulty difficulty--${row.difficulty}`}>
+                      {difficultyLabels[row.difficulty] ?? row.difficulty}
+                    </span>
+                  )}
+                  {(row.labels || '').split(';').filter(Boolean).map((label) => (
+                    <span class="label">{label}</span>
+                  ))}
+                </span>
+              </span>
+              <span class="issue-row__side">
+                {row.assignee && <span class="issue-row__assignee">@{row.assignee}</span>}
+                {row.status && (
+                  <span class={`status status--${row.status}`}>
+                    {statusLabels[row.status] ?? row.status}
+                  </span>
+                )}
+              </span>
+              <span class="sr-only">(새 창)</span>
+            </a>
+          );
+        })}
+      </div>
+      <p class="empty-state" id="issue-empty" hidden>조건에 맞는 이슈가 없습니다.</p>
+    </div>
+  </section>
+
+  <script is:inline>
+    (() => {
+      const search = document.getElementById('issue-search');
+      const projects = Array.from(document.querySelectorAll('[data-project]'));
+      const count = document.getElementById('issue-count');
+      const empty = document.getElementById('issue-empty');
+      const rows = Array.from(document.querySelectorAll('#issue-list .issue-row'));
+
+      if (!search || !count || !empty) return;
+
+      function apply() {
+        const query = search.value.trim().toLowerCase();
+        const selectedProject = projects.find((project) => project.getAttribute('aria-pressed') === 'true')?.dataset.project || '';
+        let shown = 0;
+
+        for (const row of rows) {
+          const matchesSearch = !query || (row.dataset.search || '').includes(query);
+          const matchesProject = !selectedProject || row.dataset.project === selectedProject;
+          const visible = matchesSearch && matchesProject;
+
+          row.style.display = visible ? '' : 'none';
+          if (visible) shown++;
+        }
+
+        count.textContent = shown === 0
+          ? '0개 이슈 · 조건에 맞는 이슈가 없습니다.'
+          : `${shown}개 이슈`;
+        empty.hidden = shown !== 0;
+      }
+
+      search.addEventListener('input', apply);
+      projects.forEach((project) => project.addEventListener('click', () => {
+        projects.forEach((item) => {
+          const selected = item === project;
+          item.classList.toggle('is-selected', selected);
+          item.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        });
+        apply();
+      }));
+      apply();
+    })();
+  </script>
+</Base>

@@ -1,0 +1,70 @@
+---
+import Base from '../layouts/Base.astro';
+import { milestones, officialHub, officialNotice, program } from '../data/schedule';
+---
+<Base title="일정" active="schedule">
+  <section class="section">
+    <div class="container schedule-container">
+      <p class="eyebrow">OSSCA 2026</p>
+      <h1 class="page-title">{program}</h1>
+      <p class="lede">공식 참여형 멘티 모집 공고를 기준으로 정리한 주요 일정입니다.</p>
+
+      <nav class="schedule-sources" aria-label="공식 일정 출처">
+        <a
+          class="btn btn--secondary"
+          href={officialHub}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="2026 OSSCA 공식 페이지 (새 창)"
+        >공식 페이지</a>
+        <a
+          class="btn btn--secondary"
+          href={officialNotice}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="참여형 멘티 모집 공고 (새 창)"
+        >모집 공고</a>
+      </nav>
+
+      <div class="timeline-scroll" data-timeline-scroll tabindex="0" aria-label="OSSCA 2026 일정 타임라인">
+        <ol class="timeline">
+          {milestones.map((milestone) => (
+            <li class="tl-item" data-milestone="true" data-datetime={milestone.datetime}>
+              <time class="tl-item__date" datetime={milestone.datetime}>{milestone.date}</time>
+              <h2 class="tl-item__title">{milestone.title}</h2>
+              <p class="tl-item__desc">{milestone.desc}</p>
+              <a
+                class="tl-item__link"
+                href={milestone.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${milestone.title} 공식 일정 보기 (새 창)`}
+              >공식 일정 보기</a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+  <script>
+    const timeline = document.querySelector<HTMLElement>('[data-timeline-scroll]');
+    const items = [...document.querySelectorAll<HTMLElement>('.tl-item[data-datetime]')];
+
+    if (timeline && items.length) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const parseMilestoneDate = (value: string) =>
+        new Date(`${value}${value.length === 7 ? '-01' : ''}T00:00:00`);
+      const current = items.find((item) => parseMilestoneDate(item.dataset.datetime ?? '') >= today) ?? items.at(-1);
+
+      if (current) {
+        requestAnimationFrame(() => {
+          timeline.scrollTop = Math.max(
+            0,
+            timeline.scrollTop + current.getBoundingClientRect().top - timeline.getBoundingClientRect().top
+          );
+        });
+      }
+    }
+  </script>
+</Base>

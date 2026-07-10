@@ -1,0 +1,388 @@
+---
+import Base from '../layouts/Base.astro';
+
+const base = import.meta.env.BASE_URL;
+const sampleLottie = base + 'lottie/thorvg-sample.json';
+---
+<Base title="플레이그라운드" active="playground">
+  <section class="playground-shell">
+    <aside class="playground-sidebar" id="playground-sidebar" aria-label="플레이그라운드 도구">
+      <div class="playground-sidebar__header">
+        <p class="playground-sidebar__label">도구</p>
+        <button
+          class="playground-sidebar__toggle"
+          id="playground-sidebar-toggle"
+          type="button"
+          aria-controls="playground-sidebar"
+          aria-expanded="true"
+          aria-label="사이드바 접기"
+          title="사이드바 접기"
+        ><span aria-hidden="true">☰</span></button>
+      </div>
+      <div class="playground-tabs" role="tablist" aria-label="플레이그라운드 도구">
+        <button
+          class="tab is-selected"
+          id="tab-lottie"
+          type="button"
+          role="tab"
+          aria-controls="panel-lottie"
+          aria-selected="true"
+          tabindex="0"
+          data-short="L"
+          title="LottiePlayer"
+        >LottiePlayer</button>
+        <button
+          class="tab"
+          id="tab-viewer"
+          type="button"
+          role="tab"
+          aria-controls="panel-viewer"
+          aria-selected="false"
+          tabindex="-1"
+          data-short="V"
+          title="ThorVG Viewer"
+        >ThorVG Viewer</button>
+        <button
+          class="tab"
+          id="tab-webcanvas"
+          type="button"
+          role="tab"
+          aria-controls="panel-webcanvas"
+          aria-selected="false"
+          tabindex="-1"
+          data-short="W"
+          title="WebCanvas"
+        >WebCanvas</button>
+        <button
+          class="tab"
+          id="tab-janitor"
+          type="button"
+          role="tab"
+          aria-controls="panel-janitor"
+          aria-selected="false"
+          tabindex="-1"
+          data-short="J"
+          title="Janitor"
+        >Janitor</button>
+      </div>
+    </aside>
+
+    <div class="playground-workspace">
+
+      <section
+        class="panel is-active"
+        id="panel-lottie"
+        role="tabpanel"
+        aria-labelledby="tab-lottie"
+        tabindex="0"
+      >
+        <div class="pg-stage" id="lottie-stage" aria-busy="true">
+          <div class="pg-toolbar">
+            <label class="pg-file-field btn btn--secondary" for="lottie-file">
+              JSON 파일 선택
+              <input
+                id="lottie-file"
+                type="file"
+                accept=".json,application/json"
+                disabled
+              />
+            </label>
+            <span class="pg-file-name" id="lottie-file-name">샘플 애니메이션</span>
+          </div>
+          <div class="pg-controls" aria-label="Lottie 재생 설정">
+            <div class="pg-actions">
+              <button class="btn btn--primary" id="lottie-play" type="button">재생</button>
+              <button class="btn btn--secondary" id="lottie-stop" type="button">처음으로</button>
+            </div>
+            <label class="pg-inline-field"><span>속도</span><input class="control" id="lottie-speed" type="number" min="0.1" max="4" step="0.1" value="1" /></label>
+            <label class="pg-inline-field"><span>방향</span><select class="control" id="lottie-direction"><option value="1">정방향</option><option value="-1">역방향</option></select></label>
+            <label class="pg-toggle"><input id="lottie-loop" type="checkbox" checked /> 반복</label>
+            <label class="pg-inline-field"><span>반복 횟수</span><input class="control" id="lottie-count" type="number" min="0" step="1" value="0" /></label>
+            <label class="pg-inline-field"><span>프레임</span><input class="control" id="lottie-frame" type="number" min="0" step="1" value="0" /></label>
+            <label class="pg-inline-field"><span>모드</span><select class="control" id="lottie-mode"><option value="normal">일반</option><option value="bounce">왕복</option></select></label>
+            <label class="pg-toggle"><input id="lottie-autoplay" type="checkbox" checked /> 자동 재생</label>
+            <label class="pg-inline-field"><span>간격</span><input class="control" id="lottie-intermission" type="number" min="0" step="10" value="0" /></label>
+            <label class="pg-inline-field"><span>품질</span><input class="control" id="lottie-quality" type="number" min="1" max="100" step="1" value="100" /></label>
+            <label class="pg-inline-field pg-inline-field--color"><span>배경색</span><input class="control" id="lottie-background" type="color" value="#ffffff" /></label>
+          </div>
+          <div class="pg-canvas-wrap">
+            <lottie-player
+              class="pg-lottie-player"
+              id="lottie-player"
+              src={sampleLottie}
+              autoplay
+              loop
+              controls
+              aria-label="ThorVG Lottie 샘플 애니메이션"
+            ></lottie-player>
+          </div>
+          <p class="pg-error" id="lottie-error" role="status" hidden>
+            Lottie 플레이어를 불러오지 못했습니다. ThorVG Viewer 탭에서 파일을 확인해 주세요.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="panel"
+        id="panel-viewer"
+        role="tabpanel"
+        aria-labelledby="tab-viewer"
+        tabindex="0"
+        hidden
+      >
+        <div class="pg-embed">
+          <iframe
+            class="pg-frame"
+            src="https://thorvg.github.io/thorvg.viewer/"
+            title="ThorVG Viewer"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups"
+          ></iframe>
+          <a
+            class="external-link"
+            href="https://thorvg.github.io/thorvg.viewer/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="ThorVG Viewer 원본 열기 (새 창)"
+          >ThorVG Viewer 원본 열기</a>
+        </div>
+      </section>
+
+      <section
+        class="panel"
+        id="panel-webcanvas"
+        role="tabpanel"
+        aria-labelledby="tab-webcanvas"
+        tabindex="0"
+        hidden
+      >
+        <div class="pg-embed">
+          <iframe
+            class="pg-frame"
+            src="https://thorvg-playground.vercel.app/showcase/custom-transform"
+            title="ThorVG WebCanvas 커스텀 변환 예제"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups"
+            allow="clipboard-write"
+          ></iframe>
+          <a
+            class="external-link"
+            href="https://thorvg-playground.vercel.app/showcase/custom-transform"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="WebCanvas 예제 원본 열기 (새 창)"
+          >WebCanvas 예제 원본 열기</a>
+        </div>
+      </section>
+      <section
+        class="panel"
+        id="panel-janitor"
+        role="tabpanel"
+        aria-labelledby="tab-janitor"
+        tabindex="0"
+        hidden
+      >
+        <div class="pg-embed">
+          <iframe
+            class="pg-frame"
+            src="https://thorvg-janitor.vercel.app/"
+            title="ThorVG Janitor"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups"
+          ></iframe>
+          <a
+            class="external-link"
+            href="https://thorvg-janitor.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="ThorVG Janitor 원본 열기 (새 창)"
+          >ThorVG Janitor 원본 열기</a>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <script is:inline define:vars={{ sampleLottie }}>
+    (function () {
+      var player = document.getElementById('lottie-player');
+      var sampleUrl = new URL(sampleLottie, document.baseURI).href;
+
+      player.dataset.sampleUrl = sampleUrl;
+      player.setAttribute('src', sampleUrl);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        player.removeAttribute('autoplay');
+      }
+    })();
+  </script>
+
+  <script is:inline define:vars={{ sampleLottie }}>
+    (function () {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+      var sidebar = document.getElementById('playground-sidebar');
+      var sidebarToggle = document.getElementById('playground-sidebar-toggle');
+
+      sidebarToggle.addEventListener('click', function () {
+        var compact = sidebar.classList.toggle('is-compact');
+        sidebarToggle.setAttribute('aria-expanded', compact ? 'false' : 'true');
+        sidebarToggle.setAttribute('aria-label', compact ? '사이드바 펼치기' : '사이드바 접기');
+        sidebarToggle.setAttribute('title', compact ? '사이드바 펼치기' : '사이드바 접기');
+      });
+
+      function selectTab(selectedTab, moveFocus) {
+        tabs.forEach(function (tab) {
+          var selected = tab === selectedTab;
+          var panel = document.getElementById(tab.getAttribute('aria-controls'));
+
+          tab.classList.toggle('is-selected', selected);
+          tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+          tab.setAttribute('tabindex', selected ? '0' : '-1');
+          panel.classList.toggle('is-active', selected);
+          panel.hidden = !selected;
+        });
+
+        if (moveFocus) selectedTab.focus();
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          selectTab(tab, false);
+        });
+
+        tab.addEventListener('keydown', function (event) {
+          var current = tabs.indexOf(tab);
+          var next = current;
+
+          if (event.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+          else if (event.key === 'ArrowRight') next = (current + 1) % tabs.length;
+          else if (event.key === 'Home') next = 0;
+          else if (event.key === 'End') next = tabs.length - 1;
+          else return;
+
+          event.preventDefault();
+          selectTab(tabs[next], true);
+        });
+      });
+
+      var player = document.getElementById('lottie-player');
+      var fileInput = document.getElementById('lottie-file');
+      var fileName = document.getElementById('lottie-file-name');
+      var playButton = document.getElementById('lottie-play');
+      var stopButton = document.getElementById('lottie-stop');
+      var speedInput = document.getElementById('lottie-speed');
+      var directionInput = document.getElementById('lottie-direction');
+      var loopInput = document.getElementById('lottie-loop');
+      var countInput = document.getElementById('lottie-count');
+      var frameInput = document.getElementById('lottie-frame');
+      var modeInput = document.getElementById('lottie-mode');
+      var autoplayInput = document.getElementById('lottie-autoplay');
+      var intermissionInput = document.getElementById('lottie-intermission');
+      var qualityInput = document.getElementById('lottie-quality');
+      var backgroundInput = document.getElementById('lottie-background');
+      var stage = document.getElementById('lottie-stage');
+      var error = document.getElementById('lottie-error');
+      var objectUrl = null;
+      var readyTimeout = null;
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function setLoading(loading) {
+        stage.setAttribute('aria-busy', loading ? 'true' : 'false');
+        fileInput.disabled = loading;
+
+        window.clearTimeout(readyTimeout);
+        if (loading) {
+          readyTimeout = window.setTimeout(function () {
+            if (
+              stage.getAttribute('aria-busy') === 'true' &&
+              window.customElements &&
+              window.customElements.get('lottie-player')
+            ) {
+              showError();
+            }
+          }, 5000);
+        }
+      }
+
+      function setBooleanAttribute(name, enabled) {
+        if (enabled) player.setAttribute(name, '');
+        else player.removeAttribute(name);
+      }
+
+      function setPlayerAttribute(name, value) {
+        player.setAttribute(name, value);
+      }
+
+      function showError() {
+        error.hidden = false;
+        setLoading(false);
+      }
+
+      player.addEventListener('load', function () {
+        frameInput.max = String(player.totalFrame || 0);
+        frameInput.value = String(player.currentFrame || 0);
+        if (reduceMotion) player.pause();
+        error.hidden = true;
+        setLoading(false);
+      });
+      player.addEventListener('error', showError);
+
+      if (reduceMotion && window.customElements) {
+        window.customElements.whenDefined('lottie-player').then(function () {
+          player.play();
+        });
+      }
+
+      function revokeObjectUrl() {
+        if (!objectUrl) return;
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+
+      async function loadLottie(src, nextObjectUrl) {
+        revokeObjectUrl();
+        objectUrl = nextObjectUrl || null;
+        error.hidden = true;
+        setLoading(true);
+
+        try {
+          await player.load(src);
+        } catch (loadError) {
+          showError();
+        }
+      }
+
+      fileInput.addEventListener('change', async function () {
+        var file = fileInput.files && fileInput.files[0];
+        if (!file) return;
+
+        var nextObjectUrl = URL.createObjectURL(file);
+        fileName.textContent = file.name;
+        await loadLottie(nextObjectUrl, nextObjectUrl);
+      });
+
+      playButton.addEventListener('click', function () { player.play(); });
+      stopButton.addEventListener('click', function () { player.stop(); });
+      speedInput.addEventListener('input', function () { setPlayerAttribute('speed', speedInput.value); });
+      directionInput.addEventListener('change', function () { setPlayerAttribute('direction', directionInput.value); });
+      countInput.addEventListener('input', function () { setPlayerAttribute('count', countInput.value); });
+      frameInput.addEventListener('input', function () { player.seek(Number(frameInput.value)); });
+      modeInput.addEventListener('change', function () { setPlayerAttribute('mode', modeInput.value); });
+      loopInput.addEventListener('change', function () { setBooleanAttribute('loop', loopInput.checked); });
+      autoplayInput.addEventListener('change', function () { setBooleanAttribute('autoplay', autoplayInput.checked); });
+      intermissionInput.addEventListener('input', function () { setPlayerAttribute('intermission', intermissionInput.value); });
+      qualityInput.addEventListener('input', function () { player.setQuality(Number(qualityInput.value)); });
+      backgroundInput.addEventListener('input', function () { player.setBgColor(backgroundInput.value); });
+
+      window.addEventListener('pagehide', revokeObjectUrl, { once: true });
+      setLoading(true);
+      window.setTimeout(function () {
+        if (!window.customElements || !window.customElements.get('lottie-player')) {
+          showError();
+          fileInput.disabled = true;
+        }
+      }, 1500);
+    })();
+  </script>
+</Base>

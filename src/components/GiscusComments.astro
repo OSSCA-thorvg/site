@@ -1,0 +1,74 @@
+---
+import config from '../data/discussions-config.json';
+
+const { discussionNumber } = Astro.props as { discussionNumber?: number };
+const enabled = Boolean(discussionNumber && config.repoId && config.categoryId);
+const discussionUrl = discussionNumber
+  ? `https://github.com/${config.repo}/discussions/${discussionNumber}`
+  : '';
+---
+{discussionNumber && (
+  <section class="article-comments" aria-labelledby="article-comments-title">
+    <div class="article-comments__head">
+      <h2 id="article-comments-title">댓글</h2>
+      <a
+        href={discussionUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub Discussion 원문 새 창"
+      >Discussion 원문</a>
+    </div>
+    {enabled ? (
+      <div class="giscus" data-giscus-mount></div>
+    ) : (
+      <p class="article-comments__fallback">
+        댓글은 <a href={discussionUrl} target="_blank" rel="noopener noreferrer">GitHub Discussion</a>에서 확인할 수 있습니다.
+      </p>
+    )}
+  </section>
+)}
+
+{enabled && (
+  <script
+    is:inline
+    define:vars={{
+      repo: config.repo,
+      repoId: config.repoId,
+      category: config.category,
+      categoryId: config.categoryId,
+      discussionNumber,
+    }}
+  >
+    (() => {
+      const mount = document.querySelector('[data-giscus-mount]');
+      if (!mount) return;
+
+      const root = document.documentElement;
+      const theme = () => root.dataset.theme === 'dark' ? 'dark' : 'light';
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.dataset.repo = repo;
+      script.dataset.repoId = repoId;
+      script.dataset.category = category;
+      script.dataset.categoryId = categoryId;
+      script.dataset.mapping = 'number';
+      script.dataset.term = String(discussionNumber);
+      script.dataset.strict = '1';
+      script.dataset.reactionsEnabled = '1';
+      script.dataset.emitMetadata = '0';
+      script.dataset.inputPosition = 'bottom';
+      script.dataset.theme = theme();
+      script.dataset.lang = 'ko';
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      mount.append(script);
+
+      const syncTheme = () => {
+        mount.querySelector('iframe.giscus-frame')?.contentWindow?.postMessage({
+          giscus: { setConfig: { theme: theme() } },
+        }, 'https://giscus.app');
+      };
+      new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    })();
+  </script>
+)}

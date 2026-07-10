@@ -1,0 +1,118 @@
+---
+import Base from '../../layouts/Base.astro';
+import GiscusComments from '../../components/GiscusComments.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const base = import.meta.env.BASE_URL;
+const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+---
+<Base title={post.data.title} description={post.data.summary} active="blog">
+  <section class="section">
+    <div class="container article-container">
+      <a class="btn btn--ghost article-back" href={base + 'blog'}>← 블로그 목록</a>
+      <header class="article-head">
+        <h1 class="page-title">{post.data.title}</h1>
+        <div class="article-head__meta">
+          <a
+            class="post-card__author"
+            href={`https://github.com/${post.data.github}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`@${post.data.github} GitHub 프로필 (새 창)`}
+          >
+            <img
+              class="author-avatar"
+              src={`https://github.com/${post.data.github}.png?size=80`}
+              alt=""
+              width="32"
+              height="32"
+              loading="lazy"
+              decoding="async"
+              referrerpolicy="no-referrer"
+            />
+            <span class="post-card__author-copy">
+              <span class="post-card__author-name">@{post.data.github}</span>
+            </span>
+          </a>
+          <time datetime={post.data.date.toISOString()}>{fmt(post.data.date)}</time>
+        </div>
+        <ul class="article-head__tags" aria-label="태그">
+          {post.data.tags.map((t) => <li><span class="chip">#{t}</span></li>)}
+        </ul>
+      </header>
+      <article class="prose">
+        <Content />
+      </article>
+      <GiscusComments discussionNumber={post.data.discussionNumber} />
+    </div>
+  </section>
+
+  <script>
+    const mermaidBlocks = Array.from(
+      document.querySelectorAll<HTMLElement>('.prose pre[data-language="mermaid"]')
+    );
+
+    if (mermaidBlocks.length) {
+      const { default: mermaid } = await import('mermaid');
+      const root = document.documentElement;
+      const diagrams = mermaidBlocks.map((block) => {
+        const host = document.createElement('div');
+        host.className = 'mermaid-diagram';
+        host.setAttribute('aria-label', 'Mermaid 다이어그램');
+        block.replaceWith(host);
+        return { host, source: block.textContent || '' };
+      });
+      let rendering = false;
+      let queued = false;
+
+      const renderMermaid = async () => {
+        if (rendering) {
+          queued = true;
+          return;
+        }
+        rendering = true;
+        mermaid.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: root.dataset.theme === 'dark' ? 'dark' : 'default',
+        });
+
+        for (const { host, source } of diagrams) {
+          host.classList.remove('mermaid-diagram--error');
+          host.removeAttribute('data-processed');
+          host.textContent = source;
+          try {
+            await mermaid.run({ nodes: [host], suppressErrors: true });
+          } catch {
+            host.classList.add('mermaid-diagram--error');
+            host.textContent = source;
+          }
+        }
+
+        rendering = false;
+        if (queued) {
+          queued = false;
+          await renderMermaid();
+        }
+      };
+
+      await renderMermaid();
+      new MutationObserver(() => { void renderMermaid(); }).observe(root, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    }
+  </script>
+</Base>

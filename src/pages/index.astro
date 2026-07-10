@@ -1,0 +1,116 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import liveIssues from '../data/live-issues.json';
+
+const base = import.meta.env.BASE_URL;
+const featuredIssues = liveIssues.issues.slice(0, 4);
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+const statusLabels: Record<string, string> = {
+  todo: '대기',
+  'in-progress': '진행 중',
+  done: '완료',
+  open: '열림',
+  merged: '병합',
+  closed: '닫힘',
+  draft: '초안',
+};
+const issueUrl = (issue: Record<string, string>) =>
+  `https://github.com/${issue.repo}/issues/${issue.number}`;
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+---
+<Base title="홈" active="home">
+  <section class="home-intro">
+    <div class="container home-intro__inner">
+      <lottie-player
+        class="home-intro__mark"
+        src={base + 'lottie/thorvg-mark.json'}
+        alt=""
+        autoplay
+        loop
+        data-lottie-mark
+        aria-hidden="true"
+      ></lottie-player>
+      <div>
+        <p class="eyebrow">Open Source Contribution Academy 2026</p>
+        <h1 class="home-intro__title">ThorVG × OSSCA 2026</h1>
+        <p class="home-intro__description">
+          ThorVG는 SVG와 Lottie를 포함한 벡터 그래픽을 직접 구성하고, 다양한 환경에서 렌더링할 수 있는 경량 오픈소스 엔진입니다.
+          함께 배우고 성장하며 ThorVG에 기여해 보세요.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="home-dashboard" aria-label="OSSCA 활동 대시보드">
+    <div class="container home-dashboard__grid">
+      <section class="dashboard-panel" aria-labelledby="recent-issues-title">
+        <header class="dashboard-panel__header">
+          <h2 id="recent-issues-title">최근 업데이트 이슈</h2>
+          <a href={base + 'issues'}>전체 보기</a>
+        </header>
+        <div class="dashboard-list">
+          {featuredIssues.map((issue) => (
+            <a
+              class="home-issue"
+              href={issueUrl(issue)}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-featured-issue="true"
+            >
+              <span class="home-issue__num">{issue.repo.split('/')[1]} #{issue.number}</span>
+              <span class="home-issue__body">
+                <span class="home-issue__title">{issue.title}</span>
+                <span class="home-issue__meta">
+                  <span class={`status status--${issue.status}`}>
+                    {statusLabels[issue.status] ?? issue.status}
+                  </span>
+                  {issue.assignee && <span class="home-issue__assignee">@{issue.assignee}</span>}
+                </span>
+              </span>
+              <span class="sr-only">(새 창)</span>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section class="dashboard-panel" aria-labelledby="recent-posts-title">
+        <header class="dashboard-panel__header">
+          <h2 id="recent-posts-title">최근 블로그 글</h2>
+          <a href={base + 'blog'}>전체 보기</a>
+        </header>
+        <div class="dashboard-list">
+          {posts.map((post) => (
+            <article
+              class="home-post"
+              data-recent-post="true"
+              data-date={post.data.date.getTime()}
+            >
+              <a class="home-post__title" href={base + 'blog/' + post.id}>{post.data.title}</a>
+              <p class="home-post__summary">{post.data.summary}</p>
+              <div class="home-post__meta">
+                <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+                <a
+                  href={`https://github.com/${post.data.github}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`@${post.data.github} GitHub 프로필 (새 창)`}
+                >@{post.data.github}</a>
+              </div>
+            </article>
+          ))}
+          {posts.length === 0 && <p class="empty-state home-empty">아직 공개된 블로그 글이 없습니다.</p>}
+        </div>
+      </section>
+    </div>
+  </section>
+</Base>

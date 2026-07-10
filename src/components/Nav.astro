@@ -1,0 +1,71 @@
+---
+const base = import.meta.env.BASE_URL;
+const { active } = Astro.props as { active?: string };
+const links = [
+  { key: 'home', label: '홈', href: base },
+  { key: 'issues', label: '이슈', href: base + 'issues' },
+  { key: 'blog', label: '블로그', href: base + 'blog' },
+  { key: 'playground', label: '플레이그라운드', href: base + 'playground' },
+  { key: 'schedule', label: '일정', href: base + 'schedule' },
+  { key: 'thorvg', label: 'ThorVG', href: base + 'thorvg' },
+];
+---
+<header class="nav">
+  <div class="container">
+    <a class="nav__brand" href={base} aria-label="ThorVG OSSCA 2026 홈">
+      <span class="nav__mark" aria-hidden="true">
+        <img src={base + 'favicon.svg'} alt="" width="24" height="24" />
+      </span>
+      <span>ThorVG <span aria-hidden="true">×</span> OSSCA 2026</span>
+    </a>
+    <nav class="nav__links" aria-label="주요 메뉴">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          aria-current={active === l.key ? 'page' : undefined}
+        >
+          {l.label}
+        </a>
+      ))}
+    </nav>
+    <div class="nav__actions nav__cta">
+      <label class="theme-toggle" for="theme-toggle">
+        <span>다크</span>
+        <input id="theme-toggle" type="checkbox" role="switch" aria-label="다크 테마 사용" />
+      </label>
+      <a
+        class="btn btn--secondary nav__github"
+        href="https://github.com/thorvg/thorvg"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="ThorVG GitHub 새 창"
+      >GitHub</a>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  (() => {
+    const root = document.documentElement;
+    const toggle = document.querySelector('#theme-toggle');
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    const syncThemeColor = () => {
+      const color = getComputedStyle(root).getPropertyValue('--theme-color').trim();
+      if (color) themeColor?.setAttribute('content', color);
+    };
+
+    if (toggle instanceof HTMLInputElement) {
+      toggle.checked = root.dataset.theme === 'dark';
+      syncThemeColor();
+      toggle.addEventListener('change', () => {
+        const theme = toggle.checked ? 'dark' : 'light';
+        root.dataset.theme = theme;
+        syncThemeColor();
+
+        try {
+          localStorage.setItem('ossca-thorvg-theme', theme);
+        } catch {}
+      });
+    }
+  })();
+</script>

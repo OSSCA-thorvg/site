@@ -1,0 +1,431 @@
+---
+import Base from '../layouts/Base.astro';
+
+const groups = [
+  {
+    title: '공식',
+    links: [
+      {
+        title: 'ThorVG 공식 사이트',
+        url: 'https://www.thorvg.org/',
+        desc: '프로젝트 소개와 공식 문서를 확인합니다.',
+      },
+      {
+        title: 'GitHub 저장소',
+        url: 'https://github.com/thorvg/thorvg',
+        desc: '소스 코드, 이슈, 변경 내역을 살펴봅니다.',
+      },
+      {
+        title: '릴리스',
+        url: 'https://github.com/thorvg/thorvg/releases',
+        desc: '최신 버전과 릴리스 노트를 확인합니다.',
+      },
+    ],
+  },
+  {
+    title: '시작하기',
+    links: [
+      {
+        title: '빠른 시작',
+        url: 'https://github.com/thorvg/thorvg#quick-start',
+        desc: '기본 초기화와 렌더링 흐름을 따라갑니다.',
+      },
+      {
+        title: '빌드와 설치',
+        url: 'https://github.com/thorvg/thorvg#build-and-install',
+        desc: 'Meson과 Ninja 기반 빌드 방법을 확인합니다.',
+      },
+      {
+        title: '기여 안내',
+        url: 'https://github.com/thorvg/thorvg/blob/main/CONTRIBUTING.md',
+        desc: '패치 작성과 검토 절차를 확인합니다.',
+      },
+    ],
+  },
+  {
+    title: '도구',
+    links: [
+      {
+        title: 'ThorVG Viewer',
+        url: 'https://thorvg.github.io/thorvg.viewer/',
+        desc: 'SVG와 Lottie 파일을 브라우저에서 확인합니다.',
+      },
+      {
+        title: 'WebCanvas 예제',
+        url: 'https://thorvg-playground.vercel.app/showcase/custom-transform',
+        desc: 'WebCanvas 커스텀 변환 예제를 실행합니다.',
+      },
+    ],
+  },
+];
+---
+<Base title="ThorVG 자료" active="thorvg">
+  <section class="section">
+    <div class="container resource-container">
+      <p class="eyebrow">ThorVG</p>
+      <h1 class="page-title">ThorVG 자료</h1>
+      <p class="lede">개발과 기여에 필요한 공식 문서와 도구를 모았습니다.</p>
+
+      <div class="resource-groups">
+        {groups.map((group) => (
+          <section class="resource-group">
+            <h2 class="section-title">{group.title}</h2>
+            <div class="link-list">
+              {group.links.map((link) => (
+                <a
+                  class="link-card"
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${link.title} (새 창)`}
+                >
+                  <span class="link-card__title">{link.title}</span>
+                  <span class="link-card__desc">{link.desc}</span>
+                </a>
+              ))}
+              {group.title === '도구' && (
+                <button class="link-card link-card--action" id="thorvg-diff-toggle" type="button" aria-controls="thorvg-diff" aria-expanded="false">
+                  <span class="link-card__title">Diff</span>
+                  <span class="link-card__desc">ThorVG와 Airbnb 렌더러를 같은 Lottie로 비교합니다.</span>
+                </button>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <section class="diff-section" id="thorvg-diff" data-sample-src={import.meta.env.BASE_URL + 'lottie/thorvg-sample.json'} hidden aria-labelledby="thorvg-diff-title">
+        <div class="diff-section__head">
+          <p class="eyebrow">Renderer comparison</p>
+          <h2 class="section-title" id="thorvg-diff-title">Lottie Diff</h2>
+        </div>
+        <div class="diff-toolbar" aria-label="Lottie Diff controls">
+          <label class="diff-file">
+            <span>Lottie 파일</span>
+            <input id="diff-file" type="file" accept=".json,application/json" />
+          </label>
+          <button class="btn btn--primary" id="diff-play" type="button">재생</button>
+          <button class="btn btn--secondary" id="diff-stop" type="button">정지</button>
+          <label class="diff-seek">
+            <span class="sr-only">프레임 이동</span>
+            <input id="diff-seek" type="range" min="0" max="1" value="0" step="0.01" />
+          </label>
+          <output id="diff-time" class="diff-time" for="diff-seek">0 / 0 프레임</output>
+        </div>
+        <div class="diff-grid">
+          <article class="diff-panel" data-diff-renderer="thorvg">
+            <h3>thorvg-lottie-player</h3>
+            <div class="diff-stage" data-diff-surface>
+              <lottie-player id="diff-thorvg" loop></lottie-player>
+            </div>
+            <p class="diff-color-readout" data-diff-color>RGB — 영역 위에 마우스를 올려보세요</p>
+          </article>
+          <article class="diff-panel" data-diff-renderer="airbnb">
+            <h3>Airbnb lottie-web</h3>
+            <div class="diff-stage" data-diff-surface><div id="diff-airbnb"></div></div>
+            <p class="diff-color-readout" data-diff-color>RGB — 영역 위에 마우스를 올려보세요</p>
+          </article>
+          <article class="diff-panel" data-diff-renderer="pixel-diff">
+            <h3>Pixel Diff</h3>
+            <div class="diff-stage">
+              <canvas id="diff-pixel-canvas" width="300" height="300"></canvas>
+            </div>
+            <p class="diff-color-readout" id="diff-pixel-summary">Pixel Perfect · Δ 0 px</p>
+          </article>
+        </div>
+        <p class="diff-status" id="diff-status" role="status" aria-live="polite">기본 ThorVG 샘플을 준비하는 중입니다.</p>
+      </section>
+    </div>
+  </section>
+</Base>
+
+<script is:inline src="https://unpkg.com/lottie-web@5.13.0/build/player/lottie.min.js" defer></script>
+<script is:inline>
+  (() => {
+    const toggle = document.querySelector('#thorvg-diff-toggle');
+    const section = document.querySelector('#thorvg-diff');
+    if (!(toggle instanceof HTMLButtonElement) || !(section instanceof HTMLElement)) return;
+
+    const fileInput = document.querySelector('#diff-file');
+    const playButton = document.querySelector('#diff-play');
+    const stopButton = document.querySelector('#diff-stop');
+    const seek = document.querySelector('#diff-seek');
+    const timeOutput = document.querySelector('#diff-time');
+    const status = document.querySelector('#diff-status');
+    const thorvg = document.querySelector('#diff-thorvg');
+    const airbnbContainer = document.querySelector('#diff-airbnb');
+    const pixelCanvas = document.querySelector('#diff-pixel-canvas');
+    const pixelSummary = document.querySelector('#diff-pixel-summary');
+    if (!(fileInput instanceof HTMLInputElement) || !(playButton instanceof HTMLButtonElement) || !(stopButton instanceof HTMLButtonElement) || !(seek instanceof HTMLInputElement) || !(timeOutput instanceof HTMLOutputElement) || !(status instanceof HTMLElement) || !thorvg || !(airbnbContainer instanceof HTMLElement) || !(pixelCanvas instanceof HTMLCanvasElement) || !(pixelSummary instanceof HTMLElement)) return;
+
+    const sampleUrl = section.dataset.sampleSrc;
+    let animationData = null;
+    let frame = 0;
+    let totalFrames = 1;
+    let frameRate = 60;
+    let playing = false;
+    let raf = 0;
+    let startedAt = 0;
+    let airbnbAnimation = null;
+    let uploadedObjectUrl = null;
+
+    const waitFor = (check) => new Promise((resolve) => {
+      const poll = () => check() ? resolve() : window.setTimeout(poll, 40);
+      poll();
+    });
+    const waitForPaint = () => new Promise((resolve) => {
+      requestAnimationFrame(() => window.setTimeout(resolve, 120));
+    });
+
+    const setStatus = (message) => { status.textContent = message; };
+
+    const revokeObjectUrl = () => {
+      if (!uploadedObjectUrl) return;
+      URL.revokeObjectURL(uploadedObjectUrl);
+      uploadedObjectUrl = null;
+    };
+
+    const updateTime = () => {
+      seek.value = String(frame);
+      timeOutput.value = `${Math.round(frame)} / ${totalFrames} 프레임`;
+      timeOutput.textContent = timeOutput.value;
+    };
+
+    const getCanvas = (surface) => {
+      if (surface instanceof HTMLCanvasElement) return surface;
+      return surface.querySelector('canvas') || surface.shadowRoot?.querySelector('canvas') || null;
+    };
+
+    const warmThorvgFrame = async (nextFrame) => {
+      if (typeof thorvg.seek !== 'function') return;
+      const currentFrame = Number(thorvg.currentFrame ?? 0);
+      if (nextFrame > 1 && currentFrame <= 0) {
+        await thorvg.seek(0);
+        await thorvg.seek(1);
+      }
+      await thorvg.seek(nextFrame);
+    };
+
+    const collectBounds = (pixels, canvasWidth, canvasHeight, alphaThreshold = 64) => {
+      let minX = canvasWidth;
+      let minY = canvasHeight;
+      let maxX = -1;
+      let maxY = -1;
+      for (let y = 0; y < canvasHeight; y += 1) {
+        for (let x = 0; x < canvasWidth; x += 1) {
+          const alpha = pixels[(y * canvasWidth + x) * 4 + 3];
+          if (alpha < alphaThreshold) continue;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+      return maxX >= 0 ? { minX, minY, maxX, maxY } : null;
+    };
+
+    const getDisplayPixelSize = (firstCanvas, secondCanvas) => {
+      const firstRect = firstCanvas.getBoundingClientRect();
+      const secondRect = secondCanvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const displayWidth = Math.max(firstRect.width, secondRect.width);
+      const displayHeight = Math.max(firstRect.height, secondRect.height);
+      return {
+        width: displayWidth > 0 ? Math.round(displayWidth * ratio) : Math.max(firstCanvas.width, secondCanvas.width),
+        height: displayHeight > 0 ? Math.round(displayHeight * ratio) : Math.max(firstCanvas.height, secondCanvas.height),
+      };
+    };
+
+    const normalizeCanvasPixels = (sourceCanvas, width, height) => {
+      const normalizedCanvas = document.createElement('canvas');
+      normalizedCanvas.width = width;
+      normalizedCanvas.height = height;
+      const normalizedContext = normalizedCanvas.getContext('2d', { willReadFrequently: true });
+      if (!normalizedContext) return null;
+      normalizedContext.drawImage(sourceCanvas, 0, 0, width, height);
+      return normalizedContext.getImageData(0, 0, width, height).data;
+    };
+
+    const renderPixelDiff = () => {
+      const thorvgCanvas = getCanvas(thorvg);
+      const airbnbCanvas = getCanvas(airbnbContainer);
+      const pixelContext = pixelCanvas.getContext('2d', { willReadFrequently: true });
+      if (!(thorvgCanvas instanceof HTMLCanvasElement) || !(airbnbCanvas instanceof HTMLCanvasElement) || !pixelContext) return;
+
+      const { width, height } = getDisplayPixelSize(thorvgCanvas, airbnbCanvas);
+      if (width < 1 || height < 1) return;
+      if (pixelCanvas.width !== width) pixelCanvas.width = width;
+      if (pixelCanvas.height !== height) pixelCanvas.height = height;
+
+      const thorvgPixels = normalizeCanvasPixels(thorvgCanvas, width, height);
+      const airbnbPixels = normalizeCanvasPixels(airbnbCanvas, width, height);
+      if (!thorvgPixels || !airbnbPixels) return;
+      const output = pixelContext.createImageData(width, height);
+      let mismatch = 0;
+      let maxDelta = 0;
+
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const outIndex = (y * width + x) * 4;
+          const tr = thorvgPixels[outIndex];
+          const tg = thorvgPixels[outIndex + 1];
+          const tb = thorvgPixels[outIndex + 2];
+          const ta = thorvgPixels[outIndex + 3];
+          const ar = airbnbPixels[outIndex];
+          const ag = airbnbPixels[outIndex + 1];
+          const ab = airbnbPixels[outIndex + 2];
+          const aa = airbnbPixels[outIndex + 3];
+          const diff = Math.max(Math.abs(tr - ar), Math.abs(tg - ag), Math.abs(tb - ab), Math.abs(ta - aa));
+          const unionAlpha = Math.max(ta, aa);
+          if (unionAlpha > 0) {
+            output.data[outIndex] = 36;
+            output.data[outIndex + 1] = 43;
+            output.data[outIndex + 2] = 54;
+            output.data[outIndex + 3] = Math.min(56, Math.max(18, Math.round(unionAlpha * 0.18)));
+          }
+          if (diff > 0) {
+            mismatch += 1;
+            if (diff > maxDelta) maxDelta = diff;
+            output.data[outIndex] = 255;
+            output.data[outIndex + 1] = 0;
+            output.data[outIndex + 2] = 180;
+            output.data[outIndex + 3] = Math.max(128, diff);
+          }
+        }
+      }
+
+      pixelContext.putImageData(output, 0, 0);
+      const total = width * height;
+      const percent = total ? (mismatch / total * 100).toFixed(4) : '0.0000';
+      const thorvgBounds = collectBounds(thorvgPixels, width, height);
+      const airbnbBounds = collectBounds(airbnbPixels, width, height);
+      const boundsDelta = thorvgBounds && airbnbBounds
+        ? Math.max(
+            Math.abs(thorvgBounds.minX - airbnbBounds.minX),
+            Math.abs(thorvgBounds.minY - airbnbBounds.minY),
+            Math.abs(thorvgBounds.maxX - airbnbBounds.maxX),
+            Math.abs(thorvgBounds.maxY - airbnbBounds.maxY)
+          )
+        : 0;
+      const boundsLabel = thorvgBounds && airbnbBounds
+        ? (boundsDelta <= 1 ? 'Bounds OK' : `Bounds Δ ${boundsDelta}px`)
+        : 'Bounds -';
+      pixelSummary.textContent = mismatch === 0
+        ? `Pixel Perfect · ${boundsLabel} · Δ 0 px / ${total.toLocaleString()} px · max ${maxDelta}`
+        : `${boundsLabel} · Δ ${mismatch.toLocaleString()} px / ${total.toLocaleString()} px · ${percent}% · max ${maxDelta}`;
+    };
+
+    const renderFrame = async (nextFrame) => {
+      frame = Math.max(0, Math.min(totalFrames, nextFrame));
+      await warmThorvgFrame(frame);
+      if (airbnbAnimation) airbnbAnimation.goToAndStop(frame, true);
+      await waitForPaint();
+      renderPixelDiff();
+      updateTime();
+    };
+
+    const tick = async (now) => {
+      if (!playing) return;
+      const elapsed = (now - startedAt) / 1000;
+      await renderFrame((elapsed * frameRate) % totalFrames);
+      if (playing) raf = requestAnimationFrame(tick);
+    };
+
+    const play = () => {
+      if (playing) return;
+      playing = true;
+      startedAt = performance.now() - (frame / frameRate) * 1000;
+      playButton.textContent = '일시정지';
+      raf = requestAnimationFrame(tick);
+    };
+
+    const pause = () => {
+      playing = false;
+      cancelAnimationFrame(raf);
+      playButton.textContent = '재생';
+    };
+
+    const stop = () => {
+      pause();
+      renderFrame(0);
+    };
+
+    const updateColor = (event) => {
+      const surface = event.currentTarget;
+      const canvas = getCanvas(surface);
+      const output = surface.closest('.diff-panel')?.querySelector('[data-diff-color]');
+      if (!(canvas instanceof HTMLCanvasElement) || !(output instanceof HTMLElement)) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.max(0, Math.min(canvas.width - 1, Math.floor((event.clientX - rect.left) * canvas.width / rect.width)));
+      const y = Math.max(0, Math.min(canvas.height - 1, Math.floor((event.clientY - rect.top) * canvas.height / rect.height)));
+      try {
+        const pixel = canvas.getContext('2d')?.getImageData(x, y, 1, 1).data;
+        if (pixel) output.textContent = `RGB ${pixel[0]}, ${pixel[1]}, ${pixel[2]}`;
+      } catch {
+        output.textContent = 'RGB — 이 렌더러는 픽셀 읽기를 지원하지 않습니다';
+      }
+    };
+
+    const load = async (nextData, src) => {
+      pause();
+      animationData = nextData;
+      totalFrames = Math.max(1, (nextData.op ?? 1) - (nextData.ip ?? 0));
+      frameRate = Math.max(1, nextData.fr ?? 60);
+      seek.max = String(totalFrames);
+      await waitFor(() => customElements.get('lottie-player'));
+      await waitFor(() => window.lottie);
+      await thorvg.load(src);
+      thorvg.pause();
+
+      if (airbnbAnimation) airbnbAnimation.destroy();
+      airbnbContainer.replaceChildren();
+      airbnbAnimation = window.lottie?.loadAnimation({ container: airbnbContainer, renderer: 'canvas', loop: false, autoplay: false, animationData: nextData });
+
+      await renderFrame(0);
+      setStatus('두 렌더러가 같은 Lottie 프레임을 표시합니다.');
+    };
+
+    toggle.addEventListener('click', async () => {
+      const open = section.hidden;
+      section.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      if (open) section.scrollIntoView({ block: 'start' });
+      if (open && !animationData) {
+        try {
+          await waitForPaint();
+          const response = await fetch(sampleUrl);
+          revokeObjectUrl();
+          await load(await response.json(), new URL(sampleUrl, document.baseURI).href);
+        } catch (error) {
+          setStatus(`Lottie를 불러오지 못했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+        }
+      }
+    });
+
+    playButton.addEventListener('click', () => playing ? pause() : play());
+    stopButton.addEventListener('click', stop);
+    seek.addEventListener('input', () => { pause(); renderFrame(Number(seek.value)); });
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      const nextObjectUrl = URL.createObjectURL(file);
+      try {
+        const nextData = JSON.parse(await file.text());
+        revokeObjectUrl();
+        uploadedObjectUrl = nextObjectUrl;
+        await load(nextData, nextObjectUrl);
+      } catch {
+        URL.revokeObjectURL(nextObjectUrl);
+        if (uploadedObjectUrl === nextObjectUrl) uploadedObjectUrl = null;
+        setStatus('JSON Lottie 파일을 읽지 못했습니다.');
+      }
+    });
+    document.querySelectorAll('[data-diff-surface]').forEach((surface) => {
+      surface.addEventListener('mousemove', updateColor);
+      surface.addEventListener('mouseleave', (event) => {
+        const output = event.currentTarget.closest('.diff-panel')?.querySelector('[data-diff-color]');
+        if (output instanceof HTMLElement) output.textContent = 'RGB — 영역 위에 마우스를 올려보세요';
+      });
+    });
+  })();
+</script>

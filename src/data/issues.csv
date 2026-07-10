@@ -1,0 +1,4 @@
+number,repo,title,labels,status,assignee,area,difficulty,recommended
+4538,thorvg/thorvg,"svg: text compliance",svg,open,JSUYA,svg,beginner,true
+4347,thorvg/thorvg,"lottie: support conic gradients",lottie,open,wenjieshen,lottie,intermediate,false
+3881,thorvg/thorvg,"API: runtime memory allocator customization",api,open,huming2207,api,advanced,false

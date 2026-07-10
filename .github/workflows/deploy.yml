@@ -1,0 +1,78 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  discussion:
+    types: [created, edited, deleted, category_changed]
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+# Allow the workflow to publish to Pages via OIDC.
+permissions:
+  contents: read
+  discussions: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; don't cancel an in-flight publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12
+          cache: npm
+
+      - name: Sync open ThorVG issues
+        run: node scripts/sync-issues.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Sync published Blog discussions
+        run: node scripts/sync-discussions.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Install
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - name: Test
+        run: npm test
+        env:
+          # configure-pages resolves the correct base for user vs project pages
+          # (e.g. "/<repo>" for a project page). astro.config reads BASE_PATH.
+          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

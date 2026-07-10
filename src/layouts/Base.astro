@@ -1,0 +1,90 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const base = import.meta.env.BASE_URL;
+const {
+  title = '',
+  description = 'OSSCA 2026 ThorVG 팀의 이슈, 학습 기록, 실습 도구와 일정을 모은 작업 공간입니다.',
+  active,
+} = Astro.props as { title?: string; description?: string; active?: string };
+const siteTitle = 'ThorVG × OSSCA 2026';
+const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
+---
+<!doctype html>
+<html lang="ko" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" />
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        let theme = 'light';
+
+        try {
+          theme = localStorage.getItem('ossca-thorvg-theme') === 'dark' ? 'dark' : 'light';
+        } catch {}
+
+        root.dataset.theme = theme;
+        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+        const syncThemeColor = () => {
+          const color = getComputedStyle(root).getPropertyValue('--theme-color').trim();
+          if (color) themeColorMeta?.setAttribute('content', color);
+        };
+
+        syncThemeColor();
+        document.addEventListener('DOMContentLoaded', syncThemeColor, { once: true });
+      })();
+    </script>
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href={base + 'favicon.svg'} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 건너뛰기</a>
+    <Nav active={active} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <script is:inline>
+      (() => {
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        document.querySelectorAll('[data-lottie-mark]').forEach((player) => {
+          const src = player.getAttribute('src');
+          if (src) player.setAttribute('src', new URL(src, document.baseURI).href);
+          if (reduceMotion) player.removeAttribute('autoplay');
+        });
+        document.querySelectorAll('.prose lottie-player').forEach((player) => {
+          const src = player.getAttribute('src');
+          if (src) player.setAttribute('src', new URL(src, document.baseURI).href);
+          if (reduceMotion) player.removeAttribute('autoplay');
+        });
+      })();
+    </script>
+    <script
+      is:inline
+      src="https://unpkg.com/@thorvg/lottie-player@1.0.9/dist/lottie-player.js"
+      integrity="sha256-pcsL7ofeFadgXR45WR3bw+LVMqffBtrurMlP1RDy0wA="
+      crossorigin="anonymous"
+    ></script>
+    <script is:inline>
+      (() => {
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        customElements.whenDefined('lottie-player').then(() => {
+          document.querySelectorAll('[data-lottie-mark]').forEach((player) => {
+            player.addEventListener('load', () => player.pause(), { once: true });
+            player.play();
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

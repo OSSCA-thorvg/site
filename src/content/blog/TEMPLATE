@@ -1,0 +1,17 @@
+---
+title: "글 제목"
+github: "github-id"
+date: 2026-07-11
+summary: "글 요약"
+tags: ["thorvg", "study"]
+draft: false
+---
+
+![](./cover.png)
+
+본문을 작성하세요.
+
+권장 위치는 `src/content/blog/my-post/index.mdx`입니다.
+미디어 파일은 index.mdx와 같은 폴더에 두고 `./cover.png`처럼 참조하세요.
+캡션이 필요하면 `![캡션](./cover.png)`처럼 대괄호 안에 적습니다.
+단일 파일 `my-post.mdx`에서 하위 폴더 미디어를 쓰면 `./my-post/cover.png`처럼 적습니다.

@@ -1,0 +1,29 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        블로그에 게시할 글을 Markdown으로 작성합니다. 작성 중인 글은 제목 끝에 `(WIP)`을 붙여주세요.
+  - type: input
+    id: summary
+    attributes:
+      label: 요약
+      description: 블로그 목록에 표시할 한두 문장입니다.
+      placeholder: 이 글에서 다루는 내용을 짧게 적어주세요.
+    validations:
+      required: true
+  - type: input
+    id: tags
+    attributes:
+      label: 태그
+      description: 쉼표로 구분합니다.
+      placeholder: thorvg, lottie, study
+    validations:
+      required: true
+  - type: textarea
+    id: body
+    attributes:
+      label: 본문
+      description: 이미지와 GIF는 붙여넣고, Lottie JSON 첨부 링크에는 앞에 !를 붙여주세요.
+      placeholder: Markdown으로 글을 작성하세요.
+    validations:
+      required: true

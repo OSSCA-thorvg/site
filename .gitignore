@@ -1,0 +1,14 @@
+# Build output
+dist/
+.astro/
+src/content/blog/discussion-*.md
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Vendored reference clone (VoltAgent DESIGN.md collection) — never commit or publish.
+awesome-design-md/
+
+# macOS
+.DS_Store
