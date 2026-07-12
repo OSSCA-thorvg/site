@@ -57,7 +57,7 @@ test('home page defaults the shared shell to the light theme', async () => {
   );
 });
 
-test('home page navigation uses Korean menu labels', async () => {
+test('home page navigation uses English menu labels', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.home),
     readSource('src/components/Nav.astro'),
@@ -66,16 +66,16 @@ test('home page navigation uses Korean menu labels', async () => {
 
   assert.ok(navigation, 'home page must contain the primary navigation');
 
-  for (const label of ['홈', '이슈', '블로그', '일정', 'ThorVG']) {
+  for (const label of ['Home', 'Issues', 'Blog', 'Schedule', 'ThorVG']) {
     assert.ok(navigation.includes(`>${label}</a>`), `home page navigation must contain ${label}`);
   }
   const playgroundLink = navigation.match(
-    /<a\b(?=[^>]*href="[^"]*playground")[^>]*>플레이그라운드<\/a>/
+    /<a\b(?=[^>]*href="[^"]*playground")[^>]*>Playground<\/a>/
   )?.[0];
   assert.ok(playgroundLink);
   assert.doesNotMatch(playgroundLink, /aria-label=/);
   assert.doesNotMatch(source, /nav__label--compact|>실습</);
-  assert.ok(html.includes(`href="${sitePath('thorvg')}">ThorVG 자료</a>`));
+  assert.ok(html.includes(`href="${sitePath('thorvg')}">ThorVG</a>`));
 });
 
 test('home page marks the home navigation link as current', async () => {
@@ -85,7 +85,7 @@ test('home page marks the home navigation link as current', async () => {
   assert.ok(navigation, 'home page must contain the primary navigation');
   assert.match(
     navigation,
-    /<a\b(?=[^>]*\baria-current="page")[^>]*>홈<\/a>/,
+    /<a\b(?=[^>]*\baria-current="page")[^>]*>Home<\/a>/,
     'home navigation link must have aria-current="page"'
   );
 });

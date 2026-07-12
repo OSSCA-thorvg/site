@@ -2,13 +2,14 @@
 const base = import.meta.env.BASE_URL;
 const { active } = Astro.props as { active?: string };
 const links = [
-  { key: 'home', label: '홈', href: base },
-  { key: 'issues', label: '이슈', href: base + 'issues' },
-  { key: 'blog', label: '블로그', href: base + 'blog' },
-  { key: 'playground', label: '플레이그라운드', href: base + 'playground' },
-  { key: 'schedule', label: '일정', href: base + 'schedule' },
+  { key: 'home', label: 'Home', href: base },
+  { key: 'issues', label: 'Issues', href: base + 'issues' },
+  { key: 'blog', label: 'Blog', href: base + 'blog' },
+  { key: 'playground', label: 'Playground', href: base + 'playground' },
+  { key: 'schedule', label: 'Schedule', href: base + 'schedule' },
   { key: 'thorvg', label: 'ThorVG', href: base + 'thorvg' },
   { key: 'deepwiki', label: 'DeepWiki', href: 'https://deepwiki.com/thorvg/thorvg', external: true },
+  { key: 'wiki', label: 'Wiki', href: 'https://github.com/OSSCA-thorvg/site/wiki', external: true },
 ];
 ---
 <header class="nav">
@@ -33,7 +34,7 @@ const links = [
     </nav>
     <div class="nav__actions nav__cta">
       <label class="theme-toggle" for="theme-toggle">
-        <span>다크</span>
+        <span>Dark</span>
         <input id="theme-toggle" type="checkbox" role="switch" aria-label="다크 테마 사용" />
       </label>
       <a
