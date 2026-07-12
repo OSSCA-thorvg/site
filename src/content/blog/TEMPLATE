@@ -2,7 +2,6 @@
 title: "글 제목"
 github: "github-id"
 date: 2026-07-11
-summary: "글 요약"
 tags: ["thorvg", "study"]
 draft: false
 ---

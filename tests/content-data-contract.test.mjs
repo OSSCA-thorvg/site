@@ -67,7 +67,6 @@ test('bundled blog content ships the writing guide and plain template only', asy
     '`title`',
     '`github`',
     '`date`',
-    '`summary`',
     '`tags`',
     '`draft`',
     '## TEMPLATE 사용하기',
@@ -103,7 +102,7 @@ test('bundled blog content ships the writing guide and plain template only', asy
   assert.doesNotMatch(guide, /!\[대표 미디어\]/);
   assert.doesNotMatch(guide, /`publish` 라벨/);
   assert.doesNotMatch(guide, /Lottie|lottie|animation\.json|\/lottie\//i);
-  assert.match(template, /^---\ntitle: "글 제목"\ngithub: "github-id"\ndate: \d{4}-\d{2}-\d{2}\nsummary: "글 요약"\ntags: \["thorvg", "study"\]\ndraft: false\n---/);
+  assert.match(template, /^---\ntitle: "글 제목"\ngithub: "github-id"\ndate: \d{4}-\d{2}-\d{2}\ntags: \["thorvg", "study"\]\ndraft: false\n---/);
   assert.match(template, /!\[\]\(\.\/cover\.png\)/);
   assert.doesNotMatch(template, /!\[대표 미디어\]/);
   assert.match(template, /!\[캡션\]\(\.\/cover\.png\)/);

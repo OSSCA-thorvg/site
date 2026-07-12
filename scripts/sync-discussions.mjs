@@ -2,38 +2,28 @@ import { readdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
+import { deriveSummary } from '../src/lib/summary.js';
+
 const root = fileURLToPath(new URL('../', import.meta.url));
 const blogDir = path.join(root, 'src/content/blog');
 const configFile = path.join(root, 'src/data/discussions-config.json');
 const generatedPost = /^discussion-\d+\.md$/;
 
-const section = (body, label, nextLabel) => {
+const section = (body, label) => {
   const startMarker = `### ${label}`;
   const start = body.indexOf(startMarker);
   if (start < 0) return '';
-  const contentStart = start + startMarker.length;
-  const end = nextLabel ? body.indexOf(`### ${nextLabel}`, contentStart) : -1;
-  return body.slice(contentStart, end < 0 ? undefined : end).trim();
+  return body.slice(start + startMarker.length).trim();
 };
 
 export function parseDiscussionBody(body = '') {
-  if (!body.includes('### 본문')) {
-    return {
-      summary: body.split(/\n\s*\n/, 1)[0]?.trim() ?? '',
-      tags: [],
-      body: body.trim(),
-    };
-  }
-
-  const tags = section(body, '태그', '본문')
-    .split(/[,，\n]/)
-    .map((tag) => tag.trim())
-    .filter(Boolean);
+  // 예전 폼으로 작성된 글은 '### 본문' 아래만 본문으로 사용한다.
+  // 지금은 폼 없이 자유롭게 작성하며, 요약은 본문에서 자동으로 만든다.
+  const content = body.includes('### 본문') ? section(body, '본문') : body.trim();
 
   return {
-    summary: section(body, '요약', '태그'),
-    tags: [...new Set(tags)],
-    body: section(body, '본문'),
+    summary: deriveSummary(content),
+    body: content,
   };
 }
 
@@ -45,9 +35,7 @@ export function isPublishedDiscussion(discussion, category = 'Blog') {
 
 export function renderDiscussionMarkdown(discussion) {
   const parsed = parseDiscussionBody(discussion.body);
-  const tags = parsed.tags.length
-    ? parsed.tags
-    : (discussion.labels?.nodes ?? []).map(({ name }) => name);
+  const tags = (discussion.labels?.nodes ?? []).map(({ name }) => name);
   const date = new Date(discussion.createdAt).toISOString().slice(0, 10);
   const frontmatter = [
     '---',

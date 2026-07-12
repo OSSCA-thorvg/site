@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { extractFirstMedia, resolveBlogMediaUrl } from '../../lib/blog-media.js';
+import { deriveSummary } from '../../lib/summary.js';
 
 const base = import.meta.env.BASE_URL;
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
@@ -55,7 +56,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
             data-tags={JSON.stringify(p.data.tags)}
             data-search={[
               p.data.title,
-              p.data.summary,
+              p.data.summary || deriveSummary(p.body ?? ''),
               ...p.data.tags,
               p.data.github,
             ].join(' ').toLowerCase()}

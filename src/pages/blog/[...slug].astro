@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import GiscusComments from '../../components/GiscusComments.astro';
 import MermaidDiagrams from '../../components/MermaidDiagrams.astro';
 import { getCollection, render } from 'astro:content';
+import { deriveSummary } from '../../lib/summary.js';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
@@ -19,7 +20,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
   timeZone: 'UTC',
 });
 ---
-<Base title={post.data.title} description={post.data.summary} active="blog">
+<Base title={post.data.title} description={post.data.summary || deriveSummary(post.body ?? '')} active="blog">
   <section class="section">
     <div class="container article-container">
       <a class="btn btn--ghost article-back" href={base + 'blog'}>← 블로그 목록</a>

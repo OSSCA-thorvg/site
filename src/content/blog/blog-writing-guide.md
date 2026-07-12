@@ -2,7 +2,6 @@
 title: "[공지] 블로그 글쓰는 방법"
 github: "Nor-s"
 date: 2026-07-10
-summary: "GitHub Discussion으로 글을 게시하거나 Markdown PR로 추가하는 방법을 안내드립니다."
 tags: ["Notice"]
 draft: false
 ---
@@ -113,7 +112,6 @@ JSX 컴포넌트가 필요하다면 `.mdx`를 선택하시면 됩니다.
 title: "글 제목"
 github: "github-id"
 date: 2026-07-10
-summary: "글 요약"
 tags: ["thorvg", "study"]
 draft: false
 ---
@@ -123,7 +121,7 @@ draft: false
 본문을 작성하세요.
 ```
 
-복사한 뒤 `github`, `title`, `date`, `summary`, `tags`만 본인 글에 맞게 바꿔 주시면
+복사한 뒤 `github`, `title`, `date`, `tags`만 본인 글에 맞게 바꿔 주시면
 됩니다.
 
 ## 로컬에서 확인하기
@@ -161,7 +159,6 @@ npm run preview
 title: "블로그 글쓰는 방법"
 github: "Nor-s"
 date: 2026-07-10
-summary: "OSSCA ThorVG 사이트에 블로그 글을 추가하고 PR로 보내는 방법입니다."
 tags: ["Notice"]
 draft: false
 ---
@@ -175,8 +172,6 @@ draft: false
 
 `date`는 글 날짜입니다. `2026-07-10`처럼 `YYYY-MM-DD` 형식으로 작성해 주세요.
 
-`summary`는 홈 화면의 최근 블로그 글 영역과 메타 설명에 쓰이는 짧은 요약입니다. 한두
-문장 정도면 충분합니다.
 
 `tags`는 블로그 목록의 카테고리 필터에 사용됩니다. 여러 개를 넣으셔도 됩니다.
 
