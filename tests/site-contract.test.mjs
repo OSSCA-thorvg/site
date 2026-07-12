@@ -1029,10 +1029,11 @@ test('deploy workflow checks the project and runs the full test build with the P
 });
 
 test('discussion posts use their source discussion for Korean giscus comments', async () => {
-  const [detail, comments, config] = await Promise.all([
+  const [detail, comments, config, css] = await Promise.all([
     readSource('src/pages/blog/[...slug].astro'),
     readSource('src/components/GiscusComments.astro'),
     readSource('src/data/discussions-config.json'),
+    readSource('src/styles/global.css'),
   ]);
 
   assert.match(detail, /<GiscusComments discussionNumber=\{post\.data\.discussionNumber\}/);
@@ -1042,6 +1043,8 @@ test('discussion posts use their source discussion for Korean giscus comments', 
   assert.match(comments, /MutationObserver/);
   assert.match(comments, /setConfig/);
   assert.match(comments, /discussionNumber/);
+  assert.match(css, /\.article-comments\s*\{[^}]*width:\s*100%/);
+  assert.doesNotMatch(css, /\.article-comments\s*\{[^}]*max-width/);
   assert.equal(JSON.parse(config).repo, 'OSSCA-thorvg/site');
 });
 
