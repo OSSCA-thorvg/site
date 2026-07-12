@@ -1,0 +1,60 @@
+---
+// 페이지의 .prose 안에 있는 mermaid 코드 블록을 다이어그램으로 렌더링한다.
+// 테마 전환(data-theme)에 맞춰 다시 그린다.
+---
+<script>
+  const mermaidBlocks = Array.from(
+    document.querySelectorAll<HTMLElement>('.prose pre[data-language="mermaid"]')
+  );
+
+  if (mermaidBlocks.length) {
+    const { default: mermaid } = await import('mermaid');
+    const root = document.documentElement;
+    const diagrams = mermaidBlocks.map((block) => {
+      const host = document.createElement('div');
+      host.className = 'mermaid-diagram';
+      host.setAttribute('aria-label', 'Mermaid 다이어그램');
+      block.replaceWith(host);
+      return { host, source: block.textContent || '' };
+    });
+    let rendering = false;
+    let queued = false;
+
+    const renderMermaid = async () => {
+      if (rendering) {
+        queued = true;
+        return;
+      }
+      rendering = true;
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: root.dataset.theme === 'dark' ? 'dark' : 'default',
+      });
+
+      for (const { host, source } of diagrams) {
+        host.classList.remove('mermaid-diagram--error');
+        host.removeAttribute('data-processed');
+        host.textContent = source;
+        try {
+          await mermaid.run({ nodes: [host], suppressErrors: true });
+        } catch {
+          host.classList.add('mermaid-diagram--error');
+          host.textContent = source;
+        }
+      }
+
+      rendering = false;
+      if (queued) {
+        queued = false;
+        await renderMermaid();
+      }
+    };
+
+    await renderMermaid();
+    new MutationObserver(() => { void renderMermaid(); }).observe(root, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+  }
+</script>

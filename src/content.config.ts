@@ -17,4 +17,11 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { blog };
+// AI review: per-issue analysis markdown named `<issueNumber>-<difficulty>.md`.
+// Files carry no frontmatter; the issue number comes from the file name.
+const aiReview = defineCollection({
+  loader: glob({ pattern: '*.md', base: './ai-review-issue/core' }),
+  schema: z.object({}),
+});
+
+export const collections = { blog, aiReview };

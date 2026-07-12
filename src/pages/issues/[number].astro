@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+import MermaidDiagrams from '../../components/MermaidDiagrams.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const reviews = await getCollection('aiReview');
+  return reviews.map((review) => ({
+    params: { number: review.id.split('-')[0] },
+    props: { review },
+  }));
+}
+
+const { review } = Astro.props;
+const { Content } = await render(review);
+const base = import.meta.env.BASE_URL;
+const number = review.id.split('-')[0];
+const issueUrl = `https://github.com/thorvg/thorvg/issues/${number}`;
+const heading = review.body?.match(/^#\s+(.+)$/m)?.[1] ?? `thorvg #${number}`;
+---
+<Base title={`AI 이슈 리뷰 ${heading}`} description={`thorvg/thorvg #${number} 이슈의 AI 분석 리뷰`} active="issues">
+  <section class="section">
+    <div class="container article-container">
+      <div class="article-actions">
+        <a class="btn btn--ghost article-back" href={base + 'issues'}>← 이슈 목록</a>
+        <a
+          class="btn btn--ghost"
+          href={issueUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >GitHub 이슈 원문<span class="sr-only"> (새 창)</span></a>
+      </div>
+      <p class="eyebrow">AI 이슈 리뷰</p>
+      <article class="prose">
+        <Content />
+      </article>
+    </div>
+  </section>
+
+  <MermaidDiagrams />
+</Base>

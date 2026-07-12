@@ -3,8 +3,21 @@ import Base from '../layouts/Base.astro';
 import issuesRaw from '../data/issues.csv?raw';
 import liveIssues from '../data/live-issues.json';
 import { parseCsv } from '../lib/csv.js';
+import { getCollection } from 'astro:content';
 
+const base = import.meta.env.BASE_URL;
 const rows = liveIssues.issues.length ? liveIssues.issues : parseCsv(issuesRaw);
+// AI 리뷰는 thorvg/thorvg 프로젝트를 선택했을 때만 드러나는 이스터에그다.
+// 파일명 `<이슈번호>-<난이도>.md`에서 난이도 점수를 읽는다.
+const aiReviews = await getCollection('aiReview');
+const reviewScores = new Map(
+  aiReviews.map((review) => {
+    const [number, score] = review.id.split('-');
+    return [number, Number(score)];
+  })
+);
+const aiScore = (row: Record<string, string>) =>
+  row.repo === 'thorvg/thorvg' ? reviewScores.get(String(row.number)) : undefined;
 const projects = [...new Set(rows.map((row) => row.repo).filter(Boolean))].sort();
 const statusLabels: Record<string, string> = {
   todo: '대기',
@@ -33,12 +46,23 @@ const issueUrl = (row: Record<string, string>) =>
           <input class="search" id="issue-search" type="search" placeholder="이슈 검색" aria-controls="issue-list" autocomplete="off" />
         </label>
       </div>
-      <p class="lede">기여할 이슈를 찾아보세요.</p>
+      <p class="lede">기여할 이슈를 찾아보세요.<span id="issue-ai-note" hidden> ThorVG/ThorVG에 난이도가 표시된 항목은 GPT 5.6 Sol ultra가 리뷰한 글을 볼 수 있습니다.</span></p>
       <nav class="issue-categories" aria-label="프로젝트 카테고리">
         <span class="issue-categories__label">프로젝트</span>
         <button class="issue-category is-selected" type="button" data-project="" aria-pressed="true">전체</button>
         {projects.map((project) => <button class="issue-category" type="button" data-project={project} aria-pressed="false">{project}</button>)}
       </nav>
+      <div class="issue-sort" id="issue-sort" hidden>
+        <span class="issue-sort__label">정렬</span>
+        <div class="issue-sort__group" role="group" aria-label="정렬 기준">
+          <button class="issue-category is-selected" type="button" data-sort-key="number" aria-pressed="true">이슈 번호</button>
+          <button class="issue-category" type="button" data-sort-key="difficulty" aria-pressed="false">난이도</button>
+        </div>
+        <div class="issue-sort__group" role="group" aria-label="정렬 방향">
+          <button class="issue-category" type="button" data-sort-dir="asc" aria-pressed="false">오름차순</button>
+          <button class="issue-category is-selected" type="button" data-sort-dir="desc" aria-pressed="true">내림차순</button>
+        </div>
+      </div>
       <span class="result-count issue-result-count" id="issue-count" role="status" aria-live="polite" aria-atomic="true">{rows.length}개 이슈</span>
 
       <div class="issue-list" id="issue-list">
@@ -51,6 +75,7 @@ const issueUrl = (row: Record<string, string>) =>
             row.assignee,
             row.area,
           ].join(' ').toLowerCase();
+          const score = aiScore(row);
           return (
             <a
               class="issue-row"
@@ -59,13 +84,20 @@ const issueUrl = (row: Record<string, string>) =>
               rel="noopener noreferrer"
               data-search={searchText}
               data-project={row.repo}
+              data-number={row.number}
+              data-review-href={score !== undefined ? `${base}issues/${row.number}` : undefined}
+              data-ai-score={score}
             >
               <span class="issue-row__num">
                 {`${row.repo.split('/')[1]} #${row.number}`}
               </span>
               <span class="issue-row__main">
-                <span class="issue-row__title">{row.title}</span>
+                <span class="issue-row__title">
+                  {row.title}
+                  {score !== undefined && <span class="issue-row__ai-score"> (난이도: {score})</span>}
+                </span>
                 <span class="issue-row__meta">
+                  {score !== undefined && <span class="ai-review-badge">AI 리뷰</span>}
                   {row.recommended === 'true' && <span class="recommendation">입문 추천</span>}
                   {row.difficulty && (
                     <span class={`difficulty difficulty--${row.difficulty}`}>
@@ -97,17 +129,90 @@ const issueUrl = (row: Record<string, string>) =>
   <script is:inline>
     (() => {
       const search = document.getElementById('issue-search');
-      const projects = Array.from(document.querySelectorAll('[data-project]'));
+      const projects = Array.from(document.querySelectorAll('.issue-categories [data-project]'));
       const count = document.getElementById('issue-count');
       const empty = document.getElementById('issue-empty');
+      const list = document.getElementById('issue-list');
       const rows = Array.from(document.querySelectorAll('#issue-list .issue-row'));
+      const sortBar = document.getElementById('issue-sort');
+      const aiNote = document.getElementById('issue-ai-note');
+      const sortKeys = Array.from(document.querySelectorAll('#issue-sort [data-sort-key]'));
+      const sortDirs = Array.from(document.querySelectorAll('#issue-sort [data-sort-dir]'));
 
-      if (!search || !count || !empty) return;
+      if (!search || !count || !empty || !list) return;
+
+      const originalOrder = rows.slice();
+      for (const row of rows) row.dataset.githubHref = row.getAttribute('href');
+
+      const rowNumber = (row) => Number(row.dataset.number);
+      const rowScore = (row) => (row.dataset.aiScore === undefined ? null : Number(row.dataset.aiScore));
+      const selectedIn = (buttons, attribute) =>
+        buttons.find((button) => button.getAttribute('aria-pressed') === 'true')?.dataset[attribute] || '';
+
+      function markSelected(buttons, selectedButton) {
+        buttons.forEach((button) => {
+          const selected = button === selectedButton;
+          button.classList.toggle('is-selected', selected);
+          button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        });
+      }
+
+      function applyLinkMode(thorvgMode) {
+        list.classList.toggle('issue-list--ai', thorvgMode);
+        for (const row of rows) {
+          if (!row.dataset.reviewHref) continue;
+          const newWindowNote = row.lastElementChild;
+          if (thorvgMode) {
+            row.setAttribute('href', row.dataset.reviewHref);
+            row.removeAttribute('target');
+            row.removeAttribute('rel');
+            newWindowNote.hidden = true;
+          } else {
+            row.setAttribute('href', row.dataset.githubHref);
+            row.setAttribute('target', '_blank');
+            row.setAttribute('rel', 'noopener noreferrer');
+            newWindowNote.hidden = false;
+          }
+        }
+      }
+
+      function applySort(thorvgMode) {
+        sortBar.hidden = !thorvgMode;
+        if (!thorvgMode) {
+          originalOrder.forEach((row) => list.appendChild(row));
+          return;
+        }
+        const key = selectedIn(sortKeys, 'sortKey') || 'number';
+        const dir = selectedIn(sortDirs, 'sortDir') || 'desc';
+
+        let ordered;
+        if (key === 'number') {
+          ordered = originalOrder.slice().sort((a, b) =>
+            dir === 'desc' ? rowNumber(b) - rowNumber(a) : rowNumber(a) - rowNumber(b));
+        } else {
+          // 난이도가 아직 없는(리뷰되지 않은) 이슈는 항상 위에 둔다.
+          const unreviewed = originalOrder
+            .filter((row) => rowScore(row) === null)
+            .sort((a, b) => rowNumber(a) - rowNumber(b));
+          const reviewed = originalOrder
+            .filter((row) => rowScore(row) !== null)
+            .sort((a, b) =>
+              (dir === 'desc' ? rowScore(b) - rowScore(a) : rowScore(a) - rowScore(b)) ||
+              rowNumber(a) - rowNumber(b));
+          ordered = unreviewed.concat(reviewed);
+        }
+        ordered.forEach((row) => list.appendChild(row));
+      }
 
       function apply() {
         const query = search.value.trim().toLowerCase();
         const selectedProject = projects.find((project) => project.getAttribute('aria-pressed') === 'true')?.dataset.project || '';
+        const thorvgMode = selectedProject === 'thorvg/thorvg';
         let shown = 0;
+
+        aiNote.hidden = !thorvgMode;
+        applyLinkMode(thorvgMode);
+        applySort(thorvgMode);
 
         for (const row of rows) {
           const matchesSearch = !query || (row.dataset.search || '').includes(query);
@@ -126,11 +231,15 @@ const issueUrl = (row: Record<string, string>) =>
 
       search.addEventListener('input', apply);
       projects.forEach((project) => project.addEventListener('click', () => {
-        projects.forEach((item) => {
-          const selected = item === project;
-          item.classList.toggle('is-selected', selected);
-          item.setAttribute('aria-pressed', selected ? 'true' : 'false');
-        });
+        markSelected(projects, project);
+        apply();
+      }));
+      sortKeys.forEach((button) => button.addEventListener('click', () => {
+        markSelected(sortKeys, button);
+        apply();
+      }));
+      sortDirs.forEach((button) => button.addEventListener('click', () => {
+        markSelected(sortDirs, button);
         apply();
       }));
       apply();

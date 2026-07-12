@@ -280,7 +280,11 @@ a.home-issue:hover .home-issue__title { color: var(--primary); }
 /* ---- Chips / badges / status ------------------------------------------- */
 .chip { display: inline-flex; max-width: 100%; align-items: center; gap: 4px; padding: 2px 8px; background: var(--surface-2); color: var(--ink-muted); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
 .badge { display: inline-flex; align-items: center; gap: var(--space-xs); padding: 3px 10px; background: var(--primary-subtle); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; }
-.recommendation, .difficulty { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.recommendation, .difficulty, .ai-review-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+.ai-review-badge { display: none; background: var(--surface-2); color: var(--cat-violet); border: 1px solid color-mix(in srgb, var(--cat-violet) 30%, transparent); }
+.issue-list--ai .ai-review-badge { display: inline-flex; }
+.issue-row__ai-score { display: none; color: var(--ink-subtle); font-weight: 500; white-space: nowrap; }
+.issue-list--ai .issue-row__ai-score { display: inline; }
 .recommendation { background: var(--primary-subtle); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); }
 .difficulty { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--hairline-strong); }
 .difficulty--beginner { color: var(--cat-teal); }
@@ -341,6 +345,11 @@ a.home-issue:hover .home-issue__title { color: var(--primary); }
 .issue-category { padding: 3px 7px; color: var(--ink-muted); font-size: 13px; font-weight: 500; }
 .issue-category:hover, .issue-category.is-selected { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .issue-result-count { display: block; margin-block: var(--space-md); }
+.issue-sort { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md); padding-block: var(--space-sm); border-bottom: 1px solid var(--hairline); }
+.issue-sort[hidden] { display: none; }
+.issue-sort__label { color: var(--ink-subtle); font-size: 12px; font-weight: 600; }
+.issue-sort__group { display: inline-flex; align-items: center; gap: 6px; }
+.issue-sort__group + .issue-sort__group { padding-left: var(--space-md); border-left: 1px solid var(--hairline); }
 
 /* ---- Issue list --------------------------------------------------------- */
 .issue-list { display: flex; flex-direction: column; gap: var(--space-xs); }
@@ -382,6 +391,8 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 /* ---- Article (blog detail) --------------------------------------------- */
 .article-container { max-width: 760px; }
 .article-back { margin-bottom: var(--space-lg); }
+.article-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); justify-content: space-between; margin-bottom: var(--space-lg); }
+.article-actions .article-back { margin-bottom: 0; }
 .article-head { margin-bottom: var(--space-xl); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--hairline); }
 .article-head__meta { min-width: 0; display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; font-size: 13px; color: var(--ink-subtle); margin-top: var(--space-md); }
 .article-head__meta time { margin-left: auto; white-space: nowrap; }

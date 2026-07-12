@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
 const pages = {
   home: 'index.html',
@@ -130,7 +130,7 @@ test('blog and issues page eyebrows use Korean interface copy', async () => {
 
   assert.match(blog, /<p\b[^>]*class="eyebrow"[^>]*>학습 기록<\/p>/);
   assert.match(issues, /<p\b[^>]*class="eyebrow"[^>]*>기여 이슈<\/p>/);
-  assert.match(issues, /<p\b[^>]*class="lede"[^>]*>\s*기여할 이슈를 찾아보세요\.\s*<\/p>/);
+  assert.match(issues, /<p\b[^>]*class="lede"[^>]*>\s*기여할 이슈를 찾아보세요\./);
   assert.doesNotMatch(blog, /<p\b[^>]*class="eyebrow"[^>]*>Blog<\/p>/);
   assert.doesNotMatch(issues, /<p\b[^>]*class="eyebrow"[^>]*>ThorVG Issues<\/p>/);
 });
@@ -140,7 +140,7 @@ test('home page exposes recent issues and learning records', async () => {
 
   assert.match(
     html,
-    /ThorVG는 SVG와 Lottie를 포함한 벡터 그래픽을 직접 구성하고, 다양한 환경에서 렌더링할 수 있는 경량 오픈소스 엔진입니다\.\s*함께 배우고 성장하며 ThorVG에 기여해 보세요\./
+    /ThorVG는 SVG와 Lottie를 포함한 벡터 그래픽을 직접 구성하고, 다양한 환경에서 렌더링할 수 있는 경량 오픈소스 엔진입니다\.\s*함께 ThorVG에 기여해봅시다!/
   );
   assert.ok(html.includes('최근 업데이트 이슈'), 'home page must contain 최근 업데이트 이슈');
   assert.ok(html.includes('최근 블로그 글'), 'home page must contain 최근 블로그 글');
@@ -382,7 +382,9 @@ test('bundled blog writing guide uses its first image as card media', async () =
   const html = await readPage(pages.blog);
   const card = [...html.matchAll(/<article\b(?=[^>]*\bclass="post-card")[^>]*>[\s\S]*?<\/article>/g)]
     .map(([article]) => article)
-    .find((article) => article.includes('블로그 글쓰는 방법') && article.includes('blog-writing-guide'));
+    .find((article) =>
+      article.includes('블로그 글쓰는 방법') &&
+      article.includes(`href="${sitePath('blog/blog-writing-guide')}"`));
 
   assert.ok(card, 'blog list must render the writing guide post');
   assert.match(card, /@Nor-s/);
@@ -482,6 +484,11 @@ test('hidden blog cards override the component display rule', async () => {
   assert.doesNotMatch(hiddenCard, /!important/);
 });
 
+const readAiReviewNumbers = async () => {
+  const files = await readdir(new URL('../ai-review-issue/core', import.meta.url));
+  return new Set(files.filter((file) => file.endsWith('.md')).map((file) => file.split('-')[0]));
+};
+
 test('synchronised issues render links to their GitHub sources', async () => {
   const [html, liveSource] = await Promise.all([
     readPage(pages.issues),
@@ -499,6 +506,50 @@ test('synchronised issues render links to their GitHub sources', async () => {
   }
 });
 
+test('AI review easter egg stays hidden until the thorvg/thorvg project is selected', async () => {
+  const [html, source, liveSource, reviewedNumbers] = await Promise.all([
+    readPage(pages.issues),
+    readSource('src/pages/issues.astro'),
+    readSource('src/data/live-issues.json'),
+    readAiReviewNumbers(),
+  ]);
+
+  const reviewedIssue = JSON.parse(liveSource).issues.find(
+    (issue) => issue.repo === 'thorvg/thorvg' && reviewedNumbers.has(String(issue.number))
+  );
+  if (reviewedIssue) {
+    assert.match(
+      html,
+      new RegExp(`<a\\b(?=[^>]*class="issue-row")(?=[^>]*href="https://github\\.com/thorvg/thorvg/issues/${reviewedIssue.number}")(?=[^>]*data-review-href="${escapeRegExp(sitePath(`issues/${reviewedIssue.number}`))}")(?=[^>]*data-ai-score="\\d+")`)
+    );
+  }
+
+  // 서버 렌더 기본값: 안내 문구와 정렬 UI는 숨겨진 채로 시작한다.
+  assert.match(html, /<span\b(?=[^>]*id="issue-ai-note")(?=[^>]*hidden)[^>]*>/);
+  assert.match(html, /GPT 5\.6 Sol ultra가 리뷰한 글을 볼 수 있습니다/);
+  assert.match(html, /<div\b(?=[^>]*class="issue-sort")(?=[^>]*id="issue-sort")(?=[^>]*hidden)[^>]*>/);
+  assert.match(html, /data-sort-key="number"[^>]*>이슈 번호</);
+  assert.match(html, /data-sort-key="difficulty"[^>]*>난이도</);
+  assert.match(html, /data-sort-dir="asc"[^>]*>오름차순</);
+  assert.match(html, /data-sort-dir="desc"[^>]*>내림차순</);
+
+  // 클라이언트 스크립트가 thorvg/thorvg 선택에서만 이스터에그를 켠다.
+  assert.match(source, /selectedProject === 'thorvg\/thorvg'/);
+  assert.match(source, /issue-list--ai/);
+  assert.match(source, /난이도가 아직 없는\(리뷰되지 않은\) 이슈는 항상 위에 둔다/);
+});
+
+test('AI-reviewed thorvg issues render a review page with the GitHub source link', async () => {
+  const reviewedNumbers = await readAiReviewNumbers();
+  const [number] = [...reviewedNumbers].sort((a, b) => Number(a) - Number(b));
+  assert.ok(number, 'at least one AI review markdown must exist');
+
+  const html = await readPage(`issues/${number}/index.html`);
+  assert.match(html, /AI 이슈 리뷰/);
+  assert.match(html, new RegExp(`href="https://github\\.com/thorvg/thorvg/issues/${number}"`));
+  assert.match(html, /이슈 목록/);
+});
+
 test('issues page keeps real issue links without a separate GitHub CTA', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.issues),
@@ -508,7 +559,7 @@ test('issues page keeps real issue links without a separate GitHub CTA', async (
   assert.doesNotMatch(html, /GitHub에서 실제 이슈 보기/);
   const issueRow = source.match(/<a\s+class="issue-row"[\s\S]*?data-search=\{searchText\}[\s\S]*?>/)?.[0];
   assert.doesNotMatch(issueRow, /aria-label=/);
-  assert.match(source, /href=\{issueUrl\(row\)\}/);
+  assert.match(source, /issueUrl\(row\)/);
   assert.doesNotMatch(source, /샘플 \$\{row\.number\}/);
   assert.match(source, /<span class="sr-only">\(새 창\)<\/span>/);
 });

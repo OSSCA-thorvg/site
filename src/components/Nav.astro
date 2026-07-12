@@ -8,6 +8,7 @@ const links = [
   { key: 'playground', label: '플레이그라운드', href: base + 'playground' },
   { key: 'schedule', label: '일정', href: base + 'schedule' },
   { key: 'thorvg', label: 'ThorVG', href: base + 'thorvg' },
+  { key: 'deepwiki', label: 'DeepWiki', href: 'https://deepwiki.com/thorvg/thorvg', external: true },
 ];
 ---
 <header class="nav">
@@ -23,8 +24,10 @@ const links = [
         <a
           href={l.href}
           aria-current={active === l.key ? 'page' : undefined}
+          target={l.external ? '_blank' : undefined}
+          rel={l.external ? 'noopener noreferrer' : undefined}
         >
-          {l.label}
+          {l.label}{l.external && <span class="sr-only"> (새 창)</span>}
         </a>
       ))}
     </nav>

@@ -39,9 +39,10 @@ test('Markdown images render as responsive figures instead of MDX-only placehold
 });
 
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {
-  const [config, detail, css, packageSource] = await Promise.all([
+  const [config, detail, mermaidComponent, css, packageSource] = await Promise.all([
     readSource('astro.config.mjs'),
     readSource('src/pages/blog/[...slug].astro'),
+    readSource('src/components/MermaidDiagrams.astro'),
     readSource('src/styles/global.css'),
     readSource('package.json'),
   ]);
@@ -51,10 +52,11 @@ test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', 
   assert.ok(packageJson.dependencies?.['remark-github-blockquote-alert']);
   assert.match(config, /import \{ remarkAlert \} from 'remark-github-blockquote-alert'/);
   assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\]\]/);
-  assert.match(detail, /import\('mermaid'\)/);
-  assert.match(detail, /pre\[data-language="mermaid"\]/);
-  assert.match(detail, /securityLevel:\s*'strict'/);
-  assert.match(detail, /MutationObserver/);
+  assert.match(detail, /<MermaidDiagrams \/>/);
+  assert.match(mermaidComponent, /import\('mermaid'\)/);
+  assert.match(mermaidComponent, /pre\[data-language="mermaid"\]/);
+  assert.match(mermaidComponent, /securityLevel:\s*'strict'/);
+  assert.match(mermaidComponent, /MutationObserver/);
   assert.match(css, /\.markdown-alert-note/);
   assert.match(css, /\.markdown-alert-caution/);
   assert.match(css, /\.mermaid-diagram/);
