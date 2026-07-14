@@ -36,7 +36,7 @@ export function isPublishedDiscussion(discussion, category = 'Blog') {
 export function renderDiscussionMarkdown(discussion) {
   const parsed = parseDiscussionBody(discussion.body);
   const tags = (discussion.labels?.nodes ?? []).map(({ name }) => name);
-  const date = new Date(discussion.createdAt).toISOString().slice(0, 10);
+  const date = new Date(discussion.createdAt).toISOString();
   const frontmatter = [
     '---',
     `title: ${JSON.stringify(discussion.title)}`,
