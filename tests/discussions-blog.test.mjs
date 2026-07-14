@@ -94,7 +94,7 @@ test('discussion Markdown gets stable generated frontmatter', () => {
   assert.match(output, /^---\n/);
   assert.match(output, /title: "ThorVG 렌더링 기록"/);
   assert.match(output, /github: "contributor-id"/);
-  assert.match(output, /date: "2026-07-13"/);
+  assert.match(output, /date: "2026-07-13T04:30:00\.000Z"/);
   assert.match(output, /summary: "본문 안의 제목은 그대로 남아야 합니다\."/);
   assert.match(output, /tags: \["Study"\]/);
   assert.match(output, /draft: false/);
