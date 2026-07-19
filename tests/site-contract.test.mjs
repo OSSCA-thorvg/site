@@ -910,13 +910,16 @@ test('playground styles use a desktop sidebar and a narrow-screen tool list', as
 test('narrow screens preserve Korean headings and keep the Lottie stage compact', async () => {
   const css = await readSource('src/styles/global.css');
   const pageTitle = css.match(/\.page-title\s*\{([^}]*)\}/)?.[1];
+  const compactNav = css.match(/@media \(max-width:\s*980px\)\s*\{([\s\S]*?)\n\}/)?.[1];
   const mobile = css.match(/@media \(max-width:\s*520px\)\s*\{([\s\S]*?)\n\}/)?.[1];
   const narrowNav = css.match(/@media \(max-width:\s*400px\)\s*\{([\s\S]*?)\n\}/)?.[1];
 
   assert.match(pageTitle, /word-break:\s*keep-all/);
+  assert.ok(compactNav, 'navigation must switch rows before its links overlap the theme control');
+  assert.match(compactNav, /\.nav__links\s*\{[^}]*grid-column:\s*1\s*\/\s*-1[^}]*grid-row:\s*2/);
+  assert.match(compactNav, /\.nav__actions\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1/);
   assert.match(mobile, /\.pg-canvas-wrap\s*\{\s*min-height:\s*0/);
   assert.match(narrowNav, /\.nav__github\s*\{\s*display:\s*none/);
-  assert.match(narrowNav, /\.nav__links\s*\{[^}]*grid-row:\s*2/);
   assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*?\.nav__mark\s*\{\s*display:\s*none/);
   assert.match(css, /@media \(max-width:\s*760px\)[\s\S]*?\.nav__links\s*\{[^}]*gap:\s*10px/);
   assert.doesNotMatch(css, /\.nav__label--(?:compact|wide)/);

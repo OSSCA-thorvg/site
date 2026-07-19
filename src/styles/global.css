@@ -556,16 +556,21 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 }
 
 /* ---- Responsive --------------------------------------------------------- */
+@media (max-width: 980px) {
+  .nav .container { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-sm); row-gap: var(--space-xs); }
+  .nav__brand { grid-column: 1; grid-row: 1; }
+  .nav__links { grid-column: 1 / -1; grid-row: 2; width: 100%; margin-inline: 0; padding-bottom: 2px; }
+  .nav__links a { padding-inline: 0; }
+  .nav__actions { grid-column: 2; grid-row: 1; }
+}
 @media (max-width: 900px) {
   .section { padding-block: 48px; }
 }
 @media (max-width: 760px) {
-  .nav .container { grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-sm); row-gap: var(--space-xs); }
-  .nav__brand { grid-column: 1; grid-row: 1; font-size: 14px; }
+  .nav__brand { font-size: 14px; }
   .nav__mark { display: none; }
-  .nav__links { grid-column: 1 / -1; grid-row: 2; width: 100%; gap: 10px; margin-inline: 0; padding-bottom: 2px; }
-  .nav__links a { padding-inline: 0; }
-  .nav__actions { grid-column: 2; grid-row: 1; gap: var(--space-xs); }
+  .nav__links { gap: 10px; }
+  .nav__actions { gap: var(--space-xs); }
   .nav__cta .btn { padding: 8px 10px; }
   .playground-shell { display: block; }
   .playground-sidebar { width: auto; padding: var(--space-sm) var(--space-md); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--hairline); }
@@ -600,10 +605,6 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
   .pg-canvas-wrap { min-height: 0; }
 }
 @media (max-width: 400px) {
-  .nav .container { grid-template-columns: minmax(0, 1fr) auto; }
-  .nav__brand { grid-column: 1; grid-row: 1; }
-  .nav__actions { grid-column: 2; grid-row: 1; }
-  .nav__links { grid-column: 1 / -1; grid-row: 2; }
   .nav__github { display: none; }
 }
 @media (pointer: coarse) {
