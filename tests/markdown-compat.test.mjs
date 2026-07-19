@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import { createMarkdownProcessor, rehypeHeadingIds } from '@astrojs/markdown-remark';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLottieImages from '../src/lib/remark-lottie-images.js';
 import remarkGithubVideos from '../src/lib/remark-github-videos.js';
 import remarkSeriesHeading from '../src/lib/remark-series-heading.js';
+import rehypeHeadingAnchors from '../src/lib/rehype-heading-anchors.js';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -90,6 +91,24 @@ test('the first series H1 becomes metadata instead of rendered article content',
   assert.match(ordinary.code, /<h1 id="일반-글-제목">일반 글 제목<\/h1>/);
 });
 
+test('body headings render accessible permalink anchors with their existing IDs', async () => {
+  const processor = await createMarkdownProcessor({
+    rehypePlugins: [rehypeHeadingIds, rehypeHeadingAnchors],
+  });
+  const result = await processor.render([
+    '# 글 제목',
+    '',
+    '## 렌더링 흐름',
+    '',
+    '#### 세부 단계',
+  ].join('\n'));
+
+  assert.match(result.code, /<h1 id="글-제목">글 제목<\/h1>/);
+  assert.match(result.code, /<h2 id="렌더링-흐름">렌더링 흐름<a class="heading-anchor" href="#렌더링-흐름" aria-label="렌더링 흐름 섹션 링크"/);
+  assert.match(result.code, /<h4 id="세부-단계">세부 단계<a class="heading-anchor" href="#세부-단계" aria-label="세부 단계 섹션 링크"/);
+  assert.match(result.code, /<svg[^>]*aria-hidden="true"[^>]*focusable="false"/);
+});
+
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {
   const [config, detail, mermaidComponent, css, packageSource] = await Promise.all([
     readSource('astro.config.mjs'),
@@ -104,7 +123,9 @@ test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', 
   assert.ok(packageJson.dependencies?.['remark-github-blockquote-alert']);
   assert.match(config, /import \{ remarkAlert \} from 'remark-github-blockquote-alert'/);
   assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos,\s*remarkSeriesHeading\]/);
+  assert.match(config, /\[rehypeHeadingAnchors,\s*\{ contentPath: 'src\/content\/blog\/' \}\]/);
   assert.match(css, /\.prose video/);
+  assert.match(css, /\.prose \.heading-anchor/);
   assert.match(detail, /<MermaidDiagrams \/>/);
   assert.match(mermaidComponent, /import\('mermaid'\)/);
   assert.match(mermaidComponent, /pre\[data-language="mermaid"\]/);

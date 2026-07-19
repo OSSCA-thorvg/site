@@ -506,9 +506,9 @@ test('writing guide collapses the repository Markdown workflow behind a summary'
 
   assert.match(html, /<details class="guide-details">/);
   assert.match(html, /<summary>저장소에 직접 Markdown으로 글쓰기<\/summary>/);
-  assert.match(html, /<h2 id="3-시리즈-글-작성하는-방법">3\. 시리즈 글 작성하는 방법<\/h2>/);
-  assert.match(html, /<h2 id="4-저장소에서-직접-글쓰기">4\. 저장소에서 직접 글쓰기<\/h2>/);
-  assert.match(html, /<h3 id="파일-만들기">파일 만들기<\/h3>/);
+  assert.match(html, /<h2 id="3-시리즈-글-작성하는-방법">3\. 시리즈 글 작성하는 방법<a\b[^>]*class="heading-anchor"/);
+  assert.match(html, /<h2 id="4-저장소에서-직접-글쓰기">4\. 저장소에서 직접 글쓰기<a\b[^>]*class="heading-anchor"/);
+  assert.match(html, /<h3 id="파일-만들기">파일 만들기<a\b[^>]*class="heading-anchor"/);
   assert.match(css, /\.guide-details\s*\{/);
   assert.match(css, /\.guide-details\s*>\s*summary\s*\{/);
 });

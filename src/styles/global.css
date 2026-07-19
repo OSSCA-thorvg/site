@@ -180,6 +180,11 @@ main { display: block; }
 .prose { margin-inline: auto; color: var(--ink-muted); overflow-wrap: anywhere; }
 .prose h2 { font-size: 1.6rem; margin-top: var(--space-xl); margin-bottom: var(--space-sm); color: var(--ink); }
 .prose h3 { font-size: 1.25rem; margin-top: var(--space-lg); margin-bottom: var(--space-xs); color: var(--ink); }
+.prose :is(h2, h3, h4, h5, h6)[id] { position: relative; }
+.prose .heading-anchor { position: absolute; top: 50%; right: 100%; display: grid; width: 1em; height: 1.5em; place-items: center; color: var(--ink-subtle); text-decoration: none; opacity: 0; transform: translateY(-50%); transition: color var(--dur-micro) var(--ease-out), opacity var(--dur-micro) var(--ease-out); }
+.prose .heading-anchor svg { width: 0.72em; height: 0.72em; }
+.prose :is(h2, h3, h4, h5, h6):hover > .heading-anchor, .prose .heading-anchor:focus-visible { opacity: 1; }
+.prose .heading-anchor:hover { color: var(--primary); }
 .prose p { margin-bottom: var(--space-md); line-height: 1.7; }
 .prose ul, .prose ol { margin: 0 0 var(--space-md) 1.2em; }
 .prose li { margin-bottom: var(--space-xs); list-style: disc; }
@@ -190,6 +195,9 @@ main { display: block; }
 .prose pre { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: var(--space-md); overflow-x: auto; margin-bottom: var(--space-md); }
 .prose pre code { background: none; padding: 0; }
 .prose blockquote { border-left: 3px solid var(--primary); padding-left: var(--space-md); color: var(--ink-subtle); margin-bottom: var(--space-md); }
+@media (hover: none) {
+  .prose .heading-anchor { opacity: 0.55; }
+}
 /* display:block + max-width: tables wider than the content scroll themselves instead of the page. */
 .prose table { display: block; width: max-content; max-width: 100%; margin-bottom: var(--space-md); overflow-x: auto; border-collapse: collapse; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
 .prose th, .prose td { padding: 6px 12px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; }
