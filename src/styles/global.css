@@ -125,6 +125,9 @@
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
 body {
   min-height: 100%;
+  /* Double clip with html: WebKit won't stop horizontal pan from the root clip alone.
+     Use clip (not hidden) since hidden creates a scroll container that breaks sticky nav. */
+  overflow-x: clip;
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font-body);
@@ -172,7 +175,7 @@ main { display: block; }
 .lede { font-size: 17px; color: var(--ink-muted); max-width: 62ch; line-height: 1.55; }
 .section-title { font-size: 1.75rem; margin-bottom: var(--space-lg); }
 
-.prose { max-width: 68ch; margin-inline: auto; color: var(--ink-muted); }
+.prose { max-width: 68ch; margin-inline: auto; color: var(--ink-muted); overflow-wrap: anywhere; }
 .prose h2 { font-size: 1.6rem; margin-top: var(--space-xl); margin-bottom: var(--space-sm); color: var(--ink); }
 .prose h3 { font-size: 1.25rem; margin-top: var(--space-lg); margin-bottom: var(--space-xs); color: var(--ink); }
 .prose p { margin-bottom: var(--space-md); line-height: 1.7; }
@@ -185,6 +188,10 @@ main { display: block; }
 .prose pre { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: var(--space-md); overflow-x: auto; margin-bottom: var(--space-md); }
 .prose pre code { background: none; padding: 0; }
 .prose blockquote { border-left: 3px solid var(--primary); padding-left: var(--space-md); color: var(--ink-subtle); margin-bottom: var(--space-md); }
+/* display:block + max-width: tables wider than the content scroll themselves instead of the page. */
+.prose table { display: block; width: max-content; max-width: 100%; margin-bottom: var(--space-md); overflow-x: auto; border-collapse: collapse; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
+.prose th, .prose td { padding: 6px 12px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; }
+.prose th { background: var(--surface-1); color: var(--ink); font-weight: 600; }
 .prose img { width: auto; max-width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--hairline); margin-block: var(--space-md); }
 .prose lottie-player { display: block; width: min(100%, 480px); aspect-ratio: 1; margin-block: var(--space-md); background: transparent; }
 .prose figure { display: flex; flex-direction: column; align-items: center; margin: var(--space-lg) auto; text-align: center; }
@@ -223,7 +230,9 @@ main { display: block; }
 .nav__mark { width: 24px; height: 24px; flex: none; }
 .nav__mark img { width: 100%; height: 100%; }
 .nav__brand-ossca { color: var(--primary); }
-.nav__links { display: flex; min-width: 0; align-items: center; gap: var(--space-md); margin-inline: auto; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
+/* relative is required: it makes this scroll strip the containing block for the absolute .sr-only labels.
+   Without it they anchor to the sticky .nav, escape the strip's clipping, and widen the document. */
+.nav__links { position: relative; display: flex; min-width: 0; align-items: center; gap: var(--space-md); margin-inline: auto; overflow-x: auto; scrollbar-width: none; white-space: nowrap; }
 .nav__links::-webkit-scrollbar { display: none; }
 .nav__links a { flex: none; font-size: 14px; font-weight: 500; color: var(--ink-muted); padding: 6px 2px; transition: color var(--dur-micro) var(--ease-out); }
 .nav__links a:hover { color: var(--ink); }
@@ -540,6 +549,10 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
   .issue-filters .result-count, .blog-filters .result-count { padding-bottom: 0; }
 }
 @media (max-width: 520px) {
+  .blog-heading, .issue-heading { flex-direction: column; align-items: stretch; gap: var(--space-xs); }
+  .blog-heading__actions { width: 100%; }
+  .blog-search { flex: 1 1 auto; width: auto; }
+  .issue-search { width: 100%; }
   .home-intro__inner { grid-template-columns: 1fr; gap: var(--space-md); }
   .home-issue { grid-template-columns: 1fr; gap: 6px; }
   .home-issue__num { padding-top: 0; }
