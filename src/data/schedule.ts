@@ -1,6 +1,7 @@
 export interface Milestone {
   date: string;
   datetime: string;
+  endDatetime?: string;
   title: string;
   desc: string;
   url: string;
@@ -14,6 +15,7 @@ export const milestones: Milestone[] = [
   {
     date: '5월 12일 ~ 6월 14일',
     datetime: '2026-05-12',
+    endDatetime: '2026-06-14',
     title: '멘티 모집',
     desc: '참여형 프로그램 참가 신청을 받습니다.',
     url: officialNotice,
@@ -21,6 +23,7 @@ export const milestones: Milestone[] = [
   {
     date: '6월 15일 ~ 17일',
     datetime: '2026-06-15',
+    endDatetime: '2026-06-17',
     title: '지원서 취합',
     desc: '접수된 지원서를 프로젝트별로 취합합니다.',
     url: officialNotice,
@@ -28,6 +31,7 @@ export const milestones: Milestone[] = [
   {
     date: '6월 18일 ~ 24일',
     datetime: '2026-06-18',
+    endDatetime: '2026-06-24',
     title: '멘티 선발',
     desc: '프로젝트 팀별 참여 멘티를 선발합니다.',
     url: officialNotice,
@@ -49,6 +53,7 @@ export const milestones: Milestone[] = [
   {
     date: '7월 11일 ~ 8월 4일',
     datetime: '2026-07-11',
+    endDatetime: '2026-08-04',
     title: '챌린저스',
     desc: '프로젝트 적응과 기여 이슈 선정을 진행합니다.',
     url: officialNotice,
@@ -56,6 +61,7 @@ export const milestones: Milestone[] = [
   {
     date: '8월 3일 ~ 9일',
     datetime: '2026-08-03',
+    endDatetime: '2026-08-09',
     title: '중간보고서 작성',
     desc: '멘티 중간보고서를 작성합니다.',
     url: officialNotice,
@@ -63,6 +69,7 @@ export const milestones: Milestone[] = [
   {
     date: '8월 15일 ~ 10월 24일',
     datetime: '2026-08-15',
+    endDatetime: '2026-10-24',
     title: '마스터스',
     desc: '멘토와 함께 집중 기여를 진행합니다.',
     url: officialNotice,
@@ -70,6 +77,7 @@ export const milestones: Milestone[] = [
   {
     date: '9월 28일 ~ 10월 5일',
     datetime: '2026-09-28',
+    endDatetime: '2026-10-05',
     title: '최종보고서 작성',
     desc: '멘티 최종보고서를 작성합니다.',
     url: officialNotice,
@@ -77,6 +85,7 @@ export const milestones: Milestone[] = [
   {
     date: '10월 13일 ~ 20일',
     datetime: '2026-10-13',
+    endDatetime: '2026-10-20',
     title: '서면 평가',
     desc: '최종 평가를 위한 서면 심사를 진행합니다.',
     url: officialNotice,

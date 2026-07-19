@@ -999,9 +999,11 @@ test('schedule page uses the official 2026 links and exact Korean dates', async 
   for (const link of milestoneLinks) assert.match(link, /\baria-label="[^"]*\(새 창\)"/);
 
   assert.match(html, /<div\b(?=[^>]*\bclass="timeline-scroll")(?=[^>]*\bdata-timeline-scroll)(?=[^>]*\btabindex="0")[^>]*>/);
-  assert.match(html, /<li\b(?=[^>]*\bclass="tl-item")(?=[^>]*\bdata-milestone="true")(?=[^>]*\bdata-datetime="2026-07-11")[^>]*>/);
+  assert.match(html, /<li\b(?=[^>]*\bclass="tl-item")(?=[^>]*\bdata-milestone="true")(?=[^>]*\bdata-datetime="2026-07-11")(?=[^>]*\bdata-end-datetime="2026-08-04")[^>]*>[\s\S]*?<h2 class="tl-item__title">챌린저스<\/h2>/);
   assert.match(pageSource, /querySelectorAll<HTMLElement>\('\.tl-item\[data-datetime\]'\)/);
   assert.match(pageSource, /new Date\(\)/);
+  assert.match(pageSource, /start\s*<=\s*today\s*&&\s*today\s*<=\s*end/);
+  assert.match(pageSource, /active\s*\?\?\s*next/);
   assert.match(pageSource, /timeline\.scrollTop\s*=/);
   assert.match(css, /\.timeline-scroll\s*\{[^}]*overflow-y:\s*auto/);
   assert.match(css, /\.timeline-scroll\s*\{[^}]*scrollbar-width:\s*none/);

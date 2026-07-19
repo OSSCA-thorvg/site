@@ -29,7 +29,12 @@ import { milestones, officialHub, officialNotice, program } from '../data/schedu
       <div class="timeline-scroll" data-timeline-scroll tabindex="0" aria-label="OSSCA 2026 일정 타임라인">
         <ol class="timeline">
           {milestones.map((milestone) => (
-            <li class="tl-item" data-milestone="true" data-datetime={milestone.datetime}>
+            <li
+              class="tl-item"
+              data-milestone="true"
+              data-datetime={milestone.datetime}
+              data-end-datetime={milestone.endDatetime}
+            >
               <time class="tl-item__date" datetime={milestone.datetime}>{milestone.date}</time>
               <h2 class="tl-item__title">{milestone.title}</h2>
               <p class="tl-item__desc">{milestone.desc}</p>
@@ -55,7 +60,13 @@ import { milestones, officialHub, officialNotice, program } from '../data/schedu
       today.setHours(0, 0, 0, 0);
       const parseMilestoneDate = (value: string) =>
         new Date(`${value}${value.length === 7 ? '-01' : ''}T00:00:00`);
-      const current = items.find((item) => parseMilestoneDate(item.dataset.datetime ?? '') >= today) ?? items.at(-1);
+      const active = items.find((item) => {
+        const start = parseMilestoneDate(item.dataset.datetime ?? '');
+        const end = parseMilestoneDate(item.dataset.endDatetime ?? item.dataset.datetime ?? '');
+        return start <= today && today <= end;
+      });
+      const next = items.find((item) => parseMilestoneDate(item.dataset.datetime ?? '') > today);
+      const current = active ?? next ?? items.at(-1);
 
       if (current) {
         requestAnimationFrame(() => {
