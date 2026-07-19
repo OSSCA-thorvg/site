@@ -175,7 +175,9 @@ main { display: block; }
 .lede { font-size: 17px; color: var(--ink-muted); max-width: 62ch; line-height: 1.55; }
 .section-title { font-size: 1.75rem; margin-bottom: var(--space-lg); }
 
-.prose { max-width: 68ch; margin-inline: auto; color: var(--ink-muted); overflow-wrap: anywhere; }
+/* No ch-based cap: ch tracks Latin digit width, which cuts Korean text to ~37 chars per line.
+   The article container (760px) sets the measure instead — about 47 Korean chars. */
+.prose { margin-inline: auto; color: var(--ink-muted); overflow-wrap: anywhere; }
 .prose h2 { font-size: 1.6rem; margin-top: var(--space-xl); margin-bottom: var(--space-sm); color: var(--ink); }
 .prose h3 { font-size: 1.25rem; margin-top: var(--space-lg); margin-bottom: var(--space-xs); color: var(--ink); }
 .prose p { margin-bottom: var(--space-md); line-height: 1.7; }
