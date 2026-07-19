@@ -22,6 +22,7 @@ test('series metadata comes from the first H1 or standalone bold heading outside
 
 test('series headings accept plain, hyphen, and parenthesis counters', () => {
   for (const [heading, name, number] of [
+    ['ThorVG 렌더링 흐름 - 0', 'ThorVG 렌더링 흐름', 0],
     ['공지 1', '공지', 1],
     ['ThorVG 렌더링 흐름 - 1', 'ThorVG 렌더링 흐름', 1],
     ['ThorVG 렌더링 흐름 -2', 'ThorVG 렌더링 흐름', 2],
@@ -42,7 +43,6 @@ test('ordinary or invalid H1 headings do not create a series', () => {
     'ThorVG 렌더링 흐름1',
     'ThorVG 렌더링 흐름 - intro',
     'ThorVG 렌더링 흐름 (WIP)',
-    'ThorVG 렌더링 흐름 - 0',
     '- 1',
   ]) {
     assert.equal(parseSeriesHeading(heading), null);
