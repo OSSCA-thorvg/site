@@ -1,0 +1,103 @@
+---
+// Renders a table of contents from the post's h2/h3 headings; renders nothing without headings.
+// Wide screens get a sticky sidebar next to the body, narrow screens a collapsible box above it (.toc in global.css).
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings?: Heading[];
+}
+
+const { headings = [] } = Astro.props;
+const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
+// Nest h3s under their h2; promote h3s that appear before the first h2 to the top level.
+const groups: { heading: Heading; children: Heading[] }[] = [];
+for (const h of items) {
+  const last = groups[groups.length - 1];
+  if (h.depth === 2 || !last) groups.push({ heading: h, children: [] });
+  else last.children.push(h);
+}
+---
+{items.length > 0 && (
+  <div class="toc-area">
+    <details class="toc" open>
+      <summary class="toc__summary">목차</summary>
+      <nav class="toc__nav" aria-label="목차">
+        <ul>
+          {groups.map(({ heading, children }) => (
+            <li>
+              <a href={'#' + heading.slug}>{heading.text}</a>
+              {children.length > 0 && (
+                <ul>
+                  {children.map((child) => (
+                    <li><a href={'#' + child.slug}>{child.text}</a></li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </details>
+  </div>
+)}
+
+<script>
+  const toc = document.querySelector('.toc');
+
+  if (toc instanceof HTMLDetailsElement) {
+    // Narrow screens start collapsed. The HTML renders open, so it stays open as a no-JS fallback.
+    // Keep in sync with the .toc-area breakpoint in global.css.
+    const wide = window.matchMedia('(min-width: 1280px)');
+    if (!wide.matches) toc.open = false;
+    // Force open when growing to wide, so the sidebar isn't stuck closed from the narrow state.
+    wide.addEventListener('change', () => {
+      if (wide.matches) toc.open = true;
+    });
+
+    // Scroll spy: mark the current section's link with aria-current.
+    const links = new Map<string, HTMLAnchorElement>();
+    for (const a of toc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]')) {
+      links.set(decodeURIComponent(a.hash.slice(1)), a);
+    }
+    const targets = Array.from(
+      document.querySelectorAll<HTMLElement>('.prose h2[id], .prose h3[id]')
+    ).filter((el) => links.has(el.id));
+
+    if (targets.length && 'IntersectionObserver' in window) {
+      const setCurrent = (id: string) => {
+        for (const [slug, a] of links) {
+          if (slug === id) a.setAttribute('aria-current', 'true');
+          else a.removeAttribute('aria-current');
+        }
+      };
+      const visible = new Set<Element>();
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) visible.add(e.target);
+            else visible.delete(e.target);
+          }
+          const first = targets.find((t) => visible.has(t));
+          if (first) {
+            setCurrent(first.id);
+            return;
+          }
+          // With no heading in the observed zone, the last heading past the viewport top is current.
+          let above: HTMLElement | null = null;
+          for (const t of targets) {
+            if (t.getBoundingClientRect().top < 80) above = t;
+            else break;
+          }
+          if (above) setCurrent(above.id);
+        },
+        // Shrink the top by the sticky nav and the bottom by half the screen to favor upper headings.
+        { rootMargin: '-70px 0px -55% 0px' }
+      );
+      for (const t of targets) observer.observe(t);
+    }
+  }
+</script>

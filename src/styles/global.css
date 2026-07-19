@@ -407,6 +407,28 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .article-head__meta time { margin-left: auto; white-space: nowrap; }
 .article-head__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--space-md); }
 
+/* ---- Article TOC -------------------------------------------------------- */
+/* Narrow screens: collapsible box above the article body. */
+.toc { border: 1px solid var(--hairline); border-radius: var(--radius-md); background: var(--surface-1); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); }
+.toc__summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); }
+.toc__nav { margin-top: var(--space-sm); }
+.toc__nav ul { display: grid; gap: 6px; }
+.toc__nav ul ul { margin-top: 6px; padding-left: var(--space-md); }
+.toc__nav a { display: block; font-size: 13px; line-height: 1.45; color: var(--ink-muted); overflow-wrap: anywhere; transition: color var(--dur-micro) var(--ease-out); }
+.toc__nav a:hover { color: var(--ink); }
+.toc__nav a[aria-current='true'] { color: var(--primary); font-weight: 600; }
+@media (min-width: 1280px) {
+  /* Wide screens: hang the TOC in the right margin so the article column stays page-centered.
+     Breakpoint leaves room for the 220px strip beside the centered 760px container.
+     Keep in sync with the matchMedia breakpoint in TableOfContents.astro. */
+  .article-container { position: relative; }
+  .toc-area { position: absolute; top: 0; bottom: 0; left: 100%; width: 220px; }
+  .toc { position: sticky; top: calc(60px + var(--space-lg)); max-height: calc(100vh - 60px - 2 * var(--space-lg)); overflow-y: auto; border: 0; border-left: 1px solid var(--hairline); border-radius: 0; background: none; padding: 0 0 0 var(--space-md); margin-bottom: 0; }
+  /* The summary acts as a plain title here; toggling is a narrow-screen affordance. */
+  .toc__summary { pointer-events: none; list-style: none; font-size: 12px; color: var(--ink-subtle); }
+  .toc__summary::-webkit-details-marker { display: none; }
+}
+
 /* ---- Schedule timeline -------------------------------------------------- */
 .schedule-container { max-width: 820px; }
 .schedule-sources { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-lg); }
