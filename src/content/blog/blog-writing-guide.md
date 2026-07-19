@@ -6,9 +6,13 @@ tags: ["Notice"]
 draft: false
 ---
 
+# 공지 1
+
 블로그에 글을 올리는 방법을 안내드립니다. 어렵지 않으니 편하게 따라와 주세요.
 
-## 어떤 글을 쓰면 되나요
+## 1. 블로그 글 시작하기
+
+### 어떤 글을 쓰면 되나요
 
 주제는 자유롭게 정하셔도 됩니다. ThorVG와 관련이 없어도 괜찮습니다.
 예를 들면 이런 글들을 편하게 올려 주세요.
@@ -25,7 +29,7 @@ draft: false
 글이 짧아도 전혀 괜찮습니다. 나중에 본인이나 다른 멘티분이 빠르게 참고할 수 있다면
 그것만으로 충분합니다.
 
-## Discussion에서 글쓰기
+### Discussion에서 글쓰기
 
 
 ![](./blog-writing-guide/image.png)
@@ -50,7 +54,9 @@ GitHub의 [Site 저장소 Discussions](https://github.com/OSSCA-thorvg/site/disc
 
 이미지와 GIF는 Discussion 본문에 바로 붙여넣으실 수 있습니다.
 
-## GitHub Markdown 확장 문법
+## 2. Markdown 표현 확장하기
+
+### GitHub Markdown 확장 문법
 
 > [!NOTE]
 > Discussion에서 작성한 표, 체크박스, 취소선, 자동 링크 같은 GitHub Markdown 문법은
@@ -86,7 +92,9 @@ flowchart LR
 로컬에서 MDX를 사용하거나 미디어를 저장소에 함께 보관하고 싶을 때 사용할 수 있는
 대체 방식입니다.
 
-## 파일 만들기
+## 3. 저장소에서 직접 글쓰기
+
+### 파일 만들기
 
 직접 파일을 작성하는 경우 `src/content/blog/` 아래에 추가해 주세요.
 
@@ -100,7 +108,7 @@ src/content/blog/rendering-study.md
 확장자는 `.md` 또는 `.mdx`를 사용합니다. 보통 Markdown만 쓰신다면 `.md`,
 JSX 컴포넌트가 필요하다면 `.mdx`를 선택하시면 됩니다.
 
-## TEMPLATE 사용하기
+### TEMPLATE 사용하기
 
 새 글을 만들 때는 `src/content/blog/TEMPLATE` 파일을 열어 내용을 복사해 시작하시면
 편합니다. 이 파일은 확장자가 없는 템플릿입니다.
@@ -124,7 +132,7 @@ draft: false
 복사한 뒤 `github`, `title`, `date`, `tags`만 본인 글에 맞게 바꿔 주시면
 됩니다.
 
-## 로컬에서 확인하기
+### 로컬에서 확인하기
 
 글을 쓰는 중에 바로 확인하고 싶을 때는 개발 서버를 사용해 주세요.
 
@@ -149,7 +157,7 @@ npm run preview
 `BASE_PATH=/site` 같은 빌드는 GitHub Pages 배포용 링크를 만들기 때문에 로컬 preview의
 경로와 다를 수 있습니다.
 
-## Frontmatter 작성하기
+### Frontmatter 작성하기
 
 글 맨 위의 `---`로 감싼 영역을 frontmatter라고 부릅니다. 사이트는 이 정보를 읽어서
 목록 카드, 작성자, 검색, 태그 필터, 날짜 표시를 만듭니다.
@@ -184,7 +192,7 @@ tags: ["thorvg", "study"]
 글을 작성 중일 때는 `draft: true`로 두고, PR을 보낼 때 공개할 글이라면 `draft: false`로
 바꿔 주세요.
 
-## 대표 미디어 넣기
+### 대표 미디어 넣기
 
 본문의 첫 번째 이미지나 GIF가 블로그 목록 카드의 대표 미디어가 됩니다.
 본문에서는 미디어가 가운데 정렬되고, 대괄호 안 텍스트는 캡션으로 표시됩니다.
@@ -193,7 +201,7 @@ tags: ["thorvg", "study"]
 캡션이 필요할 때만 `![렌더링 결과](./render-result.png)`처럼 쓰면 이미지 아래에
 `렌더링 결과`가 표시됩니다.
 
-## 미디어 저장 위치
+### 미디어 저장 위치
 
 경로는 항상 MDX 파일 위치 기준입니다. 어떤 파일 안에서 쓰느냐에 따라 `./cover.png`가
 가리키는 위치가 달라지니 이 부분만 조금 유의해 주세요.
@@ -245,7 +253,7 @@ src/content/blog/my-post/cover.png
 대표 미디어가 꼭 필요한 것은 아닙니다. 본문에 미디어가 없으면 블로그 목록에는
 기본 ThorVG 마크가 표시됩니다.
 
-## 본문 작성하기
+### 본문 작성하기
 
 본문은 일반 Markdown 문법으로 작성하시면 됩니다.
 
@@ -265,7 +273,7 @@ src/content/blog/my-post/cover.png
 막힌 부분이나 아직 해결하지 못한 부분도 편하게 남겨 주세요. 다른 사람이 이어서 도와주기
 훨씬 쉬워집니다.
 
-## PR 보내기
+### PR 보내기
 
 GitHub 웹에서 글을 작성하셨다면 아래 순서로 PR을 보내 주세요.
 

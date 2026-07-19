@@ -48,11 +48,11 @@ export function extractSeriesHeading(markdown = '') {
 }
 
 export function parseSeriesHeading(heading = '') {
-  const match = String(heading).trim().match(/^(.*?)\s*(?:-\s*(\d+)|\(\s*(\d+)\s*\))$/u);
+  const match = String(heading).trim().match(/^(.*?)(?:\s*-\s*(\d+)|\s*\(\s*(\d+)\s*\)|\s+(\d+))$/u);
   if (!match) return null;
 
   const name = match[1].replace(/\s+/g, ' ').trim();
-  const number = Number(match[2] ?? match[3]);
+  const number = Number(match[2] ?? match[3] ?? match[4]);
   if (!name || !Number.isSafeInteger(number) || number < 1) return null;
 
   return {

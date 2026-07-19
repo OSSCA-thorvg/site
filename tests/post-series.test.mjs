@@ -20,16 +20,17 @@ test('series metadata comes from the first H1 or standalone bold heading outside
   assert.equal(extractSeriesHeading('본문만 있습니다.\n\n## H2'), null);
 });
 
-test('series headings accept hyphen and parenthesis counters', () => {
-  for (const [heading, number] of [
-    ['ThorVG 렌더링 흐름 - 1', 1],
-    ['ThorVG 렌더링 흐름 -2', 2],
-    ['ThorVG 렌더링 흐름 (3)', 3],
-    ['ThorVG 렌더링 흐름 ( 4 )', 4],
+test('series headings accept plain, hyphen, and parenthesis counters', () => {
+  for (const [heading, name, number] of [
+    ['공지 1', '공지', 1],
+    ['ThorVG 렌더링 흐름 - 1', 'ThorVG 렌더링 흐름', 1],
+    ['ThorVG 렌더링 흐름 -2', 'ThorVG 렌더링 흐름', 2],
+    ['ThorVG 렌더링 흐름 (3)', 'ThorVG 렌더링 흐름', 3],
+    ['ThorVG 렌더링 흐름 ( 4 )', 'ThorVG 렌더링 흐름', 4],
   ]) {
     assert.deepEqual(parseSeriesHeading(heading), {
-      key: 'thorvg 렌더링 흐름',
-      name: 'ThorVG 렌더링 흐름',
+      key: name.toLocaleLowerCase('ko-KR'),
+      name,
       number,
     });
   }
@@ -38,6 +39,7 @@ test('series headings accept hyphen and parenthesis counters', () => {
 test('ordinary or invalid H1 headings do not create a series', () => {
   for (const heading of [
     'ThorVG 렌더링 흐름',
+    'ThorVG 렌더링 흐름1',
     'ThorVG 렌더링 흐름 - intro',
     'ThorVG 렌더링 흐름 (WIP)',
     'ThorVG 렌더링 흐름 - 0',

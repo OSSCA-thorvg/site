@@ -75,10 +75,13 @@ test('the first series H1 becomes metadata instead of rendered article content',
     '',
     '본문입니다.',
   ].join('\n'));
+  const plainSeries = await processor.render('# 공지 1\n\n공지 본문입니다.');
   const ordinary = await processor.render('# 일반 글 제목\n\n본문입니다.');
 
   assert.doesNotMatch(series.code, /ThorVG 렌더링 흐름/);
   assert.doesNotMatch(boldSeries.code, /ThorVG 렌더링 흐름/);
+  assert.doesNotMatch(plainSeries.code, /<h1[^>]*>공지 1<\/h1>/);
+  assert.match(plainSeries.code, /<p>공지 본문입니다\.<\/p>/);
   assert.match(boldSeries.code, /<p>본문입니다\.<\/p>/);
   assert.match(series.code, /<h1 id="나중-h1은-유지">나중 H1은 유지<\/h1>/);
   assert.match(ordinary.code, /<h1 id="일반-글-제목">일반 글 제목<\/h1>/);
