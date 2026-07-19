@@ -4,6 +4,7 @@ import GiscusComments from '../../components/GiscusComments.astro';
 import MermaidDiagrams from '../../components/MermaidDiagrams.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
 import { getCollection, render } from 'astro:content';
+import { hasAssignmentTag } from '../../lib/post-sections.js';
 import { deriveSummary } from '../../lib/summary.js';
 
 export async function getStaticPaths() {
@@ -14,6 +15,10 @@ export async function getStaticPaths() {
 const { post } = Astro.props;
 const { Content, headings } = await render(post);
 const base = import.meta.env.BASE_URL;
+const assignment = hasAssignmentTag(post.data.tags);
+const section = assignment
+  ? { active: 'assignments', href: 'assignments', label: '과제' }
+  : { active: 'blog', href: 'blog', label: '블로그' };
 const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
   year: 'numeric',
   month: 'long',
@@ -21,10 +26,10 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
   timeZone: 'UTC',
 });
 ---
-<Base title={post.data.title} description={post.data.summary || deriveSummary(post.body ?? '')} active="blog">
+<Base title={post.data.title} description={post.data.summary || deriveSummary(post.body ?? '')} active={section.active}>
   <section class="section">
     <div class="container article-container">
-      <a class="btn btn--ghost article-back" href={base + 'blog'}>← 블로그 목록</a>
+      <a class="btn btn--ghost article-back" href={base + section.href}>← {section.label} 목록</a>
       <header class="article-head">
         <h1 class="page-title">{post.data.title}</h1>
         <div class="article-head__meta">

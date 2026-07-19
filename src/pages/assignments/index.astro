@@ -1,0 +1,21 @@
+---
+import { getCollection } from 'astro:content';
+import PostListing from '../../components/PostListing.astro';
+import { hasAssignmentTag } from '../../lib/post-sections.js';
+
+const posts = (await getCollection(
+  'blog',
+  ({ data }) => !data.draft && hasAssignmentTag(data.tags)
+)).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+<PostListing
+  posts={posts}
+  title="과제"
+  active="assignments"
+  eyebrow="ThorVG 과제"
+  lede="Discussion에서 '과제' 라벨을 달고 작성한 학습·기여 과제를 모아봅니다."
+  categoryLabel="과제"
+  itemLabel="과제"
+  writeLabel="과제 작성"
+  writeAriaLabel="GitHub Discussion에서 새 과제 작성"
+/>

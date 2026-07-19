@@ -2,10 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 
+import { hasAssignmentTag, sortPostTags } from '../src/lib/post-sections.js';
+
 const pages = {
   home: 'index.html',
   issues: 'issues/index.html',
   blog: 'blog/index.html',
+  assignments: 'assignments/index.html',
   playground: 'playground/index.html',
   schedule: 'schedule/index.html',
 };
@@ -57,7 +60,7 @@ test('home page defaults the shared shell to the light theme', async () => {
   );
 });
 
-test('home page navigation uses English menu labels', async () => {
+test('home page navigation keeps English labels and places Assignments beside ThorVG', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.home),
     readSource('src/components/Nav.astro'),
@@ -66,9 +69,11 @@ test('home page navigation uses English menu labels', async () => {
 
   assert.ok(navigation, 'home page must contain the primary navigation');
 
-  for (const label of ['Home', 'Issues', 'Blog', 'Schedule', 'ThorVG']) {
+  for (const label of ['Home', 'Issues', 'Blog', 'Schedule', 'ThorVG', 'Assignments']) {
     assert.ok(navigation.includes(`>${label}</a>`), `home page navigation must contain ${label}`);
   }
+  assert.match(navigation, />ThorVG<\/a>\s*<a\b[^>]*>Assignments<\/a>/);
+  assert.doesNotMatch(navigation, />DeepWiki|>Wiki/);
   const playgroundLink = navigation.match(
     /<a\b(?=[^>]*href="[^"]*playground")[^>]*>Playground<\/a>/
   )?.[0];
@@ -122,13 +127,15 @@ test('theme persistence stores either explicit selection and treats other values
   );
 });
 
-test('blog and issues page eyebrows use Korean interface copy', async () => {
-  const [blog, issues] = await Promise.all([
+test('blog, assignments, and issues page eyebrows use Korean interface copy', async () => {
+  const [blog, assignments, issues] = await Promise.all([
     readPage(pages.blog),
+    readPage(pages.assignments),
     readPage(pages.issues),
   ]);
 
   assert.match(blog, /<p\b[^>]*class="eyebrow"[^>]*>학습 기록<\/p>/);
+  assert.match(assignments, /<p\b[^>]*class="eyebrow"[^>]*>ThorVG 과제<\/p>/);
   assert.match(issues, /<p\b[^>]*class="eyebrow"[^>]*>기여 이슈<\/p>/);
   assert.match(issues, /<p\b[^>]*class="lede"[^>]*>\s*기여할 이슈를 찾아보세요\./);
   assert.doesNotMatch(blog, /<p\b[^>]*class="eyebrow"[^>]*>Blog<\/p>/);
@@ -191,7 +198,37 @@ test('home page limits recent posts and orders them newest first', async () => {
   if (recentPosts.length === 0) {
     assert.match(html, /아직 공개된 블로그 글이 없습니다\./);
   }
+  assert.match(source, /!hasAssignmentTag\(data\.tags\)/);
   assert.match(source, /toLocaleDateString\('ko-KR',[\s\S]*?timeZone:\s*'UTC'/);
+});
+
+test('assignment tags partition Blog and 과제 without duplicating content', async () => {
+  const [blog, assignments, detail] = await Promise.all([
+    readSource('src/pages/blog/index.astro'),
+    readSource('src/pages/assignments/index.astro'),
+    readSource('src/pages/blog/[...slug].astro'),
+  ]);
+
+  assert.equal(hasAssignmentTag(['Study', ' 과제 ']), true);
+  assert.equal(hasAssignmentTag(['과제물']), false);
+  assert.deepEqual(sortPostTags(['한글', 'Study 10', 'Study 2', '한글']), ['한글', 'Study 2', 'Study 10']);
+  assert.match(blog, /!hasAssignmentTag\(data\.tags\)/);
+  assert.match(assignments, /hasAssignmentTag\(data\.tags\)/);
+  assert.doesNotMatch(assignments, /!hasAssignmentTag\(data\.tags\)/);
+  assert.match(detail, /const assignment = hasAssignmentTag\(post\.data\.tags\)/);
+  assert.match(detail, /active: 'assignments', href: 'assignments', label: '과제'/);
+});
+
+test('과제 page reuses the Blog listing experience and marks its navigation link current', async () => {
+  const html = await readPage(pages.assignments);
+  const navigation = html.match(/<nav\b[^>]*class="nav__links"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+
+  assert.match(html, /<h1\b[^>]*>과제<\/h1>/);
+  assert.match(html, /id="f-search"/);
+  assert.match(html, /class="blog-categories"/);
+  assert.match(html, /id="post-grid"/);
+  assert.match(html, /\d+개 과제<\/span>/);
+  assert.match(navigation ?? '', /<a\b(?=[^>]*\baria-current="page")[^>]*>Assignments<\/a>/);
 });
 
 test('home dashboard external links name their new-window behavior', async () => {
@@ -245,7 +282,7 @@ test('blog list follows the site theme with borderless editorial entries', async
 test('blog page derives category buttons and card metadata from published posts', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.blog),
-    readSource('src/pages/blog/index.astro'),
+    readSource('src/components/PostListing.astro'),
   ]);
   const categories = html.match(/<nav\b(?=[^>]*\bclass="blog-categories")[^>]*>([\s\S]*?)<\/nav>/)?.[1];
   const cards = html.match(/<article\b(?=[^>]*\bclass="post-card")[^>]*>/g) ?? [];
@@ -275,14 +312,14 @@ test('blog page derives category buttons and card metadata from published posts'
     cardDates.push(Number(card.match(/\bdata-date="([^"]+)"/)?.[1]));
   }
 
-  assert.deepEqual(tagValues, [...cardTags].sort(), 'tag options must be unique and sorted');
+  assert.deepEqual(tagValues, sortPostTags([...cardTags]), 'tag options must be unique and sorted');
   assert.deepEqual(cardDates, [...cardDates].sort((a, b) => b - a), 'posts must be newest first');
   assert.doesNotMatch(source, /selectedYear|matchesYear/);
   assert.doesNotMatch(html, /id="f-(?:author|sort|year|tag)"/, 'blog filters must stay focused on search and categories');
 });
 
 test('blog keeps tag filter data as JSON instead of splitting on spaces', async () => {
-  const source = await readSource('src/pages/blog/index.astro');
+  const source = await readSource('src/components/PostListing.astro');
 
   assert.match(source, /data-tags=\{JSON\.stringify\(p\.data\.tags\)\}/);
   assert.match(
@@ -295,7 +332,7 @@ test('blog keeps tag filter data as JSON instead of splitting on spaces', async 
 test('blog cards use an image-first editorial hierarchy with whole-card post links', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.blog),
-    readSource('src/pages/blog/index.astro'),
+    readSource('src/components/PostListing.astro'),
   ]);
   const cards = html.match(
     /<article\b(?=[^>]*\bclass="post-card")[^>]*>[\s\S]*?<\/article>/g
@@ -345,7 +382,7 @@ test('blog cards use an image-first editorial hierarchy with whole-card post lin
 test('blog page combines search and category filters and reports results in Korean', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.blog),
-    readSource('src/pages/blog/index.astro'),
+    readSource('src/components/PostListing.astro'),
   ]);
 
   assert.match(html, /<h1\b[^>]*>블로그<\/h1>/);
@@ -359,13 +396,13 @@ test('blog page combines search and category filters and reports results in Kore
   assert.match(source, /card\.hidden\s*=\s*!matches/);
   assert.match(
     source,
-    /shown\s*===\s*0[\s\S]*?0개 글 · 조건에 맞는 글이 없습니다\.[\s\S]*?\$\{shown\}개 글/,
+    /shown\s*===\s*0[\s\S]*?0개 \$\{itemLabel\} · 조건에 맞는 \$\{itemLabel\}이 없습니다\.[\s\S]*?\$\{shown\}개 \$\{itemLabel\}/,
     'zero results must be announced through the live status'
   );
 });
 
 test('blog cards derive body media and play Lottie on hover', async () => {
-  const source = await readSource('src/pages/blog/index.astro');
+  const source = await readSource('src/components/PostListing.astro');
 
   assert.match(source, /data-blog-lottie/);
   assert.match(source, /extractFirstMedia\(post\.body\)/);
@@ -394,9 +431,13 @@ test('bundled blog writing guide uses its first image as card media', async () =
 });
 
 test('blog detail template localizes navigation, date, and GitHub author metadata', async () => {
-  const source = await readSource('src/pages/blog/[...slug].astro');
+  const [html, source] = await Promise.all([
+    readPage('blog/blog-writing-guide/index.html'),
+    readSource('src/pages/blog/[...slug].astro'),
+  ]);
 
-  assert.match(source, />← 블로그 목록<\/a>/);
+  assert.match(html, />← 블로그 목록<\/a>/);
+  assert.match(source, /href=\{base \+ section\.href\}/);
   assert.match(source, /toLocaleDateString\('ko-KR',[\s\S]*?timeZone:\s*'UTC'/);
   assert.match(source, /href=\{`https:\/\/github\.com\/\$\{post\.data\.github\}`\}/);
   assert.match(source, /aria-label=\{`@\$\{post\.data\.github\} GitHub 프로필 \(새 창\)`\}/);
@@ -950,6 +991,7 @@ test('ThorVG page is a concise Korean resource hub with the current Viewer link'
   assert.match(html, /<h1\b[^>]*>ThorVG 자료<\/h1>/);
   for (const group of ['공식', '시작하기', '도구']) assert.ok(html.includes(`>${group}</h2>`));
   assert.ok(html.includes('https://thorvg.github.io/thorvg.viewer/'));
+  assert.match(html, />시작하기<\/h2>[\s\S]*?href="https:\/\/deepwiki\.com\/thorvg\/thorvg"[\s\S]*?href="https:\/\/github\.com\/OSSCA-thorvg\/site\/wiki"/);
   assert.doesNotMatch(html, /https:\/\/www\.thorvg\.org\/viewer/);
 });
 
@@ -1049,9 +1091,12 @@ test('discussion posts use their source discussion for Korean giscus comments', 
 });
 
 test('blog write button opens the Blog discussion form', async () => {
-  const blog = await readSource('src/pages/blog/index.astro');
+  const [blog, listing] = await Promise.all([
+    readSource('src/pages/blog/index.astro'),
+    readSource('src/components/PostListing.astro'),
+  ]);
 
-  assert.match(blog, /href="https:\/\/github\.com\/OSSCA-thorvg\/site\/discussions\/new\?category=blog"/);
+  assert.match(listing, /href="https:\/\/github\.com\/OSSCA-thorvg\/site\/discussions\/new\?category=blog"/);
   assert.match(blog, /GitHub Discussion에서 새 블로그 글쓰기/);
-  assert.doesNotMatch(blog, /\/new\/main\/src\/content\/blog/);
+  assert.doesNotMatch(listing, /\/new\/main\/src\/content\/blog/);
 });

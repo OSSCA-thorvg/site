@@ -8,8 +8,7 @@ const links = [
   { key: 'playground', label: 'Playground', href: base + 'playground' },
   { key: 'schedule', label: 'Schedule', href: base + 'schedule' },
   { key: 'thorvg', label: 'ThorVG', href: base + 'thorvg' },
-  { key: 'deepwiki', label: 'DeepWiki', href: 'https://deepwiki.com/thorvg/thorvg', external: true },
-  { key: 'wiki', label: 'Wiki', href: 'https://github.com/OSSCA-thorvg/site/wiki', external: true },
+  { key: 'assignments', label: 'Assignments', href: base + 'assignments' },
 ];
 ---
 <header class="nav">
@@ -25,10 +24,8 @@ const links = [
         <a
           href={l.href}
           aria-current={active === l.key ? 'page' : undefined}
-          target={l.external ? '_blank' : undefined}
-          rel={l.external ? 'noopener noreferrer' : undefined}
         >
-          {l.label}{l.external && <span class="sr-only"> (새 창)</span>}
+          {l.label}
         </a>
       ))}
     </nav>

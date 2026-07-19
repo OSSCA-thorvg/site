@@ -2,11 +2,15 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import liveIssues from '../data/live-issues.json';
+import { hasAssignmentTag } from '../lib/post-sections.js';
 import { deriveSummary } from '../lib/summary.js';
 
 const base = import.meta.env.BASE_URL;
 const featuredIssues = liveIssues.issues.slice(0, 4);
-const posts = (await getCollection('blog', ({ data }) => !data.draft))
+const posts = (await getCollection(
+  'blog',
+  ({ data }) => !data.draft && !hasAssignmentTag(data.tags)
+))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 3);
 const postSummary = (post: (typeof posts)[number]) =>
