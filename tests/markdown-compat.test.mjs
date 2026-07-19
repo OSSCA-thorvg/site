@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLottieImages from '../src/lib/remark-lottie-images.js';
+import remarkGithubVideos from '../src/lib/remark-github-videos.js';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -38,6 +39,27 @@ test('Markdown images render as responsive figures instead of MDX-only placehold
   assert.match(result.code, /<figcaption>렌더링 결과<\/figcaption>/);
 });
 
+test('standalone GitHub attachment and video-extension URLs render as players', async () => {
+  const processor = await createMarkdownProcessor({ remarkPlugins: [remarkGithubVideos] });
+  const attachment = 'https://github.com/user-attachments/assets/0f5b4e42-9d4a-4819-b8b3-0d4a8302e6a5';
+  const result = await processor.render([
+    '데모 영상입니다.',
+    '',
+    attachment,
+    '',
+    'https://example.com/clip.mp4',
+    '',
+    '문장 속 [링크](https://example.com/inline.mp4)는 그대로 둡니다.',
+    '',
+    'https://example.com/page',
+  ].join('\n'));
+
+  assert.match(result.code, new RegExp(`<video src="${attachment}" controls preload="metadata" playsinline`));
+  assert.match(result.code, /<video src="https:\/\/example\.com\/clip\.mp4"/);
+  assert.match(result.code, /<a href="https:\/\/example\.com\/inline\.mp4">링크<\/a>/);
+  assert.match(result.code, /<a href="https:\/\/example\.com\/page">/);
+});
+
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {
   const [config, detail, mermaidComponent, css, packageSource] = await Promise.all([
     readSource('astro.config.mjs'),
@@ -51,7 +73,8 @@ test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', 
   assert.ok(packageJson.dependencies?.mermaid);
   assert.ok(packageJson.dependencies?.['remark-github-blockquote-alert']);
   assert.match(config, /import \{ remarkAlert \} from 'remark-github-blockquote-alert'/);
-  assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\]\]/);
+  assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
+  assert.match(css, /\.prose video/);
   assert.match(detail, /<MermaidDiagrams \/>/);
   assert.match(mermaidComponent, /import\('mermaid'\)/);
   assert.match(mermaidComponent, /pre\[data-language="mermaid"\]/);

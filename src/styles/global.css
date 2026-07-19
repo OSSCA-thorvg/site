@@ -193,6 +193,7 @@ main { display: block; }
 .prose th, .prose td { padding: 6px 12px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; }
 .prose th { background: var(--surface-1); color: var(--ink); font-weight: 600; }
 .prose img { width: auto; max-width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--hairline); margin-block: var(--space-md); }
+.prose video { display: block; width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--hairline); margin-block: var(--space-md); background: #000; }
 .prose lottie-player { display: block; width: min(100%, 480px); aspect-ratio: 1; margin-block: var(--space-md); background: transparent; }
 .prose figure { display: flex; flex-direction: column; align-items: center; margin: var(--space-lg) auto; text-align: center; }
 .prose figure :where(img, lottie-player) { display: block; margin-block: 0; margin-inline: auto; }

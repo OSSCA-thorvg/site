@@ -121,7 +121,7 @@ test('blog body media keeps Markdown Lottie sugar configured without fixture pos
   assert.match(readme, /!\[\]\(\/lottie\/example\.json\)/);
   assert.match(readme, /!\[캡션\]\(\.\.\.\)/);
   assert.doesNotMatch(readme, /<lottie-player src="\/lottie\/example\.json"/);
-  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\]\]/);
+  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
 });
 
 test('project docs and local data no longer expose the removed fixture account', async () => {

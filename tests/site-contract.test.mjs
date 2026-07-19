@@ -416,7 +416,7 @@ test('blog article Lottie sources are normalized before the player loads', async
   assert.match(layout, /new URL\(src, document\.baseURI\)\.href/);
   assert.match(layout, /src="https:\/\/unpkg\.com\/@thorvg\/lottie-player@1\.0\.9\/dist\/lottie-player\.js"/);
   assert.doesNotMatch(layout, /@lottiefiles\//);
-  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\]\]/);
+  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
   assert.match(css, /\.prose lottie-player\s*\{[^}]*background:\s*transparent/);
 });
 
