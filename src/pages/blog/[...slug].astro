@@ -2,19 +2,32 @@
 import Base from '../../layouts/Base.astro';
 import GiscusComments from '../../components/GiscusComments.astro';
 import MermaidDiagrams from '../../components/MermaidDiagrams.astro';
+import SeriesList from '../../components/SeriesList.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
 import { getCollection, render } from 'astro:content';
 import { hasAssignmentTag } from '../../lib/post-sections.js';
+import { createSeriesIndex, extractSeriesHeading } from '../../lib/post-series.js';
 import { deriveSummary } from '../../lib/summary.js';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
-  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+  const seriesSources = posts.map((post) => ({
+    id: post.id,
+    title: post.data.title,
+    heading: extractSeriesHeading(post.body),
+  }));
+  const seriesIndex = createSeriesIndex(seriesSources);
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post, series: seriesIndex.get(post.id) ?? null },
+  }));
 }
 
-const { post } = Astro.props;
+const { post, series } = Astro.props;
 const { Content, headings } = await render(post);
 const base = import.meta.env.BASE_URL;
+const hasToc = headings.some((heading) => heading.depth === 2 || heading.depth === 3);
 const assignment = hasAssignmentTag(post.data.tags);
 const section = assignment
   ? { active: 'assignments', href: 'assignments', label: '과제' }
@@ -60,7 +73,14 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
           {post.data.tags.map((t) => <li><span class="chip">#{t}</span></li>)}
         </ul>
       </header>
-      <TableOfContents headings={headings} />
+      {(series || hasToc) && (
+        <div class="toc-area">
+          <div class="toc-stack">
+            {series && <SeriesList series={series} currentId={post.id} />}
+            <TableOfContents headings={headings} />
+          </div>
+        </div>
+      )}
       <article class="prose">
         <Content />
       </article>

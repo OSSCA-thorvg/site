@@ -5,6 +5,7 @@ import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLottieImages from '../src/lib/remark-lottie-images.js';
 import remarkGithubVideos from '../src/lib/remark-github-videos.js';
+import remarkSeriesHeading from '../src/lib/remark-series-heading.js';
 
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -60,6 +61,29 @@ test('standalone GitHub attachment and video-extension URLs render as players', 
   assert.match(result.code, /<a href="https:\/\/example\.com\/page">/);
 });
 
+test('the first series H1 becomes metadata instead of rendered article content', async () => {
+  const processor = await createMarkdownProcessor({ remarkPlugins: [remarkSeriesHeading] });
+  const series = await processor.render([
+    '# ThorVG 렌더링 흐름 - 1',
+    '',
+    '본문입니다.',
+    '',
+    '# 나중 H1은 유지',
+  ].join('\n'));
+  const boldSeries = await processor.render([
+    '**ThorVG 렌더링 흐름 - 1**',
+    '',
+    '본문입니다.',
+  ].join('\n'));
+  const ordinary = await processor.render('# 일반 글 제목\n\n본문입니다.');
+
+  assert.doesNotMatch(series.code, /ThorVG 렌더링 흐름/);
+  assert.doesNotMatch(boldSeries.code, /ThorVG 렌더링 흐름/);
+  assert.match(boldSeries.code, /<p>본문입니다\.<\/p>/);
+  assert.match(series.code, /<h1 id="나중-h1은-유지">나중 H1은 유지<\/h1>/);
+  assert.match(ordinary.code, /<h1 id="일반-글-제목">일반 글 제목<\/h1>/);
+});
+
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {
   const [config, detail, mermaidComponent, css, packageSource] = await Promise.all([
     readSource('astro.config.mjs'),
@@ -73,7 +97,7 @@ test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', 
   assert.ok(packageJson.dependencies?.mermaid);
   assert.ok(packageJson.dependencies?.['remark-github-blockquote-alert']);
   assert.match(config, /import \{ remarkAlert \} from 'remark-github-blockquote-alert'/);
-  assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
+  assert.match(config, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos,\s*remarkSeriesHeading\]/);
   assert.match(css, /\.prose video/);
   assert.match(detail, /<MermaidDiagrams \/>/);
   assert.match(mermaidComponent, /import\('mermaid'\)/);

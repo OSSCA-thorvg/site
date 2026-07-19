@@ -1,0 +1,38 @@
+---
+interface SeriesEntry {
+  id: string;
+  title: string;
+  number: number;
+}
+
+interface Series {
+  name: string;
+  entries: SeriesEntry[];
+}
+
+interface Props {
+  series: Series;
+  currentId: string;
+}
+
+const { series, currentId } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<details class="toc series-list" data-article-nav open>
+  <summary class="toc__summary">{series.name}</summary>
+  <nav class="toc__nav" aria-label={`${series.name} 시리즈`}>
+    <ol class="series-list__items">
+      {series.entries.map((entry) => (
+        <li data-series-number={entry.number}>
+          <a
+            href={base + 'blog/' + entry.id}
+            aria-current={entry.id === currentId ? 'page' : undefined}
+          >
+            <span class="series-list__number" aria-hidden="true">{entry.number}.</span>
+            <span>{entry.title}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+</details>

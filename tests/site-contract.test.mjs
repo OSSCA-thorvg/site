@@ -446,6 +446,27 @@ test('blog detail template localizes navigation, date, and GitHub author metadat
   assert.match(source, /post\.data\.tags\.map\(\(t\) => <li><span class="chip">#\{t\}<\/span><\/li>\)/);
 });
 
+test('body H1 counters render a frontmatter-titled series above the table of contents', async () => {
+  const [detail, seriesComponent, tocComponent, css] = await Promise.all([
+    readSource('src/pages/blog/[...slug].astro'),
+    readSource('src/components/SeriesList.astro'),
+    readSource('src/components/TableOfContents.astro'),
+    readSource('src/styles/global.css'),
+  ]);
+
+  assert.match(detail, /heading: extractSeriesHeading\(post\.body\)/);
+  assert.match(detail, /\{series && <SeriesList[\s\S]*?<TableOfContents headings=\{headings\}/);
+  assert.match(seriesComponent, /<details class="toc series-list" data-article-nav open>/);
+  assert.match(seriesComponent, /<summary class="toc__summary">\{series\.name\}<\/summary>/);
+  assert.match(seriesComponent, /data-series-number=\{entry\.number\}/);
+  assert.match(seriesComponent, /href=\{base \+ 'blog\/' \+ entry\.id\}/);
+  assert.match(seriesComponent, /aria-current=\{entry\.id === currentId \? 'page' : undefined\}/);
+  assert.match(tocComponent, /data-article-nav data-article-toc/);
+  assert.match(tocComponent, /if \(!wide\.matches\) toc\.open = false/);
+  assert.doesNotMatch(tocComponent, /querySelectorAll[^\n]*data-article-nav/);
+  assert.match(css, /\.toc-stack\s*\{[^}]*position:\s*sticky/);
+});
+
 test('blog article Lottie sources are normalized before the player loads', async () => {
   const [layout, astroConfig, css] = await Promise.all([
     readSource('src/layouts/Base.astro'),
@@ -457,7 +478,7 @@ test('blog article Lottie sources are normalized before the player loads', async
   assert.match(layout, /new URL\(src, document\.baseURI\)\.href/);
   assert.match(layout, /src="https:\/\/unpkg\.com\/@thorvg\/lottie-player@1\.0\.9\/dist\/lottie-player\.js"/);
   assert.doesNotMatch(layout, /@lottiefiles\//);
-  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
+  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos,\s*remarkSeriesHeading\]/);
   assert.match(css, /\.prose lottie-player\s*\{[^}]*background:\s*transparent/);
 });
 

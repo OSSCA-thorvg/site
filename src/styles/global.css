@@ -419,14 +419,21 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .toc__nav ul ul { margin-top: 6px; padding-left: var(--space-md); }
 .toc__nav a { display: block; font-size: 13px; line-height: 1.45; color: var(--ink-muted); overflow-wrap: anywhere; transition: color var(--dur-micro) var(--ease-out); }
 .toc__nav a:hover { color: var(--ink); }
-.toc__nav a[aria-current='true'] { color: var(--primary); font-weight: 600; }
+.toc__nav a[aria-current] { color: var(--primary); font-weight: 600; }
+.series-list__items { display: grid; gap: 6px; }
+.series-list__items a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; }
+.series-list__number { color: var(--ink-subtle); font-variant-numeric: tabular-nums; }
+.series-list__items a[aria-current] .series-list__number { color: currentColor; }
 @media (min-width: 1280px) {
   /* Wide screens: hang the TOC in the right margin so the article column stays page-centered.
      Breakpoint leaves room for the 220px strip beside the centered 760px container.
      Keep in sync with the matchMedia breakpoint in TableOfContents.astro. */
   .article-container { position: relative; }
   .toc-area { position: absolute; top: 0; bottom: 0; left: 100%; width: 220px; }
-  .toc { position: sticky; top: calc(60px + var(--space-lg)); max-height: calc(100vh - 60px - 2 * var(--space-lg)); overflow-y: auto; border: 0; border-left: 1px solid var(--hairline); border-radius: 0; background: none; padding: 0 0 0 var(--space-md); margin-bottom: 0; }
+  .toc-stack { position: sticky; top: calc(60px + var(--space-lg)); max-height: calc(100vh - 60px - 2 * var(--space-lg)); overflow-y: auto; border-left: 1px solid var(--hairline); padding-left: var(--space-md); }
+  .toc { border: 0; border-radius: 0; background: none; padding: 0; margin-bottom: var(--space-lg); }
+  .toc:last-child { margin-bottom: 0; }
+  .toc + .toc { padding-top: var(--space-md); border-top: 1px solid var(--hairline); }
   /* The summary acts as a plain title here; toggling is a narrow-screen affordance. */
   .toc__summary { pointer-events: none; list-style: none; font-size: 12px; color: var(--ink-subtle); }
   .toc__summary::-webkit-details-marker { display: none; }

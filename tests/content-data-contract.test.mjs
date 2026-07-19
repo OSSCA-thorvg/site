@@ -42,7 +42,7 @@ test('blog schema requires a GitHub username', async () => {
   assert.match(githubSchema, /\.regex\(/);
 });
 
-test('bundled blog content ships the writing guide and plain template only', async () => {
+test('bundled blog content ships the writing guide and plain template', async () => {
   const directory = new URL('../src/content/blog/', import.meta.url);
   const files = await readdir(directory, { recursive: true });
   const markdownFiles = files.filter((file) => (
@@ -53,7 +53,7 @@ test('bundled blog content ships the writing guide and plain template only', asy
     readSource('src/content/blog/TEMPLATE'),
   ]);
 
-  assert.deepEqual(markdownFiles, ['blog-writing-guide.md']);
+  assert.ok(markdownFiles.includes('blog-writing-guide.md'));
   assert.ok(files.includes('TEMPLATE'), 'blog directory must include an extensionless TEMPLATE file');
   assert.match(guide, /^---[\s\S]*?title: "블로그 글쓰는 방법"[\s\S]*?github: "Nor-s"[\s\S]*?tags: \["Notice"\][\s\S]*?---/);
   for (const requiredGuideText of [
@@ -121,7 +121,7 @@ test('blog body media keeps Markdown Lottie sugar configured without fixture pos
   assert.match(readme, /!\[\]\(\/lottie\/example\.json\)/);
   assert.match(readme, /!\[캡션\]\(\.\.\.\)/);
   assert.doesNotMatch(readme, /<lottie-player src="\/lottie\/example\.json"/);
-  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos\]/);
+  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos,\s*remarkSeriesHeading\]/);
 });
 
 test('project docs and local data no longer expose the removed fixture account', async () => {

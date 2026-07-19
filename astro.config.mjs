@@ -5,6 +5,7 @@ import { unified } from '@astrojs/markdown-remark';
 import { remarkAlert } from 'remark-github-blockquote-alert';
 import remarkLottieImages from './src/lib/remark-lottie-images.js';
 import remarkGithubVideos from './src/lib/remark-github-videos.js';
+import remarkSeriesHeading from './src/lib/remark-series-heading.js';
 import blogMediaAssets from './src/lib/blog-media-assets.js';
 
 // GitHub Pages: for a PROJECT page (https://<user>.github.io/<repo>/) set
@@ -20,7 +21,7 @@ export default defineConfig({
   base,
   trailingSlash: 'ignore',
   markdown: {
-    processor: unified({ remarkPlugins: [remarkAlert, [remarkLottieImages, { base }], remarkGithubVideos] }),
+    processor: unified({ remarkPlugins: [remarkAlert, [remarkLottieImages, { base }], remarkGithubVideos, remarkSeriesHeading] }),
   },
   integrations: [mdx(), blogMediaAssets({ base })],
 });

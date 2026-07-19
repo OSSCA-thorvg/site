@@ -22,36 +22,34 @@ for (const h of items) {
 }
 ---
 {items.length > 0 && (
-  <div class="toc-area">
-    <details class="toc" open>
-      <summary class="toc__summary">목차</summary>
-      <nav class="toc__nav" aria-label="목차">
-        <ul>
-          {groups.map(({ heading, children }) => (
-            <li>
-              <a href={'#' + heading.slug}>{heading.text}</a>
-              {children.length > 0 && (
-                <ul>
-                  {children.map((child) => (
-                    <li><a href={'#' + child.slug}>{child.text}</a></li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </details>
-  </div>
+  <details class="toc" data-article-nav data-article-toc open>
+    <summary class="toc__summary">목차</summary>
+    <nav class="toc__nav" aria-label="목차">
+      <ul>
+        {groups.map(({ heading, children }) => (
+          <li>
+            <a href={'#' + heading.slug}>{heading.text}</a>
+            {children.length > 0 && (
+              <ul>
+                {children.map((child) => (
+                  <li><a href={'#' + child.slug}>{child.text}</a></li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </details>
 )}
 
 <script>
-  const toc = document.querySelector('.toc');
+  const toc = document.querySelector('[data-article-toc]');
+  const wide = window.matchMedia('(min-width: 1280px)');
 
   if (toc instanceof HTMLDetailsElement) {
     // Narrow screens start collapsed. The HTML renders open, so it stays open as a no-JS fallback.
     // Keep in sync with the .toc-area breakpoint in global.css.
-    const wide = window.matchMedia('(min-width: 1280px)');
     if (!wide.matches) toc.open = false;
     // Force open when growing to wide, so the sidebar isn't stuck closed from the narrow state.
     wide.addEventListener('change', () => {
