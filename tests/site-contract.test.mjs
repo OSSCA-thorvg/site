@@ -60,7 +60,7 @@ test('home page defaults the shared shell to the light theme', async () => {
   );
 });
 
-test('home page navigation keeps English labels and places Assignments beside ThorVG', async () => {
+test('home page navigation keeps English labels and links ThorVG below the dashboard instead', async () => {
   const [html, source] = await Promise.all([
     readPage(pages.home),
     readSource('src/components/Nav.astro'),
@@ -69,10 +69,10 @@ test('home page navigation keeps English labels and places Assignments beside Th
 
   assert.ok(navigation, 'home page must contain the primary navigation');
 
-  for (const label of ['Home', 'Issues', 'Blog', 'Schedule', 'ThorVG', 'Assignments']) {
+  for (const label of ['Home', 'Issues', 'Blog', 'Schedule', 'Assignments']) {
     assert.ok(navigation.includes(`>${label}</a>`), `home page navigation must contain ${label}`);
   }
-  assert.match(navigation, />ThorVG<\/a>\s*<a\b[^>]*>Assignments<\/a>/);
+  assert.doesNotMatch(navigation, />ThorVG<\/a>/);
   assert.doesNotMatch(navigation, />DeepWiki|>Wiki/);
   const playgroundLink = navigation.match(
     /<a\b(?=[^>]*href="[^"]*playground")[^>]*>Playground<\/a>/
@@ -80,7 +80,10 @@ test('home page navigation keeps English labels and places Assignments beside Th
   assert.ok(playgroundLink);
   assert.doesNotMatch(playgroundLink, /aria-label=/);
   assert.doesNotMatch(source, /nav__label--compact|>실습</);
-  assert.ok(html.includes(`href="${sitePath('thorvg')}">ThorVG</a>`));
+  const dashboardIndex = html.indexOf('home-dashboard');
+  const thorvgLinkIndex = html.indexOf(`href="${sitePath('thorvg')}"`);
+  assert.ok(thorvgLinkIndex > -1, 'home page must link to the ThorVG resources page');
+  assert.ok(thorvgLinkIndex > dashboardIndex, 'ThorVG link must sit below the dashboard');
 });
 
 test('home page marks the home navigation link as current', async () => {
