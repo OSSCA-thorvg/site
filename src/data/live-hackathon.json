@@ -1,0 +1,34 @@
+{
+  "generatedAt": "2026-07-27T08:02:22.368Z",
+  "repository": "OSSCA-thorvg/site",
+  "issues": [
+    {
+      "number": "86",
+      "title": "벡터 애니메이션 툴(예시)",
+      "body": "![](https://private-user-images.githubusercontent.com/40836757/501465028-6a9d52d5-4da1-4995-a41c-1acd333ab513.gif?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3ODUxMzk0ODIsIm5iZiI6MTc4NTEzOTE4MiwicGF0aCI6Ii80MDgzNjc1Ny81MDE0NjUwMjgtNmE5ZDUyZDUtNGRhMS00OTk1LWE0MWMtMWFjZDMzM2FiNTEzLmdpZj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA3MjclMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNzI3VDA3NTk0MlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJmMDA2ZmMxNzgzMWRiZGJlYjg5MmYyNjRiNjVmYWZiZmQ1ZGExNWJkZTYwNGUwNGU1OGQ3NmE2ZDBkZGU5ODUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRmdpZiJ9.kaDgLYfHYtPcrYWh8L1dy1bAjttq5pJf3nYjXWqcojg)\n\n\n### 벡터 애니메이션 툴\n\nThorVG 를 사용해서 벡터 애니메이션 툴을 구현할 예정입니다!\n\n사용 기술/라이브러리\n- C++\n- ThorVG\n- SDL2\n- OpenGL\n- WASM\n\n관심있으신분 연락 또는 Comment 해주시면 Assignees 추가하겠습니다!",
+      "state": "open",
+      "createdAt": "2026-07-27T07:29:27Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "Nor-s",
+        "efaa98"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/86"
+    },
+    {
+      "number": "85",
+      "title": "OSSCAxThorVG Hackathon(2026-08-02)",
+      "body": "## **ThorVG 해커톤** \n\n- 멘티분들이 함께 모여 흥미롭고, 새롭고, 재미있는 무언가를 만들어낼 아이디어를 구상하며 시간을 보낼 수 있는 행사입니다. \n\n### **일정**\n\n- 기간: 8월 2일 (일) 오프라인 ~ 8월 9일(일) 온라인 마무리\n- 시상식: 8월 중순 오프라인 모임에서 심사 및 시상\n    - 멘티 + 멘토 평가\n\n### **주제**\n\n- **ThorVG 가 사용되고 정적 Web 에서 구동되면 무엇이든 OK**\n        - ThorVG 네이티브 + wasm 빌드\n        - Webcanvas\n        - Gihtub Page 정적 사이트 업로드\n\n> 빌드 결과물에 ThorVG가 포함된다면, 무엇이든 OK 입니다.\n> ex) unreal, unity, Godot 에서 ThorVG로 벡터 그래픽스를 렌더링한 게임을 웹으로 빌드\n\n\n\n### 상품 \n\n- 1등: 5만원 상당 상품권/기프티콘\n- 2등: 3만원 상당 상품권/기프티콘\n- 3등(3팀): 1만원 상당 상품권/기프티콘\n\n### 프로젝트 등록 방법 \n\n- OSSCA-thorvg/site 에 이슈 추가\n- Title 에 프로젝트 이름 자유롭게 선정 & 본문 작성\n- Labels 에 `Hackathon` 추가하시면됩니다!\n- 팀원은 Assignees 를 통해 구성할 수 있습니다!\n\n\n### 프로젝트 저장소\n\nOSSCA-thorvg 조직 아래에 프로젝트를 생성해야합니다.\n\n- **OSSCA-thorvg**\n        - Hackathon-<프로젝트 이름>\n        - 프로젝트 이름은 자유롭게 설정",
+      "state": "open",
+      "createdAt": "2026-07-27T07:19:33Z",
+      "labels": [
+        "Notice",
+        "Hackathon"
+      ],
+      "assignees": [],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/85"
+    }
+  ]
+}

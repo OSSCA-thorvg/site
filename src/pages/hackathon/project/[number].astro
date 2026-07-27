@@ -1,0 +1,90 @@
+---
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import Base from '../../../layouts/Base.astro';
+import IssueComments from '../../../components/IssueComments.astro';
+import live from '../../../data/live-hackathon.json';
+import { groupHackathons, stripUnsafeMarkdown } from '../../../lib/hackathon.js';
+import { deriveSummary } from '../../../lib/summary.js';
+
+interface HackathonProject {
+  number: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  assignees: string[];
+  url: string;
+}
+
+export function getStaticPaths() {
+  return groupHackathons(live.issues).flatMap((event, index) =>
+    (event.projects as HackathonProject[]).map((project) => ({
+      params: { number: project.number },
+      props: {
+        project,
+        backHref: index === 0 ? 'hackathon' : `hackathon/${event.date}`,
+      },
+    }))
+  );
+}
+
+const { project, backHref } = Astro.props as {
+  project: HackathonProject;
+  backHref: string;
+};
+const base = import.meta.env.BASE_URL;
+const processor = await createMarkdownProcessor({ remarkPlugins: [stripUnsafeMarkdown] });
+const bodyHtml = (await processor.render(project.body ?? '')).code;
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+---
+<Base
+  title={project.title}
+  description={deriveSummary(project.body ?? '')}
+  active="hackathon"
+>
+  <section class="section">
+    <div class="container article-container">
+      <a class="btn btn--ghost article-back" href={base + backHref}>← Hackathon</a>
+      <header class="article-head">
+        <h1 class="page-title">{project.title}</h1>
+        <div class="article-head__meta">
+          {project.assignees.map((login) => (
+            <a
+              class="post-card__author"
+              href={`https://github.com/${login}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`@${login} GitHub 프로필 (새 창)`}
+            >
+              <img
+                class="author-avatar"
+                src={`https://github.com/${login}.png?size=80`}
+                alt=""
+                width="32"
+                height="32"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              />
+              <span class="post-card__author-copy">
+                <span class="post-card__author-name">@{login}</span>
+              </span>
+            </a>
+          ))}
+          <time datetime={project.createdAt}>{formatDate(project.createdAt)}</time>
+        </div>
+      </header>
+      <article class="prose" set:html={bodyHtml} />
+      <IssueComments
+        repo={live.repository}
+        issueNumber={project.number}
+        issueUrl={project.url}
+      />
+    </div>
+  </section>
+</Base>

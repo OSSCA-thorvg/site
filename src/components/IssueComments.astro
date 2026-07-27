@@ -1,0 +1,52 @@
+---
+// utterances는 giscus와 달리 GitHub 이슈에 댓글을 직접 단다.
+// 해커톤 프로젝트 = 이슈이므로 issue-number로 바로 연결한다.
+const { repo, issueNumber, issueUrl } = Astro.props as {
+  repo: string;
+  issueNumber: string;
+  issueUrl: string;
+};
+---
+<section class="article-comments" aria-labelledby="issue-comments-title">
+  <div class="article-comments__head">
+    <h2 id="issue-comments-title">댓글</h2>
+    <a
+      href={issueUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="GitHub 이슈 원문 새 창"
+    >이슈 원문</a>
+  </div>
+  <div data-utterances-mount></div>
+  <noscript>
+    <p class="article-comments__fallback">
+      댓글은 <a href={issueUrl} target="_blank" rel="noopener noreferrer">GitHub 이슈</a>에서 확인할 수 있습니다.
+    </p>
+  </noscript>
+</section>
+
+<script is:inline define:vars={{ repo, issueNumber }}>
+  (() => {
+    const mount = document.querySelector('[data-utterances-mount]');
+    if (!mount) return;
+
+    const root = document.documentElement;
+    const theme = () => root.dataset.theme === 'dark' ? 'github-dark' : 'github-light';
+    const script = document.createElement('script');
+    script.src = 'https://utteranc.es/client.js';
+    script.setAttribute('repo', repo);
+    script.setAttribute('issue-number', String(issueNumber));
+    script.setAttribute('theme', theme());
+    script.crossOrigin = 'anonymous';
+    script.async = true;
+    mount.append(script);
+
+    const syncTheme = () => {
+      mount.querySelector('iframe.utterances-frame')?.contentWindow?.postMessage({
+        type: 'set-theme',
+        theme: theme(),
+      }, 'https://utteranc.es');
+    };
+    new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+</script>

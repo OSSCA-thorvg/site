@@ -5,6 +5,8 @@ on:
     branches: [main]
   discussion:
     types: [created, edited, deleted, category_changed, labeled, unlabeled]
+  issues:
+    types: [opened, edited, deleted, closed, reopened, labeled, unlabeled, assigned, unassigned]
   schedule:
     - cron: '17 2 * * *'
   workflow_dispatch:
@@ -13,6 +15,7 @@ on:
 permissions:
   contents: read
   discussions: read
+  issues: read
   pages: write
   id-token: write
 
@@ -41,6 +44,12 @@ jobs:
 
       - name: Sync published Blog discussions
         run: node scripts/sync-discussions.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # GITHUB_REPOSITORY 기본 환경 변수로 대상 저장소를 결정한다.
+      - name: Sync hackathon issues
+        run: node scripts/sync-hackathon.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

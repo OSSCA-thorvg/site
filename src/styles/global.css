@@ -507,6 +507,40 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .external-link:hover { color: var(--primary-hover); text-decoration: underline; text-underline-offset: 3px; }
 .pg-error { margin-top: var(--space-sm); color: var(--status-closed); font-size: 13px; white-space: pre-wrap; }
 
+/* ---- Hackathon ---------------------------------------------------------- */
+.hackathon-subnav { display: flex; gap: var(--space-xs); margin-bottom: var(--space-xl); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--hairline); overflow-x: auto; }
+.hackathon-subnav a { flex: none; padding: 6px 14px; border: 1px solid var(--hairline); border-radius: var(--radius-full); color: var(--ink-muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.hackathon-subnav a:hover { border-color: var(--hairline-strong); color: var(--ink); }
+.hackathon-subnav a[aria-current="page"] { border-color: var(--primary); background: var(--primary-subtle); color: var(--primary); }
+.hackathon-notice { max-width: 760px; }
+.hackathon-notice .prose { margin-top: var(--space-lg); }
+.hackathon-source { display: inline-block; margin-top: var(--space-md); color: var(--primary); font-size: 13px; font-weight: 600; }
+.hackathon-source:hover { color: var(--primary-hover); text-decoration: underline; text-underline-offset: 3px; }
+.hackathon-projects { margin-top: var(--space-xxl); padding-top: var(--space-xl); border-top: 1px solid var(--hairline); }
+.hackathon-projects__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); }
+.hackathon-projects__head .section-title { margin-bottom: 0; }
+
+/* 노션형 카드: 세로 7/10 미디어 + 3/10 본문 */
+.hackathon-card { position: relative; min-width: 0; display: flex; flex-direction: column; aspect-ratio: 7 / 8; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface-1); transition: transform 280ms var(--ease-out), border-color var(--dur-micro) var(--ease-out); }
+.hackathon-card:hover, .hackathon-card:focus-within { transform: translateY(-6px); border-color: var(--hairline-strong); }
+.hackathon-card:hover .hackathon-card__title, .hackathon-card:focus-within .hackathon-card__title { color: var(--primary); }
+.hackathon-card__link { position: absolute; z-index: 1; inset: 0; border-radius: var(--radius-lg); }
+.hackathon-card__media { position: relative; flex: 7 1 0; min-height: 0; overflow: hidden; background: var(--surface-3); border-bottom: 1px solid var(--hairline); }
+.hackathon-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* 이미지가 없으면 렌더링된 본문을 캡처 썸네일처럼 보여 준다. */
+.hackathon-card__preview { height: 100%; padding: var(--space-md); overflow: hidden; background: var(--surface-1); color: var(--ink-muted); font-size: 11px; line-height: 1.5; pointer-events: none; user-select: none; }
+.hackathon-card__preview :is(h1, h2, h3, h4) { margin: 0 0 4px; color: var(--ink); font-size: 12px; }
+.hackathon-card__preview :is(p, ul, ol, pre) { margin: 0 0 6px; }
+.hackathon-card__preview img { max-width: 100%; height: auto; }
+.hackathon-card__media::after { content: ""; position: absolute; inset: auto 0 0 0; height: 32px; background: linear-gradient(to bottom, transparent, var(--surface-1)); pointer-events: none; }
+.hackathon-card__media:has(img)::after { content: none; }
+.hackathon-card__body { flex: 3 1 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding: var(--space-md); overflow: hidden; }
+.hackathon-card__title { font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--ink); line-height: 1.25; overflow-wrap: anywhere; }
+.hackathon-card__summary { flex: 1; min-height: 0; overflow: hidden; color: var(--ink-muted); font-size: 13px; line-height: 1.55; }
+.hackathon-card__assignees { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); margin: 0; padding: 0; list-style: none; }
+.hackathon-card__assignees li { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 12px; font-weight: 600; }
+.hackathon-card__assignees .author-avatar { width: 22px; height: 22px; flex-basis: 22px; }
+
 /* ---- Resource links (ThorVG page) -------------------------------------- */
 .resource-container { max-width: 980px; }
 .resource-groups { display: grid; gap: var(--space-xxl); margin-top: var(--space-xxl); }

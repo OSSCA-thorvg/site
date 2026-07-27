@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import HackathonBoard from '../../components/HackathonBoard.astro';
+import live from '../../data/live-hackathon.json';
+import { groupHackathons } from '../../lib/hackathon.js';
+
+export function getStaticPaths() {
+  return groupHackathons(live.issues).map((event) => ({ params: { date: event.date } }));
+}
+
+const events = groupHackathons(live.issues);
+const current = events.find((event) => event.date === Astro.params.date) ?? null;
+---
+<Base
+  title="Hackathon"
+  description="OSSCA 2026 ThorVG 해커톤 공지와 참여 프로젝트를 확인합니다."
+  active="hackathon"
+>
+  <HackathonBoard events={events} current={current} />
+</Base>

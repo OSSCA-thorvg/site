@@ -1,0 +1,143 @@
+---
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import live from '../data/live-hackathon.json';
+import { extractFirstImage, stripUnsafeMarkdown } from '../lib/hackathon.js';
+import { deriveSummary } from '../lib/summary.js';
+
+interface HackathonIssue {
+  number: string;
+  title: string;
+  body: string;
+  state: string;
+  createdAt: string;
+  labels: string[];
+  assignees: string[];
+  url: string;
+}
+
+interface HackathonEvent {
+  notice: HackathonIssue;
+  date: string;
+  title: string;
+  projects: HackathonIssue[];
+}
+
+const base = import.meta.env.BASE_URL;
+const { events, current } = Astro.props as {
+  events: HackathonEvent[];
+  current: HackathonEvent | null;
+};
+
+const processor = await createMarkdownProcessor({ remarkPlugins: [stripUnsafeMarkdown] });
+const renderMarkdown = async (body: string) => (await processor.render(body ?? '')).code;
+
+const noticeHtml = current ? await renderMarkdown(current.notice.body) : '';
+const projects = current
+  ? await Promise.all(current.projects.map(async (project) => ({
+      ...project,
+      image: extractFirstImage(project.body),
+      summary: deriveSummary(project.body, 240),
+      detailHtml: await renderMarkdown(project.body),
+    })))
+  : [];
+
+const eventHref = (event: HackathonEvent) =>
+  event === events[0] ? base + 'hackathon' : base + 'hackathon/' + event.date;
+const formatDate = (date: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+---
+<section class="section hackathon">
+  <div class="container">
+    {events.length > 0 && (
+      <nav class="hackathon-subnav" aria-label="해커톤 회차">
+        {events.map((event) => (
+          <a
+            href={eventHref(event)}
+            aria-current={event === current ? 'page' : undefined}
+          >{event.notice.title}</a>
+        ))}
+      </nav>
+    )}
+
+    {!current && <p class="empty-state">아직 공지된 해커톤이 없습니다.</p>}
+
+    {current && (
+      <>
+        <article class="hackathon-notice" aria-labelledby="hackathon-notice-title">
+          <p class="eyebrow">{formatDate(current.date)}</p>
+          <h1 class="page-title" id="hackathon-notice-title">{current.title}</h1>
+          <div class="prose" set:html={noticeHtml} />
+          <a
+            class="hackathon-source"
+            href={current.notice.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >공지 원문 보기 <span class="sr-only">(새 창)</span></a>
+        </article>
+
+        <section class="hackathon-projects" aria-labelledby="hackathon-projects-title">
+          <div class="hackathon-projects__head">
+            <h2 class="section-title" id="hackathon-projects-title">참여 프로젝트</h2>
+            <a
+              class="btn btn--primary"
+              href={`https://github.com/${live.repository}/issues/new?labels=Hackathon`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub에서 Hackathon 이슈 만들어 참여하기 (새 창)"
+            >참여하기</a>
+          </div>
+          {projects.length === 0 && (
+            <p class="empty-state">아직 등록된 프로젝트가 없습니다.</p>
+          )}
+          <div class="card-grid hackathon-grid">
+            {projects.map((project) => (
+              <article class="hackathon-card">
+                <a
+                  class="hackathon-card__link"
+                  href={base + 'hackathon/project/' + project.number}
+                >
+                  <span class="sr-only">{project.title} 상세 보기</span>
+                </a>
+                <div class="hackathon-card__media">
+                  {project.image
+                    ? <img src={project.image} alt="" loading="lazy" />
+                    : (
+                      <div
+                        class="hackathon-card__preview"
+                        aria-hidden="true"
+                        set:html={project.detailHtml}
+                      />
+                    )}
+                </div>
+                <div class="hackathon-card__body">
+                  <h3 class="hackathon-card__title">{project.title}</h3>
+                  <p class="hackathon-card__summary">{project.summary}</p>
+                  {project.assignees.length > 0 && (
+                    <ul class="hackathon-card__assignees" aria-label="팀원">
+                      {project.assignees.map((login) => (
+                        <li>
+                          <img
+                            class="author-avatar"
+                            src={`https://github.com/${login}.png?size=80`}
+                            alt=""
+                            loading="lazy"
+                          />
+                          <span>@{login}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </>
+    )}
+  </div>
+</section>
