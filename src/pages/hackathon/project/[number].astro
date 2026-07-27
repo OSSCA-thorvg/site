@@ -1,9 +1,13 @@
 ---
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import { remarkAlert } from 'remark-github-blockquote-alert';
 import Base from '../../../layouts/Base.astro';
 import IssueComments from '../../../components/IssueComments.astro';
+import MermaidDiagrams from '../../../components/MermaidDiagrams.astro';
 import live from '../../../data/live-hackathon.json';
 import { groupHackathons, stripUnsafeMarkdown } from '../../../lib/hackathon.js';
+import remarkGithubVideos from '../../../lib/remark-github-videos.js';
+import remarkLottieImages from '../../../lib/remark-lottie-images.js';
 import { deriveSummary } from '../../../lib/summary.js';
 
 interface HackathonProject {
@@ -32,7 +36,9 @@ const { project, backHref } = Astro.props as {
   backHref: string;
 };
 const base = import.meta.env.BASE_URL;
-const processor = await createMarkdownProcessor({ remarkPlugins: [stripUnsafeMarkdown] });
+const processor = await createMarkdownProcessor({
+  remarkPlugins: [remarkAlert, stripUnsafeMarkdown, [remarkLottieImages, { base }], remarkGithubVideos],
+});
 const bodyHtml = (await processor.render(project.body ?? '')).code;
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString('ko-KR', {
@@ -87,4 +93,6 @@ const formatDate = (value: string) =>
       />
     </div>
   </section>
+
+  <MermaidDiagrams />
 </Base>

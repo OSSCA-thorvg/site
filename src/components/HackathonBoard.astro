@@ -1,7 +1,11 @@
 ---
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+import { remarkAlert } from 'remark-github-blockquote-alert';
+import MermaidDiagrams from './MermaidDiagrams.astro';
 import live from '../data/live-hackathon.json';
 import { extractFirstImage, stripUnsafeMarkdown } from '../lib/hackathon.js';
+import remarkGithubVideos from '../lib/remark-github-videos.js';
+import remarkLottieImages from '../lib/remark-lottie-images.js';
 import { deriveSummary } from '../lib/summary.js';
 
 interface HackathonIssue {
@@ -28,7 +32,10 @@ const { events, current } = Astro.props as {
   current: HackathonEvent | null;
 };
 
-const processor = await createMarkdownProcessor({ remarkPlugins: [stripUnsafeMarkdown] });
+// stripUnsafeMarkdown이 URL을 정리한 뒤에 lottie/video 변환을 태운다 (블로그와 동일 파이프라인).
+const processor = await createMarkdownProcessor({
+  remarkPlugins: [remarkAlert, stripUnsafeMarkdown, [remarkLottieImages, { base }], remarkGithubVideos],
+});
 const renderMarkdown = async (body: string) => (await processor.render(body ?? '')).code;
 
 const noticeHtml = current ? await renderMarkdown(current.notice.body) : '';
@@ -141,3 +148,5 @@ const formatDate = (date: string) =>
     )}
   </div>
 </section>
+
+<MermaidDiagrams />
