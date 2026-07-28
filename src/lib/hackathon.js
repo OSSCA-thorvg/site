@@ -10,7 +10,9 @@ const hasLabel = (issue, label) =>
   (issue.labels ?? []).some((name) => name.toLowerCase() === label);
 
 export const extractFirstImage = (body = '') =>
-  body.match(/!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+)\s*(?:"[^"]*")?\)/)?.[1] ?? null;
+  body.match(/!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+)\s*(?:"[^"]*")?\)/)?.[1]
+    ?? body.match(/<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["']/i)?.[1]
+    ?? null;
 
 export function groupHackathons(issues = []) {
   const hackathonIssues = issues.filter((issue) => hasLabel(issue, 'hackathon'));
@@ -44,14 +46,45 @@ export function groupHackathons(issues = []) {
   return events.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-// 이슈 본문은 외부 입력이다. raw HTML 노드를 제거하고
-// http(s)·mailto 외의 링크 대상을 비워 마크다운 문법만 렌더링한다.
+// 이슈 본문은 외부 입력이다. raw HTML은 <img>만 화이트리스트 속성으로 재조립해
+// 통과시키고 나머지 노드는 제거한다. http(s)·mailto 외의 링크 대상은 비운다.
 const SAFE_URL = /^(https?:|mailto:)/i;
+const IMG_TAG = /<img\b[^>]*>/gi;
+
+const attribute = (tag, name) =>
+  tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i'))?.[1]
+    ?? tag.match(new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`, 'i'))?.[1]
+    ?? null;
+
+// GitHub README 관용구인 <p align="center"><img width="..."> 를 지원한다.
+// 태그를 그대로 신뢰하지 않고 src·alt·width·height만 뽑아 새로 만든다.
+const htmlImages = (value = '') => {
+  const centered = /align\s*=\s*["']center["']/i.test(value);
+  return [...value.matchAll(IMG_TAG)].flatMap((match) => {
+    const tag = match[0];
+    const src = attribute(tag, 'src');
+    if (!src || !SAFE_URL.test(src)) return [];
+    const hProperties = {
+      src,
+      alt: attribute(tag, 'alt') ?? '',
+      loading: 'lazy',
+      decoding: 'async',
+      ...(centered ? { style: 'display:block;margin-inline:auto;' } : {}),
+    };
+    for (const name of ['width', 'height']) {
+      const size = attribute(tag, name);
+      if (size && /^\d+$/.test(size)) hProperties[name] = size;
+    }
+    return [{ type: 'text', value: '', data: { hName: 'img', hProperties } }];
+  });
+};
 
 export const stripUnsafeMarkdown = () => (tree) => {
   const walk = (node) => {
     if (!Array.isArray(node.children)) return;
-    node.children = node.children.filter((child) => child.type !== 'html');
+    node.children = node.children.flatMap((child) =>
+      child.type === 'html' ? htmlImages(child.value) : [child]
+    );
     for (const child of node.children) {
       if ((child.type === 'link' || child.type === 'image') && !SAFE_URL.test(child.url ?? '')) {
         child.url = '';

@@ -6,6 +6,7 @@ import {
   extractFirstImage,
   groupHackathons,
   parseNoticeDate,
+  stripUnsafeMarkdown,
 } from '../src/lib/hackathon.js';
 
 const readPage = (path) =>
@@ -39,6 +40,32 @@ test('the first markdown image becomes the card thumbnail', () => {
   );
   assert.equal(extractFirstImage('이미지 없음'), null);
   assert.equal(extractFirstImage('![x](javascript:alert(1))'), null);
+  // GitHub README 관용구인 HTML <img>도 썸네일로 잡는다.
+  assert.equal(
+    extractFirstImage('<p align="center">\n<img width="800" alt="Logo" src="https://example.com/logo.png" />\n</p>'),
+    'https://example.com/logo.png'
+  );
+});
+
+test('raw HTML is stripped except whitelisted <img> tags', () => {
+  const tree = {
+    type: 'root',
+    children: [
+      { type: 'html', value: '<script>alert(1)</script>' },
+      { type: 'html', value: '<p align="center">\n<img width="800" alt="Logo" src="https://example.com/logo.png" />\n</p>' },
+      { type: 'html', value: '<img src="javascript:alert(2)">' },
+    ],
+  };
+
+  stripUnsafeMarkdown()(tree);
+
+  assert.equal(tree.children.length, 1);
+  const [image] = tree.children;
+  assert.equal(image.data.hName, 'img');
+  assert.equal(image.data.hProperties.src, 'https://example.com/logo.png');
+  assert.equal(image.data.hProperties.width, '800');
+  assert.equal(image.data.hProperties.alt, 'Logo');
+  assert.match(image.data.hProperties.style, /margin-inline:auto/);
 });
 
 test('projects attach to the latest notice created before them', () => {

@@ -1,23 +1,25 @@
 {
-  "generatedAt": "2026-07-27T08:20:29.127Z",
+  "generatedAt": "2026-07-28T07:10:59.218Z",
   "repository": "OSSCA-thorvg/site",
   "issues": [
     {
       "number": "87",
-      "title": "예시2",
-      "body": "test",
+      "title": "Lottie 이펙트 믹서: 여러 Lottie를 실시간으로 합성하는 웹 툴 (예시2)",
+      "body": "여러 개의 Lottie 애니메이션을 레이어처럼 쌓고, 블렌딩·타이밍·색상을 실시간으로\n조절해서 하나의 새로운 애니메이션으로 합성하는 웹 툴을 만듭니다. 렌더링은\nThorVG WebCanvas를 사용합니다.\n\n## 목표\n\n- [ ] Lottie 파일 2개 이상 로드하고 레이어로 겹치기\n- [ ] 레이어별 재생 속도·오프셋·투명도 조절 UI\n- [ ] 합성 결과를 실시간 미리보기\n- [ ] (도전) 합성 설정을 JSON으로 내보내기\n\n## 아키텍처\n\n```mermaid\nflowchart LR\n    A[Lottie 파일들] --> B[레이어 매니저]\n    B --> C[ThorVG WebCanvas]\n    C --> D[미리보기 캔버스]\n    B --> E[설정 JSON 내보내기]\n```\n\n## 기술 스택\n\n`@thorvg/lottie-player` · `@thorvg/webcanvas` · TypeScript · Vite\n\n> [!NOTE]\n> 팀원 합류 환영합니다! 댓글로 남겨주시면 assignee로 추가할게요.\n\n## 일정\n\n| 주차 | 할 일 |\n|---|---|\n| ~8/1 | 레이어 로딩 + 렌더링 골격 |\n| 8/2 (해커톤 당일) | 조절 UI + 합성 데모 완성 |",
       "state": "open",
       "createdAt": "2026-07-27T08:20:14Z",
       "labels": [
         "Hackathon"
       ],
-      "assignees": [],
+      "assignees": [
+        "Nor-s"
+      ],
       "url": "https://github.com/OSSCA-thorvg/site/issues/87"
     },
     {
       "number": "86",
-      "title": "벡터 애니메이션 툴(예시)",
-      "body": "![temp31](https://github.com/user-attachments/assets/6a9d52d5-4da1-4995-a41c-1acd333ab513)\n\n\n\n### 벡터 애니메이션 툴\n\nThorVG 를 사용해서 벡터 애니메이션 툴을 구현할 예정입니다!\n\n사용 기술/라이브러리\n- C++\n- ThorVG\n- SDL2\n- OpenGL\n- WASM\n- IMGUI\n\n관심있으신분 연락 또는 Comment 해주시면 Assignees 추가하겠습니다!",
+      "title": "벡터 애니메이션 툴 (예시1)",
+      "body": "## 벡터 애니메이션 툴\n\n![temp31](https://github.com/user-attachments/assets/6a9d52d5-4da1-4995-a41c-1acd333ab513)\n\n\nThorVG 를 사용해서 벡터 애니메이션 툴을 구현할 예정입니다!\n\n사용 기술/라이브러리\n- C++\n- ThorVG\n- SDL2\n- OpenGL\n- WASM\n- IMGUI\n\n관심있으신분 연락 또는 Comment 해주시면 Assignees 추가하겠습니다!",
       "state": "open",
       "createdAt": "2026-07-27T07:29:27Z",
       "labels": [
@@ -32,7 +34,7 @@
     {
       "number": "85",
       "title": "OSSCAxThorVG Hackathon(2026-08-02)",
-      "body": "## **ThorVG 해커톤** \n\n- 멘티분들이 함께 모여 흥미롭고, 새롭고, 재미있는 무언가를 만들어낼 아이디어를 구상하며 시간을 보낼 수 있는 행사입니다. \n\n### **일정**\n\n- 기간: 8월 2일 (일) 오프라인 ~ 8월 9일(일) 온라인 마무리\n- 시상식: 8월 중순 오프라인 모임에서 심사 및 시상\n    - 멘티 + 멘토 평가\n\n### **주제**\n\n- **ThorVG 가 사용되고 정적 Web 에서 구동되면 무엇이든 OK**\n        - ThorVG 네이티브 + wasm 빌드\n        - Webcanvas\n        - Gihtub Page 정적 사이트 업로드\n\n> 빌드 결과물에 ThorVG가 포함된다면, 무엇이든 OK 입니다.\n> ex) unreal, unity, Godot 에서 ThorVG로 벡터 그래픽스를 렌더링한 게임을 웹으로 빌드\n\n\n\n### 상품 \n\n- 1등: 5만원 상당 상품권/기프티콘\n- 2등: 3만원 상당 상품권/기프티콘\n- 3등(3팀): 1만원 상당 상품권/기프티콘\n\n### 프로젝트 등록 방법 \n\n- OSSCA-thorvg/site 에 이슈 추가\n- Title 에 프로젝트 이름 자유롭게 선정 & 본문 작성\n- Labels 에 `Hackathon` 추가하시면됩니다!\n- 팀원은 Assignees 를 통해 구성할 수 있습니다!\n\n\n### 프로젝트 저장소\n\nOSSCA-thorvg 조직 아래에 프로젝트를 생성해야합니다.\n\n- **OSSCA-thorvg**\n        - Hackathon-<프로젝트 이름>\n        - 프로젝트 이름은 자유롭게 설정\n\n> [!IMPORTANT]\n> 프로젝트 생성에 권한이 필요하다면 이야기 해주세요!\n",
+      "body": "# 🚀 2026 ThorVG 해커톤 \"ThorThon\"\n\n\n<p align=\"center\"> \n<img width=\"800\" alt=\"Logo\" src=\"https://github.com/user-attachments/assets/3d821133-069e-4c38-9669-7b672afd47e5\" />\n</p>\n\n\n- **도전과 실험** : 평소 미션/과제 진행에서 벗어나, 순수하게 재미있고 흥미로운 아이디어에 몰입해볼 수 있는 시간입니다.\nThorVG를 활용해 평소 생각만 해봤던 아이디어, 새로운 기술적 시도, 엉뚱하지만 재미있는 실험까지\n- **교류와 유대감** : 각자 개별 기여 중 흩어져 있던 멘티분들이 이번 기회에 팀을 이뤄 함께 작업하며 새로운 시너지를 낼 수 있습니다.\n서로 다른 배경과 관심사를 가진 멘티들이 만나 아이디어를 나누고, 함께 무언가를 만들어갈 수 있는 새로운 기회\n\n- **재미 그 자체** : 무엇보다 즐거운 경험이 되는 것이 가장 중요합니다. 결과물의 완성도와 더불어 함께한 시간과 과정을 즐겨주세요.\n\n## 🤝 대상\n\n2026 OSSCA ThorVG 프로그램에 참여하신 모든 멘티분들께 열린 해커톤입니다.\n\n## 📅 일정\n\n| 구분 | 내용 |\n|---|---|\n| 🏁 시작 | 8월 2일(일) — **오프라인 킥오프** |\n| 🏠 진행 | ~8월 8일(토) — **온라인으로 마무리** |\n| 🏆 발표 및 시상식 | 8월 9일(일) 오프라인 모임 — 심사 및 시상 (멘티+멘토 평가) |\n\n\n### **주제**\n\n\n# \"Web에서 구동되는 **ThorVG** 애플리케이션 개발\"\n\n아래의 두가지 방식 중 하나를 선정하여 프로젝트를 진행해주세요.\n\n1. 🔧 ThorVG 네이티브 앱 개발 + WASM 빌드\n2. 🖼️ [WebCanvas](https://npmjs.com/package/@thorvg/webcanvas)를 활용한 웹앱 개발\n\n이후 Github Pages로 웹사이트에 본인의 프로그램을 배포하여 최종 출품합니다.\n\n> [!NOTE]\n> WASM 빌드 및 웹 페이지 배포는 [wasm-example](https://github.com/OSSCA-thorvg/wasm-example) 프로젝트를 참고하세요,\n> 막히는 부분이 생기면 멘토님께서 도와주실거에요!\n> 해커톤 기간 내 온/오프라인 멘토링이 함께 진행됩니다.\n---\n\n## 🏅 심사 기준\n\n**총점 100점 = 멘티 평가(40점) + 멘토 평가(60점)**\n\n### 🙋 멘티 평가 (40점) — Google Form 투표\n\n| 항목 | 배점 | 설명 |\n|---|---|---|\n| 창의성 & 재미 | 20점 | 아이디어가 얼마나 신선하고 흥미로운가 |\n| 완성도 | 20점 | 데모가 실제로 잘 동작하는가 |\n\n> 팀당 1인 1표, 본인 팀에는 투표 불가\n\n### 🧑‍🏫 멘토 평가 (60점)\n\n| 항목 | 배점 | 설명 |\n|---|---|---|\n| 작품성 | 15점 | 완성도, 디자인/연출, 사용자 경험 |\n| 기술력 | 15점 | 코드 품질, 문제 해결 방식, 구현 난이도 |\n| ThorVG 활용도 | 20점 | ThorVG 기능을 얼마나 적극적/창의적으로 활용했는가 |\n| 발표 평가 | 10점 | 팀 구성원 간의 역할 분담 및 발표 완성도 |\n\n---\n\n## 🎁 상품\n\n| 순위 | 상품 |\n|---|---|\n| 🥇 1등 | 10만원 상당 상품권 |\n| 🥈 2등 | 5만원 상당 상품권 |\n| 🥉 3등 (2팀) | 3만원 상당 상품권 |\n| ⭐ 인기상 (3팀) | 1만원 상당 상품권 |\n\n## 🙌 참여방법\n\n- **개인 또는 팀별**(추천)로 참여 가능합니다\n- 한 사람이 **여러 팀 또는 여러 작품**에 참여/출품 하실 수 있습니다.\n- 킥오프 이전 기간(_7월 28일 ~ 7월 31일 금요일_)까지 팀을 구성하여 프로젝트를 등록해주세요.\n\n### 📝 프로젝트 등록\n\n<img width=\"200\" height=\"auto\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/82df73d2-eb3c-4cbc-ab8b-aff9228a76a7\" />\n\n**`OSSCA-thorvg/site`** 레포에 이슈 추가!\n\n- **Title**: 프로젝트 이름 자유롭게 ✍️\n- **Description**: 작품 설명과 팀 리더를 안내해주세요\n- **Labels**: `Hackathon` 추가\n- **팀원 구성**: Assignees로 태그\n\n\n## 📦 프로젝트 저장소\n\n👉 참여 프로젝트는 구성원이 하나의 저장소에서 오픈소스로 구현하게 됩니다.\n\n프로젝트 등록 후 `OSSCA-thorvg` 조직 아래에 저장소를 생성해주세요.\n\n```\nOSSCA-thorvg / Hackathon-<프로젝트 이름>\n```\n\n> [!TIP]\n> 📌 프로젝트 이름은 이슈 타이틀과 **동일하게** 맞춰주세요!\n> ⚠️ **저장소 생성 권한이 필요하면 언제든 말씀해주세요!**\n\n---\n\n## ⚠️ 주의사항\n- 모든 멘티분들 필수 참여 과제입니다.\n- 오프라인 참석이 불가능한 분들은 온라인으로 참여하실 수 있습니다.\n- 단, 발표 및 시상식 (8월 9일 일요일 오후)에서 발표를 진행할 대표 멘티는 오프라인 참석 필수\n- 팀의 경우 최대 3명까지 멤버 구성이 가능합니다.\n- 7월 31일 금요일까지 등록된 프로젝트에 대해서만 참여하실 수 있습니다.\n",
       "state": "open",
       "createdAt": "2026-07-27T07:19:33Z",
       "labels": [
