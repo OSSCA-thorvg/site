@@ -817,7 +817,7 @@ test('playground keeps labeled Lottie controls compact without advanced or rende
 test('playground embeds the exact hosted tools with matching fallback links', async () => {
   const html = await readPage(pages.playground);
   const urls = [
-    'https://thorvg.github.io/thorvg.viewer/',
+    'https://thorvg.github.io/thorvg.view/',
     'https://thorvg-playground.vercel.app/showcase/custom-transform',
     'https://thorvg-janitor.vercel.app/',
   ];
@@ -1021,7 +1021,7 @@ test('ThorVG page is a concise Korean resource hub with the current Viewer link'
 
   assert.match(html, /<h1\b[^>]*>ThorVG 자료<\/h1>/);
   for (const group of ['공식', '시작하기', '도구']) assert.ok(html.includes(`>${group}</h2>`));
-  assert.ok(html.includes('https://thorvg.github.io/thorvg.viewer/'));
+  assert.ok(html.includes('https://thorvg.github.io/thorvg.view/'));
   assert.match(html, />시작하기<\/h2>[\s\S]*?href="https:\/\/deepwiki\.com\/thorvg\/thorvg"[\s\S]*?href="https:\/\/github\.com\/OSSCA-thorvg\/site\/wiki"/);
   assert.doesNotMatch(html, /https:\/\/www\.thorvg\.org\/viewer/);
 });

@@ -53,7 +53,7 @@
 - 로컬 샘플은 `public/lottie/thorvg-sample.json`이다.
 - Lottie 웹 컴포넌트는 다음 고정 버전과 SRI를 유지한다.
   `https://unpkg.com/@thorvg/lottie-player@1.0.9/dist/lottie-player.js`
-- iframe URL은 현재 Viewer `https://thorvg.github.io/thorvg.viewer/`와 WebCanvas 예제
+- iframe URL은 현재 Viewer `https://thorvg.github.io/thorvg.view/`와 WebCanvas 예제
   `https://thorvg-playground.vercel.app/showcase/custom-transform`이다.
 - WebCanvas는 외부 예제 iframe이며 페이지 안에 임의 코드를 실행하는 별도 실행기를
   만들지 않는다.
