@@ -1,18 +1,243 @@
 {
-  "generatedAt": "2026-07-28T07:10:59.218Z",
+  "generatedAt": "2026-08-10T13:15:49.055Z",
   "repository": "OSSCA-thorvg/site",
   "issues": [
     {
+      "number": "148",
+      "title": "OSSCAxThorVG Hackathon(2026-08-09)(END)",
+      "body": "Repo | Link\n-- | -- \nHackathon-BeatVG | https://ossca-thorvg.github.io/Hackathon-BeatVG/\nHackathon-FFV | https://ossca-thorvg.github.io/Hackathon-FFV/\nYeojeong | https://ossca-thorvg.github.io/Yeojeong/\nShape-Matching-Game | https://ossca-thorvg.github.io/Shape-Matching-Game/\nThorBridge | https://ossca-thorvg.github.io/ThorBridge/\nHackathon-SketchDate | https://ossca-thorvg.github.io/Hackathon-SketchDate/\nHackathon-Cleave | https://ossca-thorvg.github.io/Hackathon-Cleave/\nHackathon-MotionThief | https://ossca-thorvg.github.io/Hackathon-MotionThief/\nHackathon-Rubiks-Cube | https://ossca-thorvg.github.io/Hackathon-Rubiks-Cube/\nThorVG_Lottie_Color_Swapper | https://ossca-thorvg.github.io/ThorVG_Lottie_Color_Swapper/\nHackathon-Terminal_Vector_Graphics | https://ossca-thorvg.github.io/Hackathon-Terminal_Vector_Graphics/\npitch-draw | https://ossca-thorvg.github.io/pitch-draw/\nHackathon-ClaudeWhip | https://ossca-thorvg.github.io/Hackathon-ClaudeWhip/\nHackathon-SpellDrawFight | https://ossca-thorvg.github.io/Hackathon-SpellDrawFight/",
+      "state": "open",
+      "createdAt": "2026-08-09T11:14:52Z",
+      "labels": [
+        "Notice",
+        "Hackathon"
+      ],
+      "assignees": [],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/148"
+    },
+    {
+      "number": "131",
+      "title": "SketchDate — Draw Yourself, Talk First, Reveal Later",
+      "body": "# [Project Proposal] SketchDate — Draw Yourself, Talk First, Reveal Later\n\n## Overview\n\n**SketchDate**는 사용자가 직접 그린 2D 캐릭터로 상대방과 먼저 대화하고, 서로 동의한 경우에만 실제 얼굴을 공개하는 아바타 기반 랜덤 소개팅 서비스입니다.\n\n웹캠으로 검출한 얼굴 표정과 움직임을 사용자가 만든 벡터 캐릭터에 실시간으로 반영합니다. 실제 얼굴을 공개하지 않은 상태에서도 눈 깜박임, 미소, 입 모양, 시선, 고개 움직임과 같은 비언어적 표현을 전달할 수 있습니다.\n\n> **Draw yourself. Talk first. Reveal later.**\n\n## 팀장\n\n이연석\n\n## Motivation\n\n일반적인 영상 소개팅에서는 대화를 시작하기 전부터 외모가 공개되기 때문에 사용자에게 부담을 줄 수 있습니다. 반면 텍스트 기반 익명 채팅은 상대방의 표정이나 감정을 충분히 전달하기 어렵습니다.\n\nSketchDate는 두 방식의 중간 지점을 제안합니다.\n\n* 실제 얼굴을 처음부터 공개하지 않습니다.\n* 음성과 표정은 직접 만든 캐릭터를 통해 전달합니다.\n* 대화가 잘 통했다고 느낀 경우에만 서로의 동의하에 얼굴을 공개합니다.\n* 한쪽 사용자만 얼굴 공개를 선택한 경우, 해당 선택은 상대방에게 알려지지 않습니다.\n\n## User Flow\n\n1. 사용자가 얼굴, 눈, 눈썹, 입, 머리카락 등의 캐릭터 파트를 직접 그립니다.\n2. 각 파트가 자동으로 캐릭터 리그에 연결됩니다.\n3. 다른 사용자와 랜덤으로 매칭됩니다.\n4. 웹캠 얼굴 추적 결과가 캐릭터에 실시간으로 적용됩니다.\n5. 두 사용자는 음성과 움직이는 캐릭터를 통해 대화합니다.\n6. 대화 중 랜덤 질문 카드와 표정 미션이 제공됩니다.\n7. 제한 시간이 지나면 각 사용자가 비공개로 다음 행동을 선택합니다.\n\n   * 아바타 상태로 더 대화하기\n   * 실제 얼굴 공개하기\n   * 대화 종료하기\n8. 두 사용자가 모두 얼굴 공개를 선택한 경우에만 실제 영상으로 전환됩니다.\n\n## Core Features\n\n### 1. Avatar Drawing\n\n사용자는 브라우저에서 자신만의 캐릭터를 직접 제작합니다.\n\n* 얼굴 윤곽\n* 눈과 동공\n* 눈썹\n* 입\n* 머리카락\n* 액세서리\n\n각 파트는 별도의 ThorVG `Shape` 또는 `Scene`으로 관리됩니다.\n\n### 2. Real-Time Facial Retargeting\n\n웹캠에서 얼굴 랜드마크와 표정 계수를 검출하고, 이를 캐릭터의 움직임으로 변환합니다.\n\n초기 구현 대상은 다음과 같습니다.\n\n* 머리 이동 및 회전\n* 양쪽 눈 깜박임\n* 동공 및 시선 이동\n* 입 열기\n* 미소\n* 눈썹 움직임\n\n### 3. Avatar-First Communication\n\n얼굴 공개 전에는 원본 카메라 영상을 상대방에게 전달하지 않습니다.\n\n대신 다음 정보만 전송합니다.\n\n* 마이크 음성\n* 머리 방향\n* 눈 깜박임\n* 시선 방향\n* 입과 눈썹의 표정 계수\n\n수신 측 브라우저는 전달받은 모션 데이터를 이용해 상대방의 ThorVG 캐릭터를 직접 렌더링합니다.\n\n### 4. Mutual Face Reveal\n\n대화가 끝난 뒤 양쪽 사용자가 모두 얼굴 공개에 동의한 경우에만 실제 카메라 영상이 활성화됩니다.\n\n얼굴 공개 시에는 캐릭터가 벡터 조각으로 분해되거나 서서히 사라지면서 실제 영상으로 전환되는 애니메이션을 제공합니다.\n\n### 5. Conversation Support\n\n처음 만난 사용자들이 자연스럽게 대화를 이어갈 수 있도록 다음 기능을 제공합니다.\n\n* 랜덤 대화 질문\n* 공통 관심사 카드\n\n## Technical Architecture\n\n```text\nWebcam\n  ↓\nFacial Landmark Detection\n  ↓\nLocal ThorVG Avatar Rendering\n  ↓\nWebRTC DataChannel\n  ↓\nRemote ThorVG Avatar Rendering\n```\n\n얼굴 공개 이후에는 별도의 비디오 트랙을 WebRTC 연결에 추가하여 실제 영상 통화로 전환합니다.\n\n## MVP Scope\n\n해커톤 버전에서는 다음 기능을 우선 구현합니다.\n\n* 파트별 캐릭터 드로잉\n* 캐릭터 자동 리깅\n* 눈 깜박임, 입 열기, 미소, 고개 움직임\n* WebRTC 기반 1:1 음성 통화\n* RTCDataChannel 기반 모션 데이터 전송\n* 랜덤 질문 카드\n* 상호 동의 기반 얼굴 공개\n* 아바타에서 실제 영상으로 전환되는 애니메이션\n* 즉시 나가기 및 신고 UI\n\n## Demo Scenario\n\n1. 두 사용자가 각각 자신만의 캐릭터를 그립니다.\n2. 캐릭터가 사용자의 표정을 따라 움직이는 모습을 보여줍니다.\n3. 두 사용자가 매칭되어 아바타 상태로 대화합니다.\n4. 표정 미션과 질문 카드를 수행합니다.\n5. 두 사용자가 비공개로 얼굴 공개 여부를 선택합니다.\n6. 상호 동의가 확인되면 벡터 캐릭터가 사라지고 실제 영상이 공개됩니다.\n\n## Goal\n\nSketchDate의 목표는 외모를 먼저 평가하는 영상 소개팅 대신, 사용자의 개성과 대화가 먼저 전달되는 새로운 온라인 만남 방식을 만드는 것입니다.\n\n직접 그린 캐릭터가 사용자의 표정에 따라 살아 움직이고, 충분한 대화 이후에만 실제 얼굴을 공개함으로써 익명성과 감정 표현을 동시에 제공합니다.\n",
+      "state": "open",
+      "createdAt": "2026-08-02T04:55:08Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "autlyr21"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/131"
+    },
+    {
+      "number": "130",
+      "title": "Play the Picture — 연주로 완성하는 그림",
+      "body": "## 기획 배경\n\n악기를 연주할 때 음정을 정확히 맞추면 의도한 그림이 정상적으로 그려지고, 음정을 잘못 내거나 흔들리면 그 순간 화면에 그려지는 선과 형태도 함께 일그러지는 프로그램을 기획했습니다.\n\n단순히 “지금 음정이 맞다/틀리다”를 보여주는 튜너가 아니라, **연주 자체가 그림을 만들어내는 인터랙티브한 시각화 도구**를 만드는 것이 목표입니다.\n연주가 안정적이면 깔끔한 결과물이 나오고, 중간에 삐끗한 부분이 있으면 그 구간만 삐뚤어지거나 흐트러져 최종적으로는 연주 실수가 그대로 반영된 재미있는 그림이 남도록 구성했습니다.\n\n## 핵심 기능 및 동작 흐름\n\n악기 선택 또는 마이크 입력 허용 ➔ 기준 멜로디/음정 설정 ➔ 연주 시작 ➔ 실시간 음정 분석 ➔ 음정 정확도에 따라 그림 생성 ➔ 연주 종료 ➔ 최종 그림 확인 및 저장\n\n## ThorVG 활용\n\nThorVG를 이용해 음정 데이터를 실시간 벡터 그래픽으로 렌더링합니다.\n\n* **실시간 드로잉**: 연주가 진행되는 동안 선, 곡선, 도형이 계속 이어지며 하나의 그림 생성\n* **정확도 반영**: 음정이 맞으면 균형 잡힌 선과 형태를 유지하고, 틀리면 선이 흔들리거나 찌그러지도록 표현\n* **시각 효과 적용**: Blur, Shadow, Opacity 등을 활용해 음정이 불안정한 순간을 더 두드러지게 표현\n* **애니메이션 구성**: 연주 흐름에 따라 그림이 자연스럽게 확장되도록 Path와 Transform 활용\n* **결과물 저장**: 연주가 끝난 뒤 완성된 그림을 이미지로 저장\n\n## 기대 결과\n\n같은 그림을 그리는 구조라도 연주 정확도에 따라 결과물이 매번 달라집니다.\n즉, **정확한 연주는 정돈된 그림**, **실수가 섞인 연주는 일부가 뒤틀린 그림**으로 남기 때문에, 연습 과정 자체를 시각적으로 보여주면서 재미 요소도 줄 수 있습니다.\n",
+      "state": "open",
+      "createdAt": "2026-08-02T04:52:36Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "mungjin01"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/130"
+    },
+    {
+      "number": "118",
+      "title": "Agent Persona",
+      "body": "[Agent Persona — AI 에이전트의 캐릭터]\n\n\n* 배경 : \n\n현재 사용 중인 Claude Code 등 AI 에이전트 들은 동작 시 자신 만의 언어로 상태를 표현합니다.\n\n하지만 이는 현재 에이전트가 무슨 단계에 위치해 있는지에 대해 직관적으로 알기 어렵죠.\n\n거기다 텍스트 위주의 상태이기에 사용자 친화적이지 못하다고 느껴집니다. \n\n\n* 개요 : \n\nAI 에이전트의 동작 상태에 따라 캐릭터 애니메이션을 출력하는 Platform 을 ThorVG 를 통해 개발해 봅니다.\n",
+      "state": "open",
+      "createdAt": "2026-08-01T00:15:53Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "tcpark11"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/118"
+    },
+    {
+      "number": "117",
+      "title": "여정(Yeojeong) - 나만의 여행 경로 모션 그래픽 생성기",
+      "body": "# 다녀온 나라들을 한눈에 볼 수 있는 여행 정리 웹사이트\n\n## 기획 배경\n평소 여행을 즐기는데 다녀온 나라들을 한눈에 직관적으로 볼 수 있는 프로그램이 있으면 좋겠다고 생각했습니다.\n\n여행 경로를 지도 애니메이션으로 만들어 SNS에 공유하는 'TravelBoast'라는 앱이 작년에 인스타에서 자주 보였습니다.\n\n<img width=\"1578\" height=\"874\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/513b0d17-2197-4393-8180-dde80a0ce083\" />\n\n아이디어는 괜찮다고 생각했는데 실제 사용해 보니 애니메이션의 부드러움이나 디자인적인 완성도 면에서 아쉬움이 있었습니다.\n\n이번 해커톤 주제를 고민하며 ThorVG의 벡터 렌더링을 활용하여 디자인과 퍼포먼스를  발전시킨 모션 그래픽 지도를 만들어보면 어떨까? 하는 구상에서 \n프로젝트를 기획하게 되었습니다.\n\n## 핵심 기능 및 동작 흐름\n\n나라 검색 ➔ 순서대로 추가 ➔ 재생(애니메이션) ➔ 테마 조정 및 저장\n\n\n## ThorVG 활용 \n지도 렌더링과 모션 그래픽을 WebCanvas 기반으로 구현하여 외부 지도 타일 API 없이 벡터 기반의 고품질 애니메이션을 제공합니다.\n\n* 자체 지도 렌더링: SVG 기반 벡터 데이터를 ThorVG Path로 렌더링하여 확대·축소에도 품질 저하 없는 세계 지도 구현\n* 경로 애니메이션: Stroke Dash 기반 경로 드로잉 애니메이션\n* 감성 테마 시스템: Blur, Shadow 등의 장면 효과를 활용한 테마 연출\n* 결과물 추출: 렌더링 결과물 파일화\n",
+      "state": "open",
+      "createdAt": "2026-07-31T14:20:11Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "seobinpark"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/117"
+    },
+    {
+      "number": "114",
+      "title": "Cleave: 재료를 다지는 게임",
+      "body": "Cleave — 도마 위 재료를 제한 시간 안에 최대한 잘게 다지는 게임입니다.\n\n칼로 자른 조각이 사라지지 않고 남아서 계속 다시 잘립니다.\n흩어진 조각은 칼로 모아서 다시 다질 수 있습니다.\n당근, 토마토, 파 세 가지 재료가 있습니다.\n\n플레이: https://ossca-thorvg.github.io/Hackathon-Cleave/\n저장소: https://github.com/OSSCA-thorvg/Hackathon-Cleave\n\n<img width=\"705\" height=\"796\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/f884a683-bd1d-4dc5-8d6b-5eb1687ee452\" />\n\n## 핵심 규칙\n\n1. 화면에 도형이 하나 제시됩니다.\n2. 마우스 드래그로 직선을 그으면 도형이 그 각도로 갈라집니다.\n3. 잘린 조각은 무작위 방향으로 조금씩 밀려나며 흩어집니다.\n4. 흩어질수록 한 번에 여러 조각을 관통하기 어려워집니다.\n   즉 초반에 뭉쳐 있을 때 얼마나 잘 긋느냐가 실력이 됩니다.\n5. 정해진 절단 횟수 안에 만든 조각 수로 별 등급이 결정됩니다.\n\n## 왜 ThorVG인가\n\n- 자를 대상을 재생 중인 Lottie 애니메이션으로 확장할 계획입니다.\n  잘린 조각들은 각자 자기 영역의 애니메이션을 계속 재생합니다.\n  Canvas 2D에는 Lottie 지원이 없어 구현할 수 없습니다.\n- 조각이 수십 개로 늘어나면 각 조각에 클리핑과 효과가 누적됩니다.\n  Canvas 2D의 filter는 draw 호출 단위라 이 규모에서 무너지지만,\n  ThorVG는 유지형 씬 그래프에 얹어두고 변환만 갱신합니다.\n\n## 목표\n\n- [ ] 직선-다각형 교차점 계산\n- [ ] 경계 추적 방식 분할 (볼록·오목 모두, N조각 대응)\n- [ ] 드래그 입력 + 조각 흩어짐\n- [ ] 절단 횟수 제한 + 조각 수 판정 + 별 등급\n- [ ] 스테이지 5개\n- [ ] (확장) 자를 대상을 Lottie로 교체, 조각별 재생 유지\n- [ ] (확장) 조각별 드롭섀도우·블러\n- [ ] GitHub Pages 배포\n\n## 기술 스택\n\n`@thorvg/webcanvas` · TypeScript · Vite\n\n## 팀\n\n- 조정민 - 개인 참가\n\n## 일정\n\n| 기간 | 할 일 |\n| --- | --- |\n| ~8/1 | 환경 구성 + 삼각형 분할 검증 |\n| 8/2 (킥오프) | 게임 루프 완성 |\n| ~8/8 | Lottie 확장 · 연출 · 배포 |\n\n## 저장소\nhttps://github.com/OSSCA-thorvg/Hackathon-Cleave",
+      "state": "open",
+      "createdAt": "2026-07-31T13:16:37Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "YoungB0"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/114"
+    },
+    {
+      "number": "113",
+      "title": "클로드 채찍질하기",
+      "body": "<img width=\"2356\" height=\"1552\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/18a8f79e-4880-4aff-bbfa-ae257561b1e2\" />\n\n\n애니메이션으로 반응하는 인터랙티브 웹 데모입니다. 순수하게 ThorVG WebCanvas 위에서 벡터 캐릭터와 채찍 궤적, 리액션 애니메이션을 실시간으로 구현하는 데 집중합니다.\n\n팀원: 강주희, 이승원\n\n목표\n[ ] 채찍 캐릭터 + 대상 캐릭터(3~4개) 벡터 일러스트 제작\n[ ] 마우스 드래그/클릭으로 채찍 궤적을 실시간으로 그리는 인터랙션 구현\n[ ] 채찍이 캐릭터에 닿으면 리액션 애니메이션(놀람/넉백) 재생\n[ ] 캐릭터별 idle 루프 애니메이션 (가만히 있어도 살아있는 느낌)\n[ ] (도전) 여러 캐릭터를 순서대로 맞히는 미니 게임화 (점수/콤보 카운트)\n\n기술 스택\n@thorvg/webcanvas · TypeScript · Vite",
+      "state": "open",
+      "createdAt": "2026-07-31T12:52:08Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "zurdhva",
+        "nowgnuesLeee"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/113"
+    },
+    {
+      "number": "112",
+      "title": "ThorVG 포트폴리오",
+      "body": "저의 커리어에 영향을 주었던 [김종민 인터랙티브 개발자님의 포트폴리오](https://www.youtube.com/watch?v=cpEeqACsF_Q&t=455s)를 ThorVG의 특성을 살려서 오마주 해보려고 합니다.\n프로젝트 이름은 FFV입니다.\n\n목표(도전..!)\n- 3~5가지 정도의 scene 만들기\n- 기존 scene을 그대로 따라하지 않고 thorvg의 특징을 녹여내보기\n\n<img width=\"1000\" height=\"677\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/966b5450-efb3-46a0-ac2f-833aa022df40\" />",
+      "state": "open",
+      "createdAt": "2026-07-31T10:16:43Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "jinlee0310"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/112"
+    },
+    {
+      "number": "111",
+      "title": "MotionThief",
+      "body": "여러 사물에서 Lottie 애니메이션의 움직임을 가져와 다른 사물에 적용하고, 망가진 장면을 정상적으로 복구하는 Lottie를 이용한 모션 조립 퍼즐 게임입니다.\n\n핵심 루프는 다음과 같습니다.\n```\n1. 모션이 어색한 사물 찾기\n2. 자연스럽게 움직이는 다른 사물의 Lottie 애니메이션 확인\n3. 필요한 애니메이션 구간 추출\n4. 모션의 속성 변경\n5. 수정한 모션을 어색한 모션을 가진 사물에 적용\n6. 장면을 재생해 올바른 모션인지 확인\n```\n\n<br/>\n<br/>\n\n플레이어가 수정 가능한 조건은 모션 종류, 재생 방향, 재생 속도, 반복 방식 정도로 생각했습니다.\n모션은 패턴 4개(`Rotation`, `Pulse`, `Oscillation`, `Open`), 적용 속성 4개(`Rotation`, `Scale`, `Opacity`, `Position`), 허용된 Remap은 2개 정도로 생각하고 있습니다. (종류 수정은 가능, 개수 수정은 미정)\n\n스테이지는 최종 4단계 까지를 목표로 하고 있으며, 최소 구현 단계는 2단계입니다.",
+      "state": "open",
+      "createdAt": "2026-07-31T09:39:17Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "juyonLee00"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/111"
+    },
+    {
+      "number": "110",
+      "title": "BeatVG - 음악에 반응하는 Lottie 비주얼라이저",
+      "body": "음악 파일을 올리면 소리에 반응해서 Lottie 애니메이션이 동적으로 움직이는 웹을 만듭니다. 렌더링은 ThorVG WebCanvas를 사용합니다.\n\n곡의 에너지에 따라 재생 속도가 변하고, 저음 피크에서 Lottie 전체가 펄스처럼 튀고, 고음에 따라 글로우와 색조가 바뀌는 효과를 기획하고 있습니다. (변동 가능)\n\n같은 Lottie 애니메이션에서도 곡을 바꾸면 다르게 동작하도록 하는게 목표입니다.\n\n#### 목표\n- 오디오 파일 업로드 및 주파수 분석\n- 음악 에너지에 따른 Lottie 재생 속도 변화\n- 저음 피크 감지 후 전체 펄스\n- 고음·에너지 기반 글로우·색조 반응 (opt)\n- 파라미터 조절 슬라이더\n- (도전... 검토 필요) Lottie 레이어별로 다른 주파수 대역에 반응\n- ~(도전) 리듬게임?~\n\n#### 기술 스택\n@thorvg/webcanvas · TypeScript · Web Audio API · Next.js\n을 생각중입니다.\n\n엔진 보다는 웹 작업(애니메이션 조절)이 많을 것으로 예상됩니다.\n\n웹개발자 분들의 많은 관심 부탁드립니다ㅎㅎ (어느 분야든 환영입니다!!!)\n\n\n사용해보고싶으셨던 thorvg, lottie 의 다양한 효과/기능 등등 여러방향으로 충분히 논의 가능하니 편하게 연락주세요 👍",
+      "state": "open",
+      "createdAt": "2026-07-31T08:49:40Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "chae-dahee"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/110"
+    },
+    {
+      "number": "109",
+      "title": "Rubik's Cube",
+      "body": "<img width=\"250\" height=\"250\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/de187e92-c3f4-40f7-b407-8caff680f30a\" />\n\n루빅스 큐브 게임을 구현해볼 계획입니다.\n\n예상되는 결과물은 https://onlinecube.com/ 와 같을 것 같습니다.\n\n\n3차원인 만큼 기초적인 랜더링 파이프라인을 직접 만드는 부분에서 고생할 것 같네요",
+      "state": "open",
+      "createdAt": "2026-07-31T07:55:10Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "hd1534"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/109"
+    },
+    {
+      "number": "107",
+      "title": "SpellDrawFight 그려서 싸우는 턴제 게임",
+      "body": "### Description\n\n마우스로 스펠 모양을 그리면, Thorvg 캔버스에 획이 실시간 렌더링\n$1 Unistroke 알고리즘으로 모양을 인식해 스펠을 발동\n공격 타입 vs 상대의 현재 타입으로 데미지 계산하는 1:1 턴제 게임\n\n```\n내 턴 진입\n   ↓\n캔버스에 스펠 모양 드로잉 (실시간 렌더)\n   ↓\n$1 인식기로 모양 판정 → 스펠 확정\n   ↓\n상성 계산(내 스펠 vs 상대 현재 타입) → 데미지 적용\n   ↓\n캐릭터 색 전환 + Lottie 이펙트 재생\n   ↓\nCPU 턴 (같은 로직 반전) → 반복\n   ↓\nHP 0 → 승패 결정\n```\n\n실시간 드로잉 캡처, Lottie 애니메이션 재생, SceneEffect 타격 연출 등을 구현할 예정이고, 여유가 된다면 firebase로 온라인 1:1 모드도 만들어볼 생각입니다.",
+      "state": "open",
+      "createdAt": "2026-07-31T05:28:55Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "mnchnk"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/107"
+    },
+    {
+      "number": "105",
+      "title": "Terminal Vector Graphics",
+      "body": "최근 터미널 중심의 워크플로우를 선호하는 개발자들이 증가 / 개발자라면 터미널의 낭만으로 작업하는게 있다고 생각되서\n'브라우저를 켜지 않고 터미널에서 끝내는 Lottie 렌더링' 를 만들어보려합니다.\n\n목표는 'termvg play thorvg_lottie.json' 와 같이 입력하면 lottie 애니메이션이 실행되는게 목표입니다.\n\n그리고 WASM 를 제공해주기때문에, 네이티브환경 + 웹 환경에서\n터미널을 만들어서 보여주는것도 기술적으로 가능하다고 판단되어 주제에 벗어나지 않는다고 생각됩니다.\n\n기술스택\nGo, C++, TS, Next.js  등이 예상됩니다.\n\n",
+      "state": "open",
+      "createdAt": "2026-07-31T02:17:26Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "J-unStiN"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/105"
+    },
+    {
+      "number": "104",
+      "title": "Shape-Matching-Game",
+      "body": "카메라 기반 벡터 포즈 매칭 웹 게임\n\n사용자의 자세를 카메라로 인식하고 얻어낸 데이터를 이용한 ThorVG WebCanvas 기반 게임 제작.\n사용자 데이터를 벡터 캐릭터 (Path) 로 변환, 포즈나 벡터 편집 아이템을 이용하여 목표 shape를 완성하는 게임\n\n \n예상 구현\n- FrontEnd (-)\n- 카메라 입력 및 자세 인식 ([MediaPipe](https://developers.google.com/edge/mediapipe/solutions/guide))\n- 벡터그래픽 및 게임 로직 구현 ([thorvg.web](https://github.com/thorvg/thorvg.web))\n  - 문제(match target vector) 생성\n  - Thor VG 벡터 아바타 생성\n  - Shape matching \n  - Vector 편집 아이템 제작\n\n\n✅️ 팀플도 환영입니다. 같이하시고 싶으신 분들 계시다면 디스코드 메세지나 코멘트 해주세요!\n\n> for information으로 최근 매일 늦퇴중이라 평일 시간 운영이 자유롭지가 않습니다. . 혹시 팀플하며 불편하실 수 있어 미리 고지드립니다",
+      "state": "open",
+      "createdAt": "2026-07-30T22:34:12Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "jeongsunyong"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/104"
+    },
+    {
+      "number": "102",
+      "title": "ThorBridge 코드로 다리를 놓는 횡스크롤 게임",
+      "body": "<img width=\"1601\" height=\"719\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/d8005d3d-cbf2-43c4-9d62-f764a80077f5\" />\n\nPolybridge식 물리 퍼즐 + ThorVG API 튜토리얼을 합친 웹 게임.\n\n플레이어가 ThorVG api로 직접 그린 도형이 그대로 물리 오브젝트가 되어 캐릭터가 그 위를 건너는 컨셉입니다.\n\nvimtutor 나 learngitbranching.js.org/ 같은 유익함에 폴리브릿지식 재미를 담는게 목표입니다.\n\n\n# 핵심 게임 루프\n\n```\n스테이지 진입 (무언가 결핍된 화면)\n   ↓\n좌측 코드 에디터에 ThorVG API 작성  ←──┐\n   ↓                                  │\n[적용] → 캔버스에 즉시 렌더 (미리보기)   │ 실패 시 반복\n   ↓                                  │\n[재생] → 도형이 물리 바디로 변환        │\n   ↓                                  │\n삼각형 캐릭터가 굴러가며 통과 시도 ────┘\n   ↓\n골인 → 클리어 + 이번에 배운 API 요약\n```\n\n# 화면 구성\n\n```\n┌───────────────────────────┬──────────────────┐\n│                           │  📘 미션         │\n│    ThorVG Canvas          │  \"배경을 흰색으로\"│\n│    (게임 뷰 / 횡스크롤)     │                  │\n│                           ├──────────────────┤\n│         △ → → →  🚩       │  💻 코드 에디터   │\n│    ▬▬▬▬▬      ▬▬▬▬▬       │  canvas.bg(...)  │\n│                           │                  │\n│                           │  [적용] [▶ 재생]  │\n└───────────────────────────┴──────────────────┘\n```\n\n### 스테이지 대략 기획\n\n1. 화면이 검다! -> fill rect로 전체좌표 하얗게 해주니까 땅이랑 다리 나옴 -> clear~~~!\n2. 다리가 없다! -> 스트로크나 rect를 올바른 좌표에 위치하게 해서 건너게 함 -> clear~~~!\n3. .... \n4. ....\n5. 다리가 깜빡인다! -> 기본 제공된 로티 애니메이션을 수정해서 아무튼 건너게 함 -> clear~~~!\n\n\n# 목표\n\n1. 디자인은 포기하더라도....기능은 구현하기\n2. 스테이지 5개 만들기\n3. 완성도 높혀서 ThorVG 소개란에 이름 올리기\n\n1 -> 2 -> 3 순서대로 목표합니다.\n\n\n\n당장 생각나는대로 마구 적은거라 기획이 몹시 미흡합니다.\n\n기능이 많아서 외면받는게 두렵습니다. 함께 하실분있나요.",
+      "state": "open",
+      "createdAt": "2026-07-30T12:59:48Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "DaengDo"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/102"
+    },
+    {
+      "number": "100",
+      "title": "ThorVG Lottie Color Swapper",
+      "body": "\n설치나 복잡한 환경 설정 없이 단일 HTML 파일만으로 Lottie 애니메이션의 주요 색상을 추출하고, ThorVG WebCanvas로 실시간 미리보기 및 수정본을 추출하는 단일 파일 웹 도구를 목표로 만들려 합니다.\n\n목표 기능:\n\n브라우저에서 Lottie(JSON) 파일 드래그 앤 드롭 로딩 구현\n\nLottie 데이터 내 주요 색상(Hex) 코드 자동 추출 및 HTML Color Picker 연동\n\nThorVG WebCanvas를 활용해 색상 변경 사항을 실시간(Real-time)으로 렌더링\n\n변경된 색상이 반영된 새로운 Lottie JSON 파일 다운로드 기능 제공\n\n- 기술 스택: HTML5, TypeScript, @thorvg/webcanvas\n\n팀원 합류는 언제든 환영합니다!!",
+      "state": "open",
+      "createdAt": "2026-07-29T15:32:22Z",
+      "labels": [
+        "Hackathon"
+      ],
+      "assignees": [
+        "alpakaDurumi",
+        "Saususge"
+      ],
+      "url": "https://github.com/OSSCA-thorvg/site/issues/100"
+    },
+    {
       "number": "87",
       "title": "Lottie 이펙트 믹서: 여러 Lottie를 실시간으로 합성하는 웹 툴 (예시2)",
-      "body": "여러 개의 Lottie 애니메이션을 레이어처럼 쌓고, 블렌딩·타이밍·색상을 실시간으로\n조절해서 하나의 새로운 애니메이션으로 합성하는 웹 툴을 만듭니다. 렌더링은\nThorVG WebCanvas를 사용합니다.\n\n## 목표\n\n- [ ] Lottie 파일 2개 이상 로드하고 레이어로 겹치기\n- [ ] 레이어별 재생 속도·오프셋·투명도 조절 UI\n- [ ] 합성 결과를 실시간 미리보기\n- [ ] (도전) 합성 설정을 JSON으로 내보내기\n\n## 아키텍처\n\n```mermaid\nflowchart LR\n    A[Lottie 파일들] --> B[레이어 매니저]\n    B --> C[ThorVG WebCanvas]\n    C --> D[미리보기 캔버스]\n    B --> E[설정 JSON 내보내기]\n```\n\n## 기술 스택\n\n`@thorvg/lottie-player` · `@thorvg/webcanvas` · TypeScript · Vite\n\n> [!NOTE]\n> 팀원 합류 환영합니다! 댓글로 남겨주시면 assignee로 추가할게요.\n\n## 일정\n\n| 주차 | 할 일 |\n|---|---|\n| ~8/1 | 레이어 로딩 + 렌더링 골격 |\n| 8/2 (해커톤 당일) | 조절 UI + 합성 데모 완성 |",
+      "body": "여러 개의 Lottie 애니메이션을 레이어처럼 쌓고, 블렌딩·타이밍·색상을 실시간으로\n조절해서 하나의 새로운 애니메이션으로 합성하는 웹 툴을 만듭니다. 렌더링은\nThorVG WebCanvas를 사용합니다.\n\n## 목표\n\n- [ ] Lottie 파일 2개 이상 로드하고 레이어로 겹치기\n- [ ] 레이어별 재생 속도·오프셋·투명도 조절 UI\n- [ ] 합성 결과를 실시간 미리보기\n- [ ] (도전) 합성 설정을 JSON으로 내보내기\n\n## 기술 스택\n\n`@thorvg/lottie-player` · `@thorvg/webcanvas` · TypeScript · Vite\n\n> [!NOTE]\n> 팀원 합류 환영합니다! 댓글로 남겨주시면 assignee로 추가할게요.",
       "state": "open",
       "createdAt": "2026-07-27T08:20:14Z",
       "labels": [
         "Hackathon"
       ],
       "assignees": [
-        "Nor-s"
+        "efaa98"
       ],
       "url": "https://github.com/OSSCA-thorvg/site/issues/87"
     },

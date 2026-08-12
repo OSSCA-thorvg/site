@@ -4,7 +4,9 @@ import { readFile } from 'node:fs/promises';
 
 import {
   extractFirstImage,
+  extractShowcases,
   groupHackathons,
+  parseEndNoticeDate,
   parseNoticeDate,
   stripUnsafeMarkdown,
 } from '../src/lib/hackathon.js';
@@ -31,20 +33,34 @@ test('notice titles must end with a parenthesized date', () => {
   assert.equal(parseNoticeDate('OSSCAxThorVG Hackathon (2026-08-02) '), '2026-08-02');
   assert.equal(parseNoticeDate('OSSCAxThorVG Hackathon'), null);
   assert.equal(parseNoticeDate('(2026-08-02) OSSCAxThorVG Hackathon'), null);
+  assert.equal(parseNoticeDate('OSSCAxThorVG Hackathon(2026-08-09)(END)'), null);
+  assert.equal(parseEndNoticeDate('OSSCAxThorVG Hackathon(2026-08-09)(END)'), '2026-08-09');
+  assert.equal(parseEndNoticeDate('OSSCAxThorVG Hackathon(2026-08-09) (end) '), '2026-08-09');
 });
 
-test('the first markdown image becomes the card thumbnail', () => {
+test('showcase links are read from the closing notice Repo and Link table', () => {
+  const showcases = extractShowcases(`Repo | Link
+-- | --
+Hackathon-BeatVG | https://ossca-thorvg.github.io/Hackathon-BeatVG/
+Color Swapper | [Play](https://ossca-thorvg.github.io/ThorVG_Lottie_Color_Swapper/)
+Unsafe | javascript:alert(1)`);
+
+  assert.deepEqual(showcases, [
+    { repo: 'Hackathon-BeatVG', link: 'https://ossca-thorvg.github.io/Hackathon-BeatVG/' },
+    { repo: 'Color Swapper', link: 'https://ossca-thorvg.github.io/ThorVG_Lottie_Color_Swapper/' },
+  ]);
+});
+
+test('the first issue image becomes the project card thumbnail', () => {
   assert.equal(
-    extractFirstImage('인트로\n\n![썸네일](https://example.com/a.png "제목")\n![b](https://example.com/b.png)'),
+    extractFirstImage('인트로\n\n![썸네일](https://example.com/a.png "제목")'),
     'https://example.com/a.png'
   );
-  assert.equal(extractFirstImage('이미지 없음'), null);
-  assert.equal(extractFirstImage('![x](javascript:alert(1))'), null);
-  // GitHub README 관용구인 HTML <img>도 썸네일로 잡는다.
   assert.equal(
-    extractFirstImage('<p align="center">\n<img width="800" alt="Logo" src="https://example.com/logo.png" />\n</p>'),
+    extractFirstImage('<img width="800" src="https://example.com/logo.png" />'),
     'https://example.com/logo.png'
   );
+  assert.equal(extractFirstImage('![x](javascript:alert(1))'), null);
 });
 
 test('raw HTML is stripped except whitelisted <img> tags', () => {
@@ -86,6 +102,24 @@ test('projects attach to the latest notice created before them', () => {
   assert.deepEqual(events[0].projects.map((project) => project.number), ['4']);
 });
 
+test('an END notice closes the matching latest hackathon and supplies its showcases', () => {
+  const events = groupHackathons([
+    issue({ number: '10', title: 'OSSCAxThorVG Hackathon(2026-08-02)', labels: ['Hackathon', 'Notice'], createdAt: '2026-07-27T00:00:00Z' }),
+    issue({
+      number: '11',
+      title: 'OSSCAxThorVG Hackathon(2026-08-09)(END)',
+      labels: ['Notice', 'Hackathon'],
+      createdAt: '2026-08-09T00:00:00Z',
+      body: 'Repo | Link\n-- | --\nBeatVG | https://example.com/beatvg/',
+    }),
+  ]);
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].closingNotice.number, '11');
+  assert.equal(events[0].endDate, '2026-08-09');
+  assert.deepEqual(events[0].showcases, [{ repo: 'BeatVG', link: 'https://example.com/beatvg/' }]);
+});
+
 test('notice-labeled issues without a valid date are excluded entirely', () => {
   const events = groupHackathons([
     issue({ number: '10', title: 'Hackathon(2026-08-02)', labels: ['Hackathon', 'Notice'], createdAt: '2026-07-01T00:00:00Z' }),
@@ -113,31 +147,47 @@ test('hackathon page renders synced notices or the Korean empty state', async ()
   if (events.length === 0) {
     assert.ok(html.includes('아직 공지된 해커톤이 없습니다.'));
   } else {
-    assert.ok(html.includes('aria-label="해커톤 회차"'));
+    assert.ok(html.includes('aria-label="해커톤과 출품작"'));
     assert.ok(html.includes('id="hackathon-notice-title"'));
-    // 참여하기 버튼은 Hackathon 라벨이 미리 채워진 이슈 생성 화면을 새 창으로 연다.
-    assert.match(
-      html,
-      /<a\b(?=[^>]*\bclass="btn btn--primary")(?=[^>]*\bhref="https:\/\/github\.com\/[^"]+\/issues\/new\?labels=Hackathon")(?=[^>]*\btarget="_blank")(?=[^>]*\brel="noopener noreferrer")[^>]*>참여하기<\/a>/
-    );
+    assert.ok(html.includes('id="hackathon-projects-title"'));
+    assert.ok(html.includes('>Home</span>'));
+    for (const project of events[0].projects) {
+      assert.ok(html.includes(`hackathon/project/${project.number}`));
+    }
+    if (events[0].closingNotice) {
+      assert.doesNotMatch(html, />참여하기<\/a>/);
+      for (const showcase of events[0].showcases) {
+        assert.ok(html.includes(`data-showcase-url="${showcase.link}"`));
+      }
+    } else {
+      // 진행 중일 때만 Hackathon 라벨이 미리 채워진 참여 버튼을 표시한다.
+      assert.match(
+        html,
+        /<a\b(?=[^>]*\bclass="btn btn--primary")(?=[^>]*\bhref="https:\/\/github\.com\/[^"]+\/issues\/new\?labels=Hackathon")(?=[^>]*\btarget="_blank")(?=[^>]*\brel="noopener noreferrer")[^>]*>참여하기<\/a>/
+      );
+    }
   }
 });
 
-test('hackathon board keeps the card and thumbnail contracts without a popup', async () => {
+test('hackathon board uses a collapsible playground tree and one sandboxed showcase iframe', async () => {
   const [board, css] = await Promise.all([
     readSource('src/components/HackathonBoard.astro'),
     readSource('src/styles/global.css'),
   ]);
 
-  // 카드는 팝업이 아니라 블로그처럼 내부 상세 페이지로 이동한다.
+  assert.match(board, /<details class="hackathon-tree__event"/);
+  assert.match(board, /<p class="hackathon-studio__label">Hackathon<\/p>/);
+  assert.match(board, /<span>Home<\/span>/);
+  assert.match(board, /class="hackathon-tree__item hackathon-showcase-trigger"/);
+  assert.match(board, /id="hackathon-showcase-frame"/);
   assert.match(board, /href=\{base \+ 'hackathon\/project\/' \+ project\.number\}/);
-  assert.doesNotMatch(board, /<dialog\b|showModal|data-hackathon-trigger/);
-  // 이슈 본문은 raw HTML을 제거한 뒤 렌더링한다.
-  assert.match(board, /stripUnsafeMarkdown/);
-  // 이미지 없는 카드는 렌더링된 본문을 썸네일로 쓰되 선택·클릭이 불가능해야 한다.
   assert.match(board, /hackathon-card__preview/);
+  assert.match(board, /sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups"/);
+  assert.match(board, /referrerpolicy="no-referrer"/);
+  assert.match(board, /stripUnsafeMarkdown/);
+  assert.match(css, /\.hackathon-studio \{[^}]*grid-template-columns: 300px minmax\(0, 1fr\);/);
+  assert.match(css, /\.hackathon-showcase__frame \{[^}]*height: calc\(100vh - 136px\);/);
   assert.match(css, /\.hackathon-card__preview \{[^}]*pointer-events: none;[^}]*user-select: none;/);
-  // 노션형 비율: 미디어 7, 본문 3 (이미지 높이는 유지하고 본문만 축소).
   assert.match(css, /\.hackathon-card__media \{[^}]*flex: 7 1 0;/);
   assert.match(css, /\.hackathon-card__body \{[^}]*flex: 3 1 0;/);
 });

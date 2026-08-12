@@ -508,26 +508,53 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .pg-error { margin-top: var(--space-sm); color: var(--status-closed); font-size: 13px; white-space: pre-wrap; }
 
 /* ---- Hackathon ---------------------------------------------------------- */
-.hackathon-subnav { display: flex; gap: var(--space-xs); margin-bottom: var(--space-xl); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--hairline); overflow-x: auto; }
-.hackathon-subnav a { flex: none; padding: 6px 14px; border: 1px solid var(--hairline); border-radius: var(--radius-full); color: var(--ink-muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
-.hackathon-subnav a:hover { border-color: var(--hairline-strong); color: var(--ink); }
-.hackathon-subnav a[aria-current="page"] { border-color: var(--primary); background: var(--primary-subtle); color: var(--primary); }
-.hackathon-notice { max-width: 760px; }
+.hackathon-studio { width: 100%; min-width: 0; min-height: calc(100vh - 60px); display: grid; grid-template-columns: 300px minmax(0, 1fr); background: var(--canvas); }
+.hackathon-studio__sidebar { position: sticky; top: 60px; width: 300px; height: calc(100vh - 60px); align-self: start; overflow-y: auto; border-right: 1px solid var(--hairline); background: var(--surface-1); }
+.hackathon-studio__sidebar-head { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--hairline); }
+.hackathon-studio__label { color: var(--ink); font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.hackathon-studio__count { color: var(--ink-subtle); font-family: var(--font-mono); font-size: 11px; }
+.hackathon-tree { padding-block: var(--space-xs); }
+.hackathon-tree__event { border-bottom: 1px solid var(--hairline); }
+.hackathon-tree__event:last-child { border-bottom: 0; }
+.hackathon-tree__event > summary { min-height: 58px; display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: var(--space-xs); padding: 10px var(--space-md); color: var(--ink); cursor: pointer; list-style: none; }
+.hackathon-tree__event > summary::-webkit-details-marker { display: none; }
+.hackathon-tree__event > summary::before { content: "›"; color: var(--ink-subtle); font-size: 18px; line-height: 1; transform: rotate(0); transition: transform var(--dur-micro) var(--ease-out); }
+.hackathon-tree__event[open] > summary::before { transform: rotate(90deg); }
+.hackathon-tree__event > summary:hover { background: var(--surface-2); }
+.hackathon-tree__event-copy { min-width: 0; display: grid; gap: 2px; }
+.hackathon-tree__event-title { overflow-wrap: anywhere; font-size: 13px; font-weight: 600; line-height: 1.35; }
+.hackathon-tree__event-copy time { color: var(--ink-subtle); font-family: var(--font-mono); font-size: 10px; }
+.hackathon-tree__status { padding: 2px 6px; border: 1px solid currentColor; border-radius: var(--radius-pill); color: var(--status-open); font-size: 10px; font-weight: 600; white-space: nowrap; }
+.hackathon-tree__status.is-ended { color: var(--status-draft); }
+.hackathon-tree__items { padding: 0 var(--space-xs) var(--space-sm) 28px; }
+.hackathon-tree__item { width: 100%; min-height: 38px; display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: var(--space-xs); padding: 7px 10px; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--ink-muted); font-size: 12px; line-height: 1.35; text-align: left; overflow-wrap: anywhere; }
+.hackathon-tree__item:hover { background: var(--surface-2); color: var(--ink); }
+.hackathon-tree__item.is-selected { border-color: var(--hairline); background: var(--canvas); color: var(--primary); font-weight: 600; }
+.hackathon-tree__home-mark { color: currentColor; font-family: var(--font-mono); font-size: 16px; text-align: center; }
+.hackathon-tree__project-mark { width: 7px; height: 7px; margin-left: 5px; border: 1px solid var(--ink-subtle); background: var(--canvas); transform: rotate(45deg); }
+.hackathon-tree__item.is-selected .hackathon-tree__project-mark { border-color: var(--primary); background: var(--primary); }
+.hackathon-tree__empty { padding: 8px 10px 4px 28px; color: var(--ink-faint); font-size: 11px; }
+.hackathon-studio__workspace { min-width: 0; background: var(--canvas); }
+.hackathon-studio__empty { padding: var(--space-xl); }
+.hackathon-home { padding: var(--space-xxl) clamp(var(--space-lg), 5vw, 72px) 72px; }
+.hackathon-home[hidden], .hackathon-showcase[hidden] { display: none; }
+.hackathon-notice { max-width: 760px; margin-inline: auto; }
+.hackathon-notice__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+.hackathon-ended { margin-bottom: var(--space-sm); color: var(--status-draft); font-size: 12px; font-weight: 600; }
 .hackathon-notice .prose { margin-top: var(--space-lg); }
-.hackathon-source { display: inline-block; margin-top: var(--space-md); color: var(--primary); font-size: 13px; font-weight: 600; }
+.hackathon-notice__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-md); margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--hairline); }
+.hackathon-source { display: inline-block; color: var(--primary); font-size: 13px; font-weight: 600; }
 .hackathon-source:hover { color: var(--primary-hover); text-decoration: underline; text-underline-offset: 3px; }
-.hackathon-projects { margin-top: var(--space-xxl); padding-top: var(--space-xl); border-top: 1px solid var(--hairline); }
+.hackathon-projects { width: 100%; max-width: 1120px; margin: var(--space-xxl) auto 0; padding-top: var(--space-xl); border-top: 1px solid var(--hairline); }
 .hackathon-projects__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-lg); }
 .hackathon-projects__head .section-title { margin-bottom: 0; }
-
-/* 노션형 카드: 세로 7/10 미디어 + 3/10 본문 */
+.hackathon-projects__head p { color: var(--ink-subtle); font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
 .hackathon-card { position: relative; min-width: 0; display: flex; flex-direction: column; aspect-ratio: 7 / 8; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-lg); background: var(--surface-1); transition: transform 280ms var(--ease-out), border-color var(--dur-micro) var(--ease-out); }
 .hackathon-card:hover, .hackathon-card:focus-within { transform: translateY(-6px); border-color: var(--hairline-strong); }
 .hackathon-card:hover .hackathon-card__title, .hackathon-card:focus-within .hackathon-card__title { color: var(--primary); }
 .hackathon-card__link { position: absolute; z-index: 1; inset: 0; border-radius: var(--radius-lg); }
 .hackathon-card__media { position: relative; flex: 7 1 0; min-height: 0; overflow: hidden; background: var(--surface-3); border-bottom: 1px solid var(--hairline); }
 .hackathon-card__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* 이미지가 없으면 렌더링된 본문을 캡처 썸네일처럼 보여 준다. */
 .hackathon-card__preview { height: 100%; padding: var(--space-md); overflow: hidden; background: var(--surface-1); color: var(--ink-muted); font-size: 11px; line-height: 1.5; pointer-events: none; user-select: none; }
 .hackathon-card__preview :is(h1, h2, h3, h4) { margin: 0 0 4px; color: var(--ink); font-size: 12px; }
 .hackathon-card__preview :is(p, ul, ol, pre) { margin: 0 0 6px; }
@@ -540,6 +567,11 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .hackathon-card__assignees { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-sm); margin: 0; padding: 0; list-style: none; }
 .hackathon-card__assignees li { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 12px; font-weight: 600; }
 .hackathon-card__assignees .author-avatar { width: 22px; height: 22px; flex-basis: 22px; }
+.hackathon-showcase { min-width: 0; }
+.hackathon-showcase__toolbar { min-height: 76px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-sm) var(--space-lg); border-bottom: 1px solid var(--hairline); background: var(--surface-1); }
+.hackathon-showcase__toolbar h1 { margin-top: 2px; font-size: 18px; overflow-wrap: anywhere; }
+.hackathon-showcase__eyebrow { color: var(--primary); font-family: var(--font-mono); font-size: 10px; font-weight: 600; text-transform: uppercase; }
+.hackathon-showcase__frame { width: 100%; max-width: none; height: calc(100vh - 136px); min-height: 560px; border: 0; background: #FFFFFF; }
 
 /* ---- Resource links (ThorVG page) -------------------------------------- */
 .resource-container { max-width: 980px; }
@@ -613,6 +645,14 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
   .playground-tabs { display: flex; width: max-content; min-width: 100%; }
   .playground-tabs .tab { width: auto; flex: 0 0 auto; padding-inline: 12px; font-size: 13px; }
   .pg-frame { height: calc(100vh - 160px); }
+  .hackathon-studio { display: block; min-height: 0; }
+  .hackathon-studio__sidebar { position: static; width: 100%; height: auto; max-height: min(52vh, 420px); border-right: 0; border-bottom: 1px solid var(--hairline); }
+  .hackathon-studio__sidebar-head { min-height: 52px; padding: var(--space-sm) var(--space-md); }
+  .hackathon-tree__event > summary { padding-inline: var(--space-md); }
+  .hackathon-home { padding: var(--space-xl) var(--space-md) var(--space-xxl); }
+  .hackathon-showcase__toolbar { min-height: 68px; align-items: flex-start; padding-inline: var(--space-md); }
+  .hackathon-showcase__toolbar .btn { flex: none; }
+  .hackathon-showcase__frame { height: 70vh; min-height: 480px; }
   .resource-heading { align-items: flex-start; }
   .diff-grid { grid-template-columns: 1fr; }
   #panel-webcanvas .pg-embed { height: calc(100vh - 160px + 300px); }

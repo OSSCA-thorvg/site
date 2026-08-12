@@ -1,10 +1,15 @@
 // 해커톤 데이터 규칙.
-// 공지: `Hackathon` + `Notice` 라벨이 함께 있고 제목이 `(YYYY-MM-DD)`로 끝나는 이슈.
+// 시작 공지: `Hackathon` + `Notice` 라벨이 함께 있고 제목이 `(YYYY-MM-DD)`로 끝나는 이슈.
+// 종료 공지: 같은 라벨을 가지며 제목이 `(YYYY-MM-DD)(END)`로 끝나는 이슈.
 // 프로젝트: `Notice` 없이 `Hackathon` 라벨만 붙은 이슈이며,
 // 자기 생성일 이전에 만들어진 공지 중 가장 최근 것에 귀속된다.
 const NOTICE_DATE = /\((\d{4}-\d{2}-\d{2})\)\s*$/;
+const END_NOTICE_DATE = /\((\d{4}-\d{2}-\d{2})\)\s*\(END\)\s*$/i;
 
 export const parseNoticeDate = (title = '') => title.match(NOTICE_DATE)?.[1] ?? null;
+export const parseEndNoticeDate = (title = '') => title.match(END_NOTICE_DATE)?.[1] ?? null;
+
+const noticeName = (title, pattern) => title.replace(pattern, '').trim().toLowerCase();
 
 const hasLabel = (issue, label) =>
   (issue.labels ?? []).some((name) => name.toLowerCase() === label);
@@ -13,6 +18,29 @@ export const extractFirstImage = (body = '') =>
   body.match(/!\[[^\]]*\]\(\s*(https?:\/\/[^\s)]+)\s*(?:"[^"]*")?\)/)?.[1]
     ?? body.match(/<img\b[^>]*\bsrc\s*=\s*["'](https?:\/\/[^"']+)["']/i)?.[1]
     ?? null;
+
+export function extractShowcases(body = '') {
+  return body.split(/\r?\n/).flatMap((line) => {
+    const cells = line.split('|').map((cell) => cell.trim());
+    if (cells[0] === '') cells.shift();
+    if (cells.at(-1) === '') cells.pop();
+    if (cells.length < 2) return [];
+
+    const [repo, rawLink] = cells;
+    if (repo.toLowerCase() === 'repo' || /^:?-{2,}:?$/.test(repo)) return [];
+
+    const markdownLink = rawLink.match(/^\[[^\]]*\]\((https?:\/\/[^\s)]+)\)$/i);
+    const link = (markdownLink?.[1] ?? rawLink).replace(/^<|>$/g, '');
+
+    try {
+      const url = new URL(link);
+      if (!['http:', 'https:'].includes(url.protocol)) return [];
+      return [{ repo, link: url.href }];
+    } catch {
+      return [];
+    }
+  });
+}
 
 export function groupHackathons(issues = []) {
   const hackathonIssues = issues.filter((issue) => hasLabel(issue, 'hackathon'));
@@ -24,7 +52,29 @@ export function groupHackathons(issues = []) {
       date: parseNoticeDate(notice.title),
       title: notice.title.replace(NOTICE_DATE, '').trim(),
       projects: [],
+      closingNotice: null,
+      endDate: null,
+      showcases: [],
     }));
+
+  const closingNotices = hackathonIssues
+    .filter((issue) => hasLabel(issue, 'notice') && parseEndNoticeDate(issue.title))
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  for (const closingNotice of closingNotices) {
+    const created = new Date(closingNotice.createdAt).getTime();
+    const name = noticeName(closingNotice.title, END_NOTICE_DATE);
+    const event = events.findLast((candidate) =>
+      !candidate.closingNotice
+      && noticeName(candidate.notice.title, NOTICE_DATE) === name
+      && new Date(candidate.notice.createdAt).getTime() <= created
+    );
+    if (!event) continue;
+
+    event.closingNotice = closingNotice;
+    event.endDate = parseEndNoticeDate(closingNotice.title);
+    event.showcases = extractShowcases(closingNotice.body);
+  }
 
   for (const issue of hackathonIssues) {
     // Notice 라벨이 있으면(날짜가 깨진 공지 포함) 프로젝트 카드로 취급하지 않는다.

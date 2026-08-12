@@ -19,11 +19,19 @@ interface HackathonIssue {
   url: string;
 }
 
+interface HackathonShowcase {
+  repo: string;
+  link: string;
+}
+
 interface HackathonEvent {
   notice: HackathonIssue;
   date: string;
   title: string;
   projects: HackathonIssue[];
+  closingNotice: HackathonIssue | null;
+  endDate: string | null;
+  showcases: HackathonShowcase[];
 }
 
 const base = import.meta.env.BASE_URL;
@@ -32,12 +40,10 @@ const { events, current } = Astro.props as {
   current: HackathonEvent | null;
 };
 
-// stripUnsafeMarkdown이 URL을 정리한 뒤에 lottie/video 변환을 태운다 (블로그와 동일 파이프라인).
 const processor = await createMarkdownProcessor({
   remarkPlugins: [remarkAlert, stripUnsafeMarkdown, [remarkLottieImages, { base }], remarkGithubVideos],
 });
 const renderMarkdown = async (body: string) => (await processor.render(body ?? '')).code;
-
 const noticeHtml = current ? await renderMarkdown(current.notice.body) : '';
 const projects = current
   ? await Promise.all(current.projects.map(async (project) => ({
@@ -47,7 +53,6 @@ const projects = current
       detailHtml: await renderMarkdown(project.body),
     })))
   : [];
-
 const eventHref = (event: HackathonEvent) =>
   event === events[0] ? base + 'hackathon' : base + 'hackathon/' + event.date;
 const formatDate = (date: string) =>
@@ -58,45 +63,99 @@ const formatDate = (date: string) =>
     timeZone: 'UTC',
   });
 ---
-<section class="section hackathon">
-  <div class="container">
+<section class="hackathon-studio">
+  <aside class="hackathon-studio__sidebar" aria-label="해커톤 플레이그라운드">
+    <header class="hackathon-studio__sidebar-head">
+      <p class="hackathon-studio__label">Hackathon</p>
+      <p class="hackathon-studio__count">{events.length}회</p>
+    </header>
+
     {events.length > 0 && (
-      <nav class="hackathon-subnav" aria-label="해커톤 회차">
+      <nav class="hackathon-tree" aria-label="해커톤과 출품작">
         {events.map((event) => (
-          <a
-            href={eventHref(event)}
-            aria-current={event === current ? 'page' : undefined}
-          >{event.notice.title}</a>
+          <details class="hackathon-tree__event" open={event === current}>
+            <summary>
+              <span class="hackathon-tree__event-copy">
+                <span class="hackathon-tree__event-title">{event.title}</span>
+                <time datetime={event.date}>{event.date}</time>
+              </span>
+              <span class:list={['hackathon-tree__status', { 'is-ended': event.closingNotice }] }>
+                {event.closingNotice ? '종료' : '진행 중'}
+              </span>
+            </summary>
+            <ul class="hackathon-tree__items">
+              <li>
+                <a
+                  class:list={['hackathon-tree__item', 'hackathon-home-link', { 'is-selected': event === current }]}
+                  href={eventHref(event)}
+                  aria-current={event === current ? 'page' : undefined}
+                  data-current-home={event === current ? 'true' : undefined}
+                >
+                  <span class="hackathon-tree__home-mark" aria-hidden="true">⌂</span>
+                  <span>Home</span>
+                </a>
+              </li>
+              {event.showcases.map((showcase) => (
+                <li>
+                  <button
+                    class="hackathon-tree__item hackathon-showcase-trigger"
+                    type="button"
+                    data-showcase-url={showcase.link}
+                    data-showcase-title={showcase.repo}
+                    aria-pressed="false"
+                  >
+                    <span class="hackathon-tree__project-mark" aria-hidden="true"></span>
+                    <span>{showcase.repo}</span>
+                  </button>
+                </li>
+              ))}
+              {event.showcases.length === 0 && (
+                <li class="hackathon-tree__empty">작품 공개 전입니다.</li>
+              )}
+            </ul>
+          </details>
         ))}
       </nav>
     )}
+  </aside>
 
-    {!current && <p class="empty-state">아직 공지된 해커톤이 없습니다.</p>}
+  <div class="hackathon-studio__workspace">
+    {!current && <p class="empty-state hackathon-studio__empty">아직 공지된 해커톤이 없습니다.</p>}
 
     {current && (
-      <>
-        <article class="hackathon-notice" aria-labelledby="hackathon-notice-title">
-          <p class="eyebrow">{formatDate(current.date)}</p>
+      <section class="hackathon-home" id="hackathon-home" aria-labelledby="hackathon-notice-title">
+        <article class="hackathon-notice">
+          <div class="hackathon-notice__meta">
+            <p class="eyebrow">{formatDate(current.date)}</p>
+            {current.endDate && (
+              <p class="hackathon-ended">{formatDate(current.endDate)} 종료</p>
+            )}
+          </div>
           <h1 class="page-title" id="hackathon-notice-title">{current.title}</h1>
           <div class="prose" set:html={noticeHtml} />
-          <a
-            class="hackathon-source"
-            href={current.notice.url}
-            target="_blank"
-            rel="noopener noreferrer"
-          >공지 원문 보기 <span class="sr-only">(새 창)</span></a>
+          <footer class="hackathon-notice__actions">
+            <a
+              class="hackathon-source"
+              href={current.notice.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >공지 원문 보기 <span class="sr-only">(새 창)</span></a>
+            {!current.closingNotice && (
+              <a
+                class="btn btn--primary"
+                href={`https://github.com/${live.repository}/issues/new?labels=Hackathon`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub에서 Hackathon 이슈 만들어 참여하기 (새 창)"
+              >참여하기</a>
+            )}
+          </footer>
         </article>
 
         <section class="hackathon-projects" aria-labelledby="hackathon-projects-title">
           <div class="hackathon-projects__head">
             <h2 class="section-title" id="hackathon-projects-title">참여 프로젝트</h2>
-            <a
-              class="btn btn--primary"
-              href={`https://github.com/${live.repository}/issues/new?labels=Hackathon`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub에서 Hackathon 이슈 만들어 참여하기 (새 창)"
-            >참여하기</a>
+            <p>{projects.length}개 프로젝트</p>
           </div>
           {projects.length === 0 && (
             <p class="empty-state">아직 등록된 프로젝트가 없습니다.</p>
@@ -144,9 +203,85 @@ const formatDate = (date: string) =>
             ))}
           </div>
         </section>
-      </>
+      </section>
     )}
+
+    <section class="hackathon-showcase" id="hackathon-showcase" aria-labelledby="hackathon-showcase-title" hidden>
+      <header class="hackathon-showcase__toolbar">
+        <div>
+          <p class="hackathon-showcase__eyebrow">Live project</p>
+          <h1 id="hackathon-showcase-title">출품작</h1>
+        </div>
+        <a
+          class="btn btn--secondary"
+          id="hackathon-showcase-source"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+        >새 창에서 열기 <span class="sr-only">(새 창)</span></a>
+      </header>
+      <iframe
+        class="hackathon-showcase__frame"
+        id="hackathon-showcase-frame"
+        src="about:blank"
+        title="선택한 해커톤 출품작"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-modals allow-popups"
+        allow="autoplay; camera; clipboard-write; fullscreen; microphone"
+        allowfullscreen
+      ></iframe>
+    </section>
+    <p class="sr-only" id="hackathon-selection-status" role="status" aria-live="polite"></p>
   </div>
 </section>
+
+<script>
+  const home = document.getElementById('hackathon-home');
+  const showcase = document.getElementById('hackathon-showcase');
+  const frame = document.getElementById('hackathon-showcase-frame');
+  const title = document.getElementById('hackathon-showcase-title');
+  const source = document.getElementById('hackathon-showcase-source');
+  const status = document.getElementById('hackathon-selection-status');
+  const triggers = Array.from(document.querySelectorAll<HTMLButtonElement>('.hackathon-showcase-trigger'));
+  const currentHome = document.querySelector('[data-current-home="true"]');
+
+  const clearSelection = () => {
+    document.querySelectorAll('.hackathon-tree__item').forEach((item) => {
+      item.classList.remove('is-selected');
+    });
+    triggers.forEach((trigger) => trigger.setAttribute('aria-pressed', 'false'));
+  };
+
+  triggers.forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      const url = trigger.dataset.showcaseUrl;
+      const projectTitle = trigger.dataset.showcaseTitle;
+      if (!url || !projectTitle || !showcase || !frame || !title || !source) return;
+
+      clearSelection();
+      trigger.classList.add('is-selected');
+      trigger.setAttribute('aria-pressed', 'true');
+      if (home) home.hidden = true;
+      showcase.hidden = false;
+      title.textContent = projectTitle;
+      frame.title = `${projectTitle} 해커톤 출품작`;
+      if (frame.getAttribute('src') !== url) frame.setAttribute('src', url);
+      source.setAttribute('href', url);
+      source.setAttribute('aria-label', `${projectTitle} 새 창에서 열기`);
+      if (status) status.textContent = `${projectTitle} 출품작을 열었습니다.`;
+    });
+  });
+
+  currentHome?.addEventListener('click', (event) => {
+    if (!showcase || showcase.hidden) return;
+    event.preventDefault();
+    clearSelection();
+    currentHome.classList.add('is-selected');
+    showcase.hidden = true;
+    if (home) home.hidden = false;
+    if (status) status.textContent = '해커톤 공지를 열었습니다.';
+  });
+</script>
 
 <MermaidDiagrams />
