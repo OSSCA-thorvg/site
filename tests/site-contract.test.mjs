@@ -450,15 +450,23 @@ test('blog detail template localizes navigation, date, and GitHub author metadat
 });
 
 test('body H1 counters render a frontmatter-titled series above the table of contents', async () => {
-  const [detail, seriesComponent, tocComponent, css] = await Promise.all([
+  const [detail, sidebarComponent, seriesComponent, tocComponent, css] = await Promise.all([
     readSource('src/pages/blog/[...slug].astro'),
+    readSource('src/components/BlogSidebar.astro'),
     readSource('src/components/SeriesList.astro'),
     readSource('src/components/TableOfContents.astro'),
     readSource('src/styles/global.css'),
   ]);
 
   assert.match(detail, /heading: extractSeriesHeading\(post\.body\)/);
-  assert.match(detail, /\{series && <SeriesList[\s\S]*?<TableOfContents headings=\{headings\}/);
+  assert.match(detail, /<BlogSidebar[\s\S]*?series=\{blogSeries\}[\s\S]*?currentId=\{post\.id\}[\s\S]*?desktopMin=\{1328\}/);
+  assert.match(detail, /assignment && series && <SeriesList[\s\S]*?<TableOfContents headings=\{headings\}/);
+  assert.match(sidebarComponent, /open=\{currentSeries\}/);
+  assert.match(sidebarComponent, /aria-current=\{entry\.id === currentId \? 'page' : undefined\}/);
+  assert.match(css, /\.blog-library--article\s*\{\s*display:\s*block/);
+  assert.match(css, /@media \(min-width: 1328px\)[\s\S]*?\.blog-library--article\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 760px\) minmax\(0, 1fr\)/);
+  assert.match(css, /\.blog-library--article > \.blog-sidebar\s*\{[^}]*grid-column:\s*1[^}]*max-height:\s*calc\(100vh - 60px - 2 \* var\(--space-lg\)\)/);
+  assert.match(css, /\.blog-sidebar\s*\{[^}]*position:\s*sticky/);
   assert.match(seriesComponent, /<details class="toc series-list" data-article-nav open>/);
   assert.match(seriesComponent, /<summary class="toc__summary">\{series\.name\}<\/summary>/);
   assert.match(seriesComponent, /data-series-number=\{entry\.number\}/);

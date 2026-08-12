@@ -1,0 +1,86 @@
+---
+interface SeriesEntry {
+  id: string;
+  title: string;
+  number: number;
+}
+
+interface PostSeries {
+  name: string;
+  entries: SeriesEntry[];
+}
+
+interface Props {
+  series: PostSeries[];
+  postCount: number;
+  currentId?: string;
+  desktopMin?: number;
+}
+
+const { series, postCount, currentId, desktopMin = 981 } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+<aside class="blog-sidebar" aria-label="블로그 탐색">
+  <details class="blog-sidebar__panel" data-blog-sidebar-panel data-desktop-min={desktopMin} open>
+    <summary class="blog-sidebar__header">
+      <span class="blog-sidebar__label">Library</span>
+      <span class="blog-sidebar__total">{postCount} posts</span>
+      <span class="blog-sidebar__toggle" aria-hidden="true">⌄</span>
+    </summary>
+    <nav class="blog-sidebar__nav" aria-label="블로그와 시리즈">
+      <a
+        class:list={['blog-sidebar__all', { 'is-selected': !currentId }]}
+        href={base + 'blog/'}
+        aria-current={!currentId ? 'page' : undefined}
+      >
+        <span>전체</span>
+        <span class="blog-sidebar__count">{postCount}</span>
+      </a>
+      <p class="blog-sidebar__section-label">시리즈</p>
+      <div class="blog-sidebar__series-list">
+        {series.map((item, index) => {
+          const currentSeries = currentId
+            ? item.entries.some((entry) => entry.id === currentId)
+            : index === 0;
+          return (
+            <details class:list={['blog-series', { 'is-current': currentSeries && Boolean(currentId) }]} open={currentSeries}>
+              <summary>
+                <span class="blog-series__chevron" aria-hidden="true">›</span>
+                <span class="blog-series__name">{item.name}</span>
+                <span class="blog-sidebar__count">{item.entries.length}</span>
+              </summary>
+              <ol class="blog-series__posts">
+                {item.entries.map((entry) => (
+                  <li>
+                    <a
+                      href={base + 'blog/' + entry.id}
+                      aria-current={entry.id === currentId ? 'page' : undefined}
+                    >
+                      <span class="blog-series__number" aria-hidden="true">{entry.number}.</span>
+                      <span>{entry.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          );
+        })}
+      </div>
+    </nav>
+  </details>
+</aside>
+
+<script>
+  const sidebarPanels = document.querySelectorAll<HTMLDetailsElement>('[data-blog-sidebar-panel]');
+
+  for (const panel of sidebarPanels) {
+    const desktopMin = Number(panel.dataset.desktopMin) || 981;
+    const desktopSidebar = window.matchMedia(`(min-width: ${desktopMin}px)`);
+    const syncSidebarPanel = () => {
+      panel.open = desktopSidebar.matches;
+    };
+
+    syncSidebarPanel();
+    desktopSidebar.addEventListener('change', syncSidebarPanel);
+  }
+</script>

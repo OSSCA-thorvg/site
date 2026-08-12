@@ -109,6 +109,13 @@ test('body headings render accessible permalink anchors with their existing IDs'
   assert.match(result.code, /<svg[^>]*aria-hidden="true"[^>]*focusable="false"/);
 });
 
+test('article H2 and H3 headings use hierarchical section dividers', async () => {
+  const css = await readSource('src/styles/global.css');
+
+  assert.match(css, /\.prose h2\s*\{[^}]*padding-bottom:\s*var\(--space-sm\)[^}]*border-bottom:\s*1px solid var\(--hairline-strong\)/);
+  assert.match(css, /\.prose h3\s*\{[^}]*padding-bottom:\s*var\(--space-xs\)[^}]*border-bottom:\s*1px solid var\(--hairline\)/);
+});
+
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {
   const [config, detail, mermaidComponent, css, packageSource] = await Promise.all([
     readSource('astro.config.mjs'),

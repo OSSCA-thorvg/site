@@ -1,12 +1,25 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import BlogSidebar from './BlogSidebar.astro';
 import { extractFirstMedia, resolveBlogMediaUrl } from '../lib/blog-media.js';
 import { sortPostTags } from '../lib/post-sections.js';
 import { deriveSummary } from '../lib/summary.js';
 
+interface SeriesEntry {
+  id: string;
+  title: string;
+  number: number;
+}
+
+interface PostSeries {
+  name: string;
+  entries: SeriesEntry[];
+}
+
 interface Props {
   posts: CollectionEntry<'blog'>[];
+  series?: PostSeries[];
   title: string;
   active: 'blog' | 'assignments';
   eyebrow: string;
@@ -19,6 +32,7 @@ interface Props {
 
 const {
   posts,
+  series = [],
   title,
   active,
   eyebrow,
@@ -40,7 +54,13 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
 ---
 <Base title={title} active={active}>
   <section class="section">
-    <div class="container">
+    <div class:list={{ 'blog-library': series.length > 0 }}>
+      {series.length > 0 && (
+        <BlogSidebar series={series} postCount={posts.length} />
+      )}
+
+      <div class:list={{ 'blog-library__content': series.length > 0 }}>
+        <div class="container">
       <p class="eyebrow">{eyebrow}</p>
       <div class="blog-heading">
         <h1 class="page-title">{title}</h1>
@@ -150,6 +170,8 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
         })}
       </div>
       <p class="empty-state" id="b-empty" hidden>조건에 맞는 {itemLabel}이 없습니다.</p>
+        </div>
+      </div>
     </div>
   </section>
 

@@ -2,14 +2,22 @@
 import { getCollection } from 'astro:content';
 import PostListing from '../../components/PostListing.astro';
 import { hasAssignmentTag } from '../../lib/post-sections.js';
+import { createSeriesIndex, extractSeriesHeading } from '../../lib/post-series.js';
 
 const posts = (await getCollection(
   'blog',
   ({ data }) => !data.draft && !hasAssignmentTag(data.tags)
 )).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const seriesIndex = createSeriesIndex(posts.map((post) => ({
+  id: post.id,
+  title: post.data.title,
+  heading: extractSeriesHeading(post.body),
+})));
+const series = [...new Set(seriesIndex.values())];
 ---
 <PostListing
   posts={posts}
+  series={series}
   title="블로그"
   active="blog"
   eyebrow="학습 기록"

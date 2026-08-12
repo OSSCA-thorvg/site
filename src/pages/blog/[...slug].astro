@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import BlogSidebar from '../../components/BlogSidebar.astro';
 import GiscusComments from '../../components/GiscusComments.astro';
 import MermaidDiagrams from '../../components/MermaidDiagrams.astro';
 import SeriesList from '../../components/SeriesList.astro';
@@ -11,20 +12,27 @@ import { deriveSummary } from '../../lib/summary.js';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
-  const seriesSources = posts.map((post) => ({
+  const blogPosts = posts.filter((post) => !hasAssignmentTag(post.data.tags));
+  const seriesSources = blogPosts.map((post) => ({
     id: post.id,
     title: post.data.title,
     heading: extractSeriesHeading(post.body),
   }));
   const seriesIndex = createSeriesIndex(seriesSources);
+  const blogSeries = [...new Set(seriesIndex.values())];
 
   return posts.map((post) => ({
     params: { slug: post.id },
-    props: { post, series: seriesIndex.get(post.id) ?? null },
+    props: {
+      post,
+      series: seriesIndex.get(post.id) ?? null,
+      blogSeries,
+      blogPostCount: blogPosts.length,
+    },
   }));
 }
 
-const { post, series } = Astro.props;
+const { post, series, blogSeries, blogPostCount } = Astro.props;
 const { Content, headings } = await render(post);
 const base = import.meta.env.BASE_URL;
 const hasToc = headings.some((heading) => heading.depth === 2 || heading.depth === 3);
@@ -41,7 +49,17 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
 ---
 <Base title={post.data.title} description={post.data.summary || deriveSummary(post.body ?? '')} active={section.active}>
   <section class="section">
-    <div class="container article-container">
+    <div class:list={{ 'blog-library': !assignment, 'blog-library--article': !assignment }}>
+      {!assignment && (
+        <BlogSidebar
+          series={blogSeries}
+          postCount={blogPostCount}
+          currentId={post.id}
+          desktopMin={1328}
+        />
+      )}
+      <div class:list={{ 'blog-library__content': !assignment }}>
+        <div class="container article-container">
       <a class="btn btn--ghost article-back" href={base + section.href}>← {section.label} 목록</a>
       <header class="article-head">
         <h1 class="page-title">{post.data.title}</h1>
@@ -73,10 +91,10 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
           {post.data.tags.map((t) => <li><span class="chip">#{t}</span></li>)}
         </ul>
       </header>
-      {(series || hasToc) && (
+      {((assignment && series) || hasToc) && (
         <div class="toc-area">
           <div class="toc-stack">
-            {series && <SeriesList series={series} currentId={post.id} />}
+            {assignment && series && <SeriesList series={series} currentId={post.id} />}
             <TableOfContents headings={headings} />
           </div>
         </div>
@@ -85,6 +103,8 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
         <Content />
       </article>
       <GiscusComments discussionNumber={post.data.discussionNumber} />
+        </div>
+      </div>
     </div>
   </section>
 
