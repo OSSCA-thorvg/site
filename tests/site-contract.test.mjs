@@ -599,7 +599,7 @@ test('AI review easter egg stays hidden until the thorvg/thorvg project is selec
     );
   }
 
-  // 서버 렌더 기본값: 안내 문구와 정렬 UI는 숨겨진 채로 시작한다.
+  // Keep the review message and sorting controls hidden in the server-rendered output.
   assert.match(html, /<span\b(?=[^>]*id="issue-ai-note")(?=[^>]*hidden)[^>]*>/);
   assert.match(html, /GPT 5\.6 Sol ultra가 리뷰한 글을 볼 수 있습니다/);
   assert.match(html, /<div\b(?=[^>]*class="issue-sort")(?=[^>]*id="issue-sort")(?=[^>]*hidden)[^>]*>/);
@@ -608,10 +608,11 @@ test('AI review easter egg stays hidden until the thorvg/thorvg project is selec
   assert.match(html, /data-sort-dir="asc"[^>]*>오름차순</);
   assert.match(html, /data-sort-dir="desc"[^>]*>내림차순</);
 
-  // 클라이언트 스크립트가 thorvg/thorvg 선택에서만 이스터에그를 켠다.
+  // Reveal the AI review controls only after selecting thorvg/thorvg.
   assert.match(source, /selectedProject === 'thorvg\/thorvg'/);
   assert.match(source, /issue-list--ai/);
-  assert.match(source, /난이도가 아직 없는\(리뷰되지 않은\) 이슈는 항상 위에 둔다/);
+  assert.match(source, /const unreviewed = originalOrder[\s\S]*?rowScore\(row\) === null/);
+  assert.match(source, /ordered = unreviewed\.concat\(reviewed\)/);
 });
 
 test('AI-reviewed thorvg issues render a review page with the GitHub source link', async () => {

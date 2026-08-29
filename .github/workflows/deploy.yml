@@ -47,7 +47,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      # GITHUB_REPOSITORY 기본 환경 변수로 대상 저장소를 결정한다.
+      # Use the default GITHUB_REPOSITORY variable to select the target repository.
       - name: Sync hackathon issues
         run: node scripts/sync-hackathon.mjs
         env:

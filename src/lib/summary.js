@@ -1,5 +1,5 @@
-// 본문 Markdown에서 목록 카드와 메타 설명에 쓸 요약을 만든다.
-// 제목, 이미지, 코드 블록을 건너뛰고 첫 번째 일반 문단을 사용한다.
+// Use the first regular Markdown paragraph for card summaries and meta descriptions.
+// Skip headings, images, and fenced code blocks.
 const MAX_SUMMARY_LENGTH = 160;
 
 const stripInline = (text) =>

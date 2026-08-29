@@ -17,8 +17,8 @@ const section = (body, label) => {
 };
 
 export function parseDiscussionBody(body = '') {
-  // 예전 폼으로 작성된 글은 '### 본문' 아래만 본문으로 사용한다.
-  // 지금은 폼 없이 자유롭게 작성하며, 요약은 본문에서 자동으로 만든다.
+  // Legacy form posts use only the designated body section.
+  // Current free-form posts derive their summaries from the full body.
   const content = body.includes('### 본문') ? section(body, '본문') : body.trim();
 
   return {

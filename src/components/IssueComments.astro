@@ -1,6 +1,5 @@
 ---
-// utterances는 giscus와 달리 GitHub 이슈에 댓글을 직접 단다.
-// 해커톤 프로젝트 = 이슈이므로 issue-number로 바로 연결한다.
+// Hackathon projects map directly to GitHub issues, so link utterances by issue number.
 const { repo, issueNumber, issueUrl } = Astro.props as {
   repo: string;
   issueNumber: string;

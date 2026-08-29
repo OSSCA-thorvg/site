@@ -96,9 +96,9 @@ test('projects attach to the latest notice created before them', () => {
 
   assert.deepEqual(events.map((event) => event.date), ['2026-09-02', '2026-08-02']);
   assert.equal(events[0].title, 'Hackathon');
-  // 8월 회차: 공지(07-01) 이후 ~ 9월 공지(08-10) 이전 생성분. 최신순 정렬.
+  // August event: issues created after the July notice and before the September notice.
   assert.deepEqual(events[1].projects.map((project) => project.number), ['3', '2']);
-  // 9월 회차: 9월 공지 이후 생성분. 첫 공지 이전 생성분(#1)은 어디에도 속하지 않는다.
+  // September event: issues created after its notice; issue #1 predates every event.
   assert.deepEqual(events[0].projects.map((project) => project.number), ['4']);
 });
 
@@ -160,7 +160,7 @@ test('hackathon page renders synced notices or the Korean empty state', async ()
         assert.ok(html.includes(`data-showcase-url="${showcase.link}"`));
       }
     } else {
-      // 진행 중일 때만 Hackathon 라벨이 미리 채워진 참여 버튼을 표시한다.
+      // Show the prefilled participation link only while the event is active.
       assert.match(
         html,
         /<a\b(?=[^>]*\bclass="btn btn--primary")(?=[^>]*\bhref="https:\/\/github\.com\/[^"]+\/issues\/new\?labels=Hackathon")(?=[^>]*\btarget="_blank")(?=[^>]*\brel="noopener noreferrer")[^>]*>참여하기<\/a>/
