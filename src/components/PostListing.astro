@@ -43,6 +43,7 @@ const {
   writeAriaLabel,
 } = Astro.props;
 const base = import.meta.env.BASE_URL;
+const PAGE_SIZE = 12;
 const mediaByPost = new Map(posts.map((post) => [post.id, extractFirstMedia(post.body)]));
 const tags = sortPostTags(posts.flatMap((post) => post.data.tags));
 const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
@@ -170,6 +171,20 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
         })}
       </div>
       <p class="empty-state" id="b-empty" hidden>조건에 맞는 {itemLabel}이 없습니다.</p>
+      <nav
+        class="pagination"
+        id="post-pagination"
+        aria-label={`${categoryLabel} 페이지`}
+        aria-controls="post-grid"
+        data-page-size={PAGE_SIZE}
+        hidden
+      >
+        <button class="pagination__step" type="button" data-page-previous disabled>← 이전</button>
+        <span class="pagination__pages" data-page-buttons role="group" aria-label="페이지 선택"></span>
+        <span class="pagination__summary" data-page-summary aria-hidden="true"></span>
+        <button class="pagination__step" type="button" data-page-next disabled>다음 →</button>
+        <span class="sr-only" data-page-status role="status" aria-live="polite" aria-atomic="true"></span>
+      </nav>
         </div>
       </div>
     </div>
@@ -234,12 +249,117 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
     const categories = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-tag]'));
     const count = document.getElementById('b-count')!;
     const empty = document.getElementById('b-empty')!;
+    const grid = document.getElementById('post-grid')!;
+    const pagination = document.getElementById('post-pagination')!;
+    const previous = pagination.querySelector<HTMLButtonElement>('[data-page-previous]')!;
+    const next = pagination.querySelector<HTMLButtonElement>('[data-page-next]')!;
+    const pageButtons = pagination.querySelector<HTMLElement>('[data-page-buttons]')!;
+    const pageSummary = pagination.querySelector<HTMLElement>('[data-page-summary]')!;
+    const pageStatus = pagination.querySelector<HTMLElement>('[data-page-status]')!;
+    const pageSize = Number(pagination.dataset.pageSize) || 12;
     const itemLabel = count.dataset.itemLabel || '글';
+    let currentPage = pageFromUrl();
+    let currentMatches = cards;
 
-    function apply() {
+    function pageFromUrl() {
+      const value = Number.parseInt(new URL(window.location.href).searchParams.get('page') || '1', 10);
+      return Number.isFinite(value) && value > 0 ? value : 1;
+    }
+
+    function updatePageUrl(mode: 'push' | 'replace') {
+      const url = new URL(window.location.href);
+      if (currentPage === 1) url.searchParams.delete('page');
+      else url.searchParams.set('page', String(currentPage));
+
+      if (mode === 'push') window.history.pushState({}, '', url);
+      else window.history.replaceState({}, '', url);
+    }
+
+    function pageItems(totalPages: number) {
+      if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+
+      const candidates = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+      if (currentPage <= 4) [2, 3, 4, 5].forEach((page) => candidates.add(page));
+      if (currentPage >= totalPages - 3) {
+        [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1].forEach((page) => candidates.add(page));
+      }
+
+      const pages = [...candidates].filter((page) => page > 0 && page <= totalPages).sort((a, b) => a - b);
+      const items: Array<number | null> = [];
+      pages.forEach((page, index) => {
+        if (index > 0 && page - pages[index - 1] > 1) items.push(null);
+        items.push(page);
+      });
+      return items;
+    }
+
+    function renderPageButtons(totalPages: number) {
+      pageButtons.replaceChildren();
+      for (const page of pageItems(totalPages)) {
+        if (page === null) {
+          const ellipsis = document.createElement('span');
+          ellipsis.className = 'pagination__ellipsis';
+          ellipsis.textContent = '…';
+          ellipsis.setAttribute('aria-hidden', 'true');
+          pageButtons.appendChild(ellipsis);
+          continue;
+        }
+
+        const button = document.createElement('button');
+        button.className = 'pagination__page';
+        button.type = 'button';
+        button.dataset.page = String(page);
+        button.textContent = String(page);
+        button.setAttribute('aria-label', `${page}페이지`);
+        if (page === currentPage) button.setAttribute('aria-current', 'page');
+        pageButtons.appendChild(button);
+      }
+    }
+
+    function renderPagination(historyMode?: 'push' | 'replace') {
+      const totalItems = currentMatches.length;
+      const totalPages = Math.ceil(totalItems / pageSize);
+      const requestedPage = currentPage;
+      currentPage = totalPages === 0 ? 1 : Math.min(Math.max(currentPage, 1), totalPages);
+
+      const start = (currentPage - 1) * pageSize;
+      const end = Math.min(start + pageSize, totalItems);
+      currentMatches.forEach((card, index) => {
+        card.hidden = index < start || index >= end;
+      });
+
+      pagination.hidden = totalPages <= 1;
+      previous.disabled = currentPage <= 1;
+      next.disabled = currentPage >= totalPages;
+      pageSummary.textContent = totalPages > 0 ? `${currentPage} / ${totalPages}` : '';
+      pageStatus.textContent = totalPages > 1
+        ? `${totalPages}페이지 중 ${currentPage}페이지, ${start + 1}–${end}번째 ${itemLabel} 표시`
+        : '';
+      renderPageButtons(totalPages);
+      if (historyMode) updatePageUrl(historyMode);
+      else if (requestedPage !== currentPage) updatePageUrl('replace');
+    }
+
+    function scrollToGrid() {
+      const top = grid.getBoundingClientRect().top + window.scrollY - 84;
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      window.scrollTo({ top: Math.max(0, top), behavior });
+    }
+
+    function goToPage(page: number, historyMode: 'push' | 'replace' = 'push') {
+      const totalPages = Math.ceil(currentMatches.length / pageSize);
+      const target = Math.min(Math.max(page, 1), totalPages || 1);
+      if (target === currentPage) return;
+      currentPage = target;
+      renderPagination(historyMode);
+      scrollToGrid();
+    }
+
+    function apply(resetPage = false) {
       const q = search.value.trim().toLowerCase();
       const selectedTag = categories.find((category) => category.getAttribute('aria-pressed') === 'true')?.dataset.tag || '';
       let shown = 0;
+      const matchingCards: HTMLElement[] = [];
 
       for (const card of cards) {
         const matchesSearch = !q || (card.dataset.search || '').includes(q);
@@ -247,8 +367,15 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
         const matches = matchesSearch && matchesTag;
 
         card.hidden = !matches;
-        if (matches) shown++;
+        if (matches) {
+          matchingCards.push(card);
+          shown++;
+        }
       }
+
+      currentMatches = matchingCards;
+      if (resetPage) currentPage = 1;
+      renderPagination(resetPage ? 'replace' : undefined);
 
       count.textContent = shown === 0
         ? `0개 ${itemLabel} · 조건에 맞는 ${itemLabel}이 없습니다.`
@@ -256,15 +383,27 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
       empty.hidden = shown !== 0;
     }
 
-    search.addEventListener('input', apply);
+    search.addEventListener('input', () => apply(true));
     categories.forEach((category) => category.addEventListener('click', () => {
       categories.forEach((item) => {
         const selected = item === category;
         item.classList.toggle('is-selected', selected);
         item.setAttribute('aria-pressed', selected ? 'true' : 'false');
       });
-      apply();
+      apply(true);
     }));
+
+    previous.addEventListener('click', () => goToPage(currentPage - 1));
+    next.addEventListener('click', () => goToPage(currentPage + 1));
+    pageButtons.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-page]');
+      if (button?.dataset.page) goToPage(Number(button.dataset.page));
+    });
+    window.addEventListener('popstate', () => {
+      currentPage = pageFromUrl();
+      renderPagination();
+      scrollToGrid();
+    });
     apply();
   </script>
 </Base>

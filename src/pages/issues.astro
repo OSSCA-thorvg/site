@@ -6,6 +6,7 @@ import { parseCsv } from '../lib/csv.js';
 import { getCollection } from 'astro:content';
 
 const base = import.meta.env.BASE_URL;
+const ISSUE_PAGE_SIZE = 20;
 const rows = liveIssues.issues.length ? liveIssues.issues : parseCsv(issuesRaw);
 // AI 리뷰는 thorvg/thorvg 프로젝트를 선택했을 때만 드러나는 이스터에그다.
 // 파일명 `<이슈번호>-<난이도>.md`에서 난이도 점수를 읽는다.
@@ -123,6 +124,20 @@ const issueUrl = (row: Record<string, string>) =>
         })}
       </div>
       <p class="empty-state" id="issue-empty" hidden>조건에 맞는 이슈가 없습니다.</p>
+      <nav
+        class="pagination"
+        id="issue-pagination"
+        aria-label="이슈 페이지"
+        aria-controls="issue-list"
+        data-page-size={ISSUE_PAGE_SIZE}
+        hidden
+      >
+        <button class="pagination__step" type="button" data-page-previous disabled>← 이전</button>
+        <span class="pagination__pages" data-page-buttons role="group" aria-label="페이지 선택"></span>
+        <span class="pagination__summary" data-page-summary aria-hidden="true"></span>
+        <button class="pagination__step" type="button" data-page-next disabled>다음 →</button>
+        <span class="sr-only" data-page-status role="status" aria-live="polite" aria-atomic="true"></span>
+      </nav>
     </div>
   </section>
 
@@ -136,13 +151,116 @@ const issueUrl = (row: Record<string, string>) =>
       const rows = Array.from(document.querySelectorAll('#issue-list .issue-row'));
       const sortBar = document.getElementById('issue-sort');
       const aiNote = document.getElementById('issue-ai-note');
+      const pagination = document.getElementById('issue-pagination');
+      const previous = pagination?.querySelector('[data-page-previous]');
+      const next = pagination?.querySelector('[data-page-next]');
+      const pageButtons = pagination?.querySelector('[data-page-buttons]');
+      const pageSummary = pagination?.querySelector('[data-page-summary]');
+      const pageStatus = pagination?.querySelector('[data-page-status]');
+      const pageSize = Number(pagination?.dataset.pageSize) || 20;
       const sortKeys = Array.from(document.querySelectorAll('#issue-sort [data-sort-key]'));
       const sortDirs = Array.from(document.querySelectorAll('#issue-sort [data-sort-dir]'));
 
-      if (!search || !count || !empty || !list) return;
+      if (!search || !count || !empty || !list || !pagination || !previous || !next || !pageButtons || !pageSummary || !pageStatus) return;
 
       const originalOrder = rows.slice();
+      let currentPage = pageFromUrl();
+      let currentMatches = rows;
       for (const row of rows) row.dataset.githubHref = row.getAttribute('href');
+
+      function pageFromUrl() {
+        const value = Number.parseInt(new URL(window.location.href).searchParams.get('page') || '1', 10);
+        return Number.isFinite(value) && value > 0 ? value : 1;
+      }
+
+      function updatePageUrl(mode) {
+        const url = new URL(window.location.href);
+        if (currentPage === 1) url.searchParams.delete('page');
+        else url.searchParams.set('page', String(currentPage));
+
+        if (mode === 'push') window.history.pushState({}, '', url);
+        else window.history.replaceState({}, '', url);
+      }
+
+      function pageItems(totalPages) {
+        if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+
+        const candidates = new Set([1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
+        if (currentPage <= 4) [2, 3, 4, 5].forEach((page) => candidates.add(page));
+        if (currentPage >= totalPages - 3) {
+          [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1].forEach((page) => candidates.add(page));
+        }
+
+        const pages = [...candidates].filter((page) => page > 0 && page <= totalPages).sort((a, b) => a - b);
+        const items = [];
+        pages.forEach((page, index) => {
+          if (index > 0 && page - pages[index - 1] > 1) items.push(null);
+          items.push(page);
+        });
+        return items;
+      }
+
+      function renderPageButtons(totalPages) {
+        pageButtons.replaceChildren();
+        for (const page of pageItems(totalPages)) {
+          if (page === null) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'pagination__ellipsis';
+            ellipsis.textContent = '…';
+            ellipsis.setAttribute('aria-hidden', 'true');
+            pageButtons.appendChild(ellipsis);
+            continue;
+          }
+
+          const button = document.createElement('button');
+          button.className = 'pagination__page';
+          button.type = 'button';
+          button.dataset.page = String(page);
+          button.textContent = String(page);
+          button.setAttribute('aria-label', `${page}페이지`);
+          if (page === currentPage) button.setAttribute('aria-current', 'page');
+          pageButtons.appendChild(button);
+        }
+      }
+
+      function renderPagination(historyMode) {
+        const totalItems = currentMatches.length;
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const requestedPage = currentPage;
+        currentPage = totalPages === 0 ? 1 : Math.min(Math.max(currentPage, 1), totalPages);
+
+        const start = (currentPage - 1) * pageSize;
+        const end = Math.min(start + pageSize, totalItems);
+        currentMatches.forEach((row, index) => {
+          row.style.display = index < start || index >= end ? 'none' : '';
+        });
+
+        pagination.hidden = totalPages <= 1;
+        previous.disabled = currentPage <= 1;
+        next.disabled = currentPage >= totalPages;
+        pageSummary.textContent = totalPages > 0 ? `${currentPage} / ${totalPages}` : '';
+        pageStatus.textContent = totalPages > 1
+          ? `${totalPages}페이지 중 ${currentPage}페이지, ${start + 1}–${end}번째 이슈 표시`
+          : '';
+        renderPageButtons(totalPages);
+        if (historyMode) updatePageUrl(historyMode);
+        else if (requestedPage !== currentPage) updatePageUrl('replace');
+      }
+
+      function scrollToList() {
+        const top = list.getBoundingClientRect().top + window.scrollY - 84;
+        const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+        window.scrollTo({ top: Math.max(0, top), behavior });
+      }
+
+      function goToPage(page, historyMode = 'push') {
+        const totalPages = Math.ceil(currentMatches.length / pageSize);
+        const target = Math.min(Math.max(page, 1), totalPages || 1);
+        if (target === currentPage) return;
+        currentPage = target;
+        renderPagination(historyMode);
+        scrollToList();
+      }
 
       const rowNumber = (row) => Number(row.dataset.number);
       const rowScore = (row) => (row.dataset.aiScore === undefined ? null : Number(row.dataset.aiScore));
@@ -204,11 +322,12 @@ const issueUrl = (row: Record<string, string>) =>
         ordered.forEach((row) => list.appendChild(row));
       }
 
-      function apply() {
+      function apply(resetPage = false) {
         const query = search.value.trim().toLowerCase();
         const selectedProject = projects.find((project) => project.getAttribute('aria-pressed') === 'true')?.dataset.project || '';
         const thorvgMode = selectedProject === 'thorvg/thorvg';
         let shown = 0;
+        const matchingRows = new Set();
 
         aiNote.hidden = !thorvgMode;
         applyLinkMode(thorvgMode);
@@ -220,8 +339,16 @@ const issueUrl = (row: Record<string, string>) =>
           const visible = matchesSearch && matchesProject;
 
           row.style.display = visible ? '' : 'none';
-          if (visible) shown++;
+          if (visible) {
+            matchingRows.add(row);
+            shown++;
+          }
         }
+
+        currentMatches = Array.from(list.querySelectorAll('.issue-row'))
+          .filter((row) => matchingRows.has(row));
+        if (resetPage) currentPage = 1;
+        renderPagination(resetPage ? 'replace' : undefined);
 
         count.textContent = shown === 0
           ? '0개 이슈 · 조건에 맞는 이슈가 없습니다.'
@@ -229,19 +356,30 @@ const issueUrl = (row: Record<string, string>) =>
         empty.hidden = shown !== 0;
       }
 
-      search.addEventListener('input', apply);
+      search.addEventListener('input', () => apply(true));
       projects.forEach((project) => project.addEventListener('click', () => {
         markSelected(projects, project);
-        apply();
+        apply(true);
       }));
       sortKeys.forEach((button) => button.addEventListener('click', () => {
         markSelected(sortKeys, button);
-        apply();
+        apply(true);
       }));
       sortDirs.forEach((button) => button.addEventListener('click', () => {
         markSelected(sortDirs, button);
-        apply();
+        apply(true);
       }));
+      previous.addEventListener('click', () => goToPage(currentPage - 1));
+      next.addEventListener('click', () => goToPage(currentPage + 1));
+      pageButtons.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-page]');
+        if (button?.dataset.page) goToPage(Number(button.dataset.page));
+      });
+      window.addEventListener('popstate', () => {
+        currentPage = pageFromUrl();
+        renderPagination();
+        scrollToList();
+      });
       apply();
     })();
   </script>
