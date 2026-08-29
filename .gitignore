@@ -17,3 +17,9 @@ awesome-design-md/
 thorvg
 
 .vscode
+
+# Generated hackathon card thumbnails
+/public/hackathon-thumbnails/
+
+# Generated blog card thumbnails
+/public/blog-thumbnails/

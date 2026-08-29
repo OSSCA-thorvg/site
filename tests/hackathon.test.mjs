@@ -169,6 +169,23 @@ test('hackathon page renders synced notices or the Korean empty state', async ()
   }
 });
 
+test('hackathon project cards serve optimized local thumbnails', async () => {
+  const html = await readPage('hackathon/index.html');
+  const media = [...html.matchAll(/<div class="hackathon-card__media">([\s\S]*?)<\/div>/g)]
+    .map((match) => match[1]);
+  const thumbnails = media
+    .map((content) => content.match(/<img\b[^>]*>/)?.[0])
+    .filter(Boolean);
+
+  assert.ok(thumbnails.length > 0, 'at least one project card must have a thumbnail');
+  for (const thumbnail of thumbnails) {
+    assert.match(thumbnail, /src="[^"]*\/hackathon-thumbnails\/\d+-[a-f0-9]{12}\.webp"/);
+    assert.match(thumbnail, /width="640"/);
+    assert.match(thumbnail, /height="360"/);
+    assert.doesNotMatch(thumbnail, /github\.com\/user-attachments/);
+  }
+});
+
 test('hackathon board uses a collapsible playground tree and one sandboxed showcase iframe', async () => {
   const [board, css] = await Promise.all([
     readSource('src/components/HackathonBoard.astro'),

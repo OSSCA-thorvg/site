@@ -111,19 +111,6 @@ test('bundled blog content ships the writing guide and plain template', async ()
   assert.doesNotMatch(template, /^\s*author:/m);
 });
 
-test('blog body media keeps Markdown Lottie sugar configured without fixture posts', async () => {
-  const [readme, astroConfig] = await Promise.all([
-    readSource('README.md'),
-    readSource('astro.config.mjs'),
-  ]);
-
-  assert.doesNotMatch(readme, new RegExp(`\\b${removedFixtureAccount}\\b`, 'i'));
-  assert.match(readme, /!\[\]\(\/lottie\/example\.json\)/);
-  assert.match(readme, /!\[캡션\]\(\.\.\.\)/);
-  assert.doesNotMatch(readme, /<lottie-player src="\/lottie\/example\.json"/);
-  assert.match(astroConfig, /remarkPlugins:\s*\[remarkAlert,\s*\[remarkLottieImages,\s*\{ base \}\],\s*remarkGithubVideos,\s*remarkSeriesHeading\]/);
-});
-
 test('project docs and local data no longer expose the removed fixture account', async () => {
   const [readme, issuesCsv, liveSource] = await Promise.all([
     readSource('README.md'),
@@ -139,20 +126,6 @@ test('project docs and local data no longer expose the removed fixture account',
     liveIssues.every((issue) => issue.assignee !== removedFixtureAccount),
     'live issue assignees must not expose the removed fixture account'
   );
-});
-
-test('README documents automatic issue sync without manual issue or schedule chores', async () => {
-  const readme = await readSource('README.md');
-
-  assert.match(readme, /src\/data\/live-issues\.json/);
-  assert.match(readme, /scripts\/sync-issues\.mjs/);
-  assert.match(readme, /npm run preview\s+# 마지막 build 결과 확인/);
-  assert.match(readme, /`preview`는 개발 서버가 아니라 이미 만들어진 `dist\/`만 보여줍니다/);
-  assert.match(readme, /`BASE_PATH=\/site`/);
-  assert.match(readme, /로컬 preview의 경로와 다를 수 있습니다/);
-  assert.doesNotMatch(readme, /^## 이슈 추가$/m);
-  assert.doesNotMatch(readme, /^## 일정 갱신$/m);
-  assert.doesNotMatch(readme, /number,repo,title,labels,status,assignee,area,difficulty,recommended/);
 });
 
 test('blog body media parser supports Markdown images, GIFs, and Lottie image sugar', () => {

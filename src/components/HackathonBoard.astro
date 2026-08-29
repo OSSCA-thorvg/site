@@ -4,6 +4,7 @@ import { remarkAlert } from 'remark-github-blockquote-alert';
 import MermaidDiagrams from './MermaidDiagrams.astro';
 import live from '../data/live-hackathon.json';
 import { extractFirstImage, stripUnsafeMarkdown } from '../lib/hackathon.js';
+import { resolveHackathonThumbnail } from '../lib/hackathon-images.js';
 import remarkGithubVideos from '../lib/remark-github-videos.js';
 import remarkLottieImages from '../lib/remark-lottie-images.js';
 import { deriveSummary } from '../lib/summary.js';
@@ -48,7 +49,7 @@ const noticeHtml = current ? await renderMarkdown(current.notice.body) : '';
 const projects = current
   ? await Promise.all(current.projects.map(async (project) => ({
       ...project,
-      image: extractFirstImage(project.body),
+      image: resolveHackathonThumbnail(project.number, extractFirstImage(project.body), base),
       summary: deriveSummary(project.body, 240),
       detailHtml: await renderMarkdown(project.body),
     })))
@@ -171,7 +172,16 @@ const formatDate = (date: string) =>
                 </a>
                 <div class="hackathon-card__media">
                   {project.image
-                    ? <img src={project.image} alt="" loading="lazy" />
+                    ? (
+                      <img
+                        src={project.image.src}
+                        alt=""
+                        width={project.image.width}
+                        height={project.image.height}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    )
                     : (
                       <div
                         class="hackathon-card__preview"

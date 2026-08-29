@@ -8,7 +8,7 @@ draft: false
 
 import ColorMismatchComparison from "./ColorMismatchComparison.astro";
 
-# Core2026 - 3
+# Core2026 - 6
 
 > [!IMPORTANT]
 > Static PNG Loader 이슈 처리 사례를 통해 Image Loader 이슈 작업 방식에 대해 알아봅시다.
@@ -376,17 +376,15 @@ cICP, iCCP, sRGB, gAMA, cHRM은 PNG 색상 profile 관련 청크입니다.
 - 한가지 중 선택해서 사용
 - 우선순위: cICP > iCCP > sRGB > gAMA + cHRM
 
-#### iCCP 안에는 무엇이 있는가
 
-기존 RGB 를 일정 수학적 변환으로 sRGB로 변환하는 정보를 가지고 있음
-- `rXYZ`, `gXYZ`, `bXYZ`로 source RGB → XYZ matrix 구성
-- `rTRC`, `gTRC`, `bTRC` curve로 encoded RGB를 linear RGB로 복원
-- `wtpt`와 optional `chad` tag로 white point와 chromatic adaptation 처리
+iCCP
+- 기존 RGB 를 일정 수학적 변환으로 sRGB로 변환하는 정보를 가지고 있음
+- 색상 변환을 위한 변수
+  - `rXYZ`, `gXYZ`, `bXYZ`로 source RGB → XYZ matrix 구성
+  - `rTRC`, `gTRC`, `bTRC` curve로 encoded RGB를 linear RGB로 복원
+  - `wtpt`와 optional `chad` tag로 white point와 chromatic adaptation 처리
 
-3차원 변환 행렬이 계산의 주가 되며
 
-
-LodePNG 의 이런 변환 함수를 ThorVG 에서 사용가능하게 하는것이 이번 이슈의 목표
 
 
 ### 3.3 LodePNG 작업과 PR #4568

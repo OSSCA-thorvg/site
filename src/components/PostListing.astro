@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import BlogSidebar from './BlogSidebar.astro';
 import { extractFirstMedia, resolveBlogMediaUrl } from '../lib/blog-media.js';
+import { resolveBlogThumbnail } from '../lib/blog-thumbnails.js';
 import { sortPostTags } from '../lib/post-sections.js';
 import { deriveSummary } from '../lib/summary.js';
 
@@ -127,7 +128,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
                   ></lottie-player>
                 ) : (
                   <img
-                    src={resolveBlogMediaUrl(media.src, p.id, base)}
+                    src={resolveBlogThumbnail(p.id, media, base) ?? resolveBlogMediaUrl(media.src, p.id, base)}
                     alt={media.alt}
                     width="640"
                     height="360"

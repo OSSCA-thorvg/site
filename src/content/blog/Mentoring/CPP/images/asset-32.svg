@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Intel VTune Profiler</title>
+  <desc id="desc">Vector reconstruction of the Intel VTune VT product badge.</desc>
+  <rect width="64" height="64" rx="4" fill="#07467B"/>
+  <path d="M9.3 19.7h6.6l7.2 17.7 7.2-17.7h6.8L26.6 44.2h-6.8z" fill="#10AEE5"/>
+  <path d="M34.7 19.7h20v5.7h-8.6v18.8h-6.6V25.4h-7.2z" fill="#FFF"/>
+</svg>

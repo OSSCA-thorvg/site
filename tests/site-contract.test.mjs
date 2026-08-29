@@ -418,7 +418,7 @@ test('blog cards derive body media and play Lottie on hover', async () => {
   assert.match(source, /player\.pause\(\)/);
 });
 
-test('bundled blog writing guide uses its first image as card media', async () => {
+test('bundled blog writing guide uses an optimized first image as card media', async () => {
   const html = await readPage(pages.blog);
   const card = [...html.matchAll(/<article\b(?=[^>]*\bclass="post-card")[^>]*>[\s\S]*?<\/article>/g)]
     .map(([article]) => article)
@@ -429,8 +429,24 @@ test('bundled blog writing guide uses its first image as card media', async () =
   assert.ok(card, 'blog list must render the writing guide post');
   assert.match(card, /@Nor-s/);
   assert.match(card, /post-card__media--image/);
-  assert.match(card, new RegExp(`src="${escapeRegExp(sitePath('blog-assets/blog-writing-guide/image.png'))}"`));
+  assert.match(card, new RegExp(`src="${escapeRegExp(sitePath('blog-thumbnails/'))}[a-f0-9]{12}\\.webp"`));
   assert.match(html, /<span\b(?=[^>]*\bid="b-count")[^>]*>\d+개 글<\/span>/);
+});
+
+test('blog raster cards serve optimized local thumbnails', async () => {
+  const html = await readPage(pages.blog);
+  const media = [...html.matchAll(/<div class="post-card__media post-card__media--(?:image|gif)">([\s\S]*?)<\/div>/g)]
+    .map((match) => match[1]);
+
+  assert.ok(media.length > 0, 'at least one blog card must have raster media');
+  for (const content of media) {
+    const thumbnail = content.match(/<img\b[^>]*>/)?.[0];
+    assert.ok(thumbnail, 'raster card media must render an image');
+    assert.match(thumbnail, /src="[^"]*\/blog-thumbnails\/[a-f0-9]{12}\.webp"/);
+    assert.match(thumbnail, /width="640"/);
+    assert.match(thumbnail, /height="360"/);
+    assert.doesNotMatch(thumbnail, /github\.com\/user-attachments|i\.imgur\.com/);
+  }
 });
 
 test('blog detail template localizes navigation, date, and GitHub author metadata', async () => {
