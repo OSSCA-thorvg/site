@@ -8,6 +8,7 @@ const posts = (await getCollection(
   'blog',
   ({ data }) => !data.draft && !hasAssignmentTag(data.tags)
 )).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const visiblePosts = posts.filter(({ data }) => !data['no-blog']);
 const seriesIndex = createSeriesIndex(posts.map((post) => ({
   id: post.id,
   title: post.data.title,
@@ -16,7 +17,7 @@ const seriesIndex = createSeriesIndex(posts.map((post) => ({
 const series = [...new Set(seriesIndex.values())];
 ---
 <PostListing
-  posts={posts}
+  posts={visiblePosts}
   series={series}
   title="블로그"
   active="blog"

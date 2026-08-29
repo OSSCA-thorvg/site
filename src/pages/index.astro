@@ -9,7 +9,7 @@ const base = import.meta.env.BASE_URL;
 const featuredIssues = liveIssues.issues.slice(0, 4);
 const posts = (await getCollection(
   'blog',
-  ({ data }) => !data.draft && !hasAssignmentTag(data.tags)
+  ({ data }) => !data.draft && !data['no-blog'] && !hasAssignmentTag(data.tags)
 ))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
   .slice(0, 3);

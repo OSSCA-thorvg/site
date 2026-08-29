@@ -1,0 +1,117 @@
+---
+import colorMismatch from "./IMAGE/03-Loader/11-color-mismatch.png";
+---
+
+<div
+  class="comparison-frame"
+  role="region"
+  aria-label="ThorVG 색상 불일치 비교"
+  tabindex="0"
+>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Issue</th>
+        <th scope="col">Expected</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="crop crop-issue">
+            <img
+              src={colorMismatch.src}
+              width={colorMismatch.width}
+              height={colorMismatch.height}
+              alt="색상 프로필이 적용되지 않은 ThorVG 렌더링 결과"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </td>
+        <td>
+          <div class="crop crop-expected">
+            <img
+              src={colorMismatch.src}
+              width={colorMismatch.width}
+              height={colorMismatch.height}
+              alt="색상 프로필이 적용된 기대 결과"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .comparison-frame {
+    margin: 24px 0;
+    overflow-x: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    background: var(--canvas);
+  }
+
+  .comparison-frame:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  table {
+    width: 100%;
+    min-width: 560px;
+    margin: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  th {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--surface-1);
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 650;
+    text-align: left;
+  }
+
+  td {
+    padding: 8px;
+    border: 0;
+    background: var(--canvas);
+  }
+
+  th + th,
+  td + td {
+    border-left: 1px solid var(--hairline);
+  }
+
+  .crop {
+    position: relative;
+    aspect-ratio: 440 / 389;
+    overflow: hidden;
+    background: #f4f9fc;
+  }
+
+  .crop img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: calc(100% * 463 / 440);
+    max-width: none;
+    height: auto;
+    margin: 0;
+  }
+
+  .crop-issue img {
+    transform: translate(-1.512%, -10.175%);
+  }
+
+  .crop-expected img {
+    transform: translate(-1.512%, -59.609%);
+  }
+</style>

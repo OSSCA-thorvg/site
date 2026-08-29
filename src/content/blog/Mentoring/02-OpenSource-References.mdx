@@ -1,0 +1,65 @@
+---
+title: "[Core2026] ThorVG에서 사용하는 오픈소스와 기술 레퍼런스"
+github: "Nor-s"
+date: 2026-08-29
+tags: ["ThorVG", "Core", "Open Source"]
+draft: false
+no-blog: true
+---
+
+# Core2026 - 2
+
+## 외부 의존성
+
+- [libpng](https://github.com/pnggroup/libpng)
+  - [ThorVG External PNG Loader](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/external_png/meson.build)
+
+- [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo)
+  - [ThorVG External JPEG Loader](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/external_jpg/meson.build)
+
+- [libwebp](https://developers.google.com/speed/webp/docs/api)
+  - [ThorVG External WebP Loader](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/external_webp/meson.build)
+
+
+## 저장소에 포함된 오픈소스
+
+- [LodePNG](https://github.com/lvandeve/lodepng)
+  - [ThorVG PNG Loader](https://github.com/thorvg/thorvg/tree/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/png)
+  - [도입 커밋](https://github.com/thorvg/thorvg/commit/2e6715ba41173f44855701eb984bdecc07090117)
+  - [ThorVG svg2png 도구](https://github.com/thorvg/thorvg/tree/e3c505f628a9abc267514bc0975cd5feae5bdd26/tools/svg2png)
+
+- [jpgd](https://github.com/richgel999/jpeg-compressor)
+  - [ThorVG JPEG Loader](https://github.com/thorvg/thorvg/tree/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/jpg)
+
+- [libwebp 축소 포크](https://github.com/jacklicn/libwebp)
+  - [ThorVG WebP Loader](https://github.com/thorvg/thorvg/tree/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/webp)
+  - [도입 커밋](https://github.com/thorvg/thorvg/commit/e0eeaf54b047c5b279a54467180374663d018429)
+
+- [RapidJSON](https://github.com/Tencent/rapidjson)
+  - [도입 커밋](https://github.com/thorvg/thorvg/commit/250e2d7d34de3baf4df627f2687153591346eee4)
+
+- [JerryScript 3.0.0](https://github.com/jerryscript-project/jerryscript/releases/tag/v3.0.0)
+  - [도입 커밋](https://github.com/thorvg/thorvg/commit/625a5ca74795ef91bd9ac7f2ea25e45cfe720858)
+
+- [gif.h](https://github.com/charlietangora/gif-h)
+  - [도입 커밋](https://github.com/thorvg/thorvg/commit/a20216045a14987c567cf4cd92b481b9f165554c)
+
+- [Catch2 2.13.10](https://github.com/catchorg/Catch2/releases/tag/v2.13.10)
+  - [ThorVG `test/catch.hpp`](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/test/catch.hpp)
+
+
+## 참고 구현과 알고리즘
+
+- FreeType Smooth Raster
+  - [ThorVG `tvgSwRle.cpp`](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/renderer/cpu_engine/tvgSwRle.cpp)
+  - 폰트 래스터화
+
+- [Mozilla `SMILKeySpline`](https://searchfox.org/mozilla-central/source/dom/smil/SMILKeySpline.cpp)
+  - [ThorVG `tvgLottieInterpolator.cpp`](https://github.com/thorvg/thorvg/blob/e3c505f628a9abc267514bc0975cd5feae5bdd26/src/loaders/lottie/tvgLottieInterpolator.cpp)
+  - Cubic Bézier Easing
+
+- [Fast Almost-Gaussian Filtering — Peter Kovesi](https://peterkovesi.com/papers/FastGaussianSmoothing.pdf)
+  - ThorVG CPU Effect
+  - Gaussian Blur
+  - Separable Box Filter
+  - Gaussian 근사
