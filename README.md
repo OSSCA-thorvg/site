@@ -29,8 +29,10 @@ npm run preview   # 마지막 build 결과 확인
 
 
 - [Disscussion/Blog](https://github.com/OSSCA-thorvg/site/discussions/categories/blog) 를 참고하세요. 
-- 또는, Blog 를 Clone 하고 .mdx 를 자유롭게 구성하면, 인터렉티브한 블로그 글을 작성할 수 있습니다.니
-
+- 또는, Blog 를 Clone 하고 .mdx 를 자유롭게 구성하면, 인터렉티브한 블로그 글을 작성할 수 있습니다. 
+    - ThorVG Wasm 추가 
+    - ThorVG WebCanvas 활용 
+    
 > [!IMPORTANT]
 > 추가로 H1 요소를 제일 앞에 두고 넘버링 1, 2, (1), (2) 를 사용하면 글을 시리즈로 묶을 수 있습니다. (실제 사이트 렌더링시 목록 생성)
 > ex) `# 공지 1`
