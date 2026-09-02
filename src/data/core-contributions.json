@@ -1,0 +1,842 @@
+{
+  "generatedAt": "2026-09-02T12:09:56.853Z",
+  "organization": "thorvg",
+  "contributionSince": "2026-06-01",
+  "repositories": [
+    "thorvg/thorvg",
+    "thorvg/thorvg.android",
+    "thorvg/thorvg.benchmark",
+    "thorvg/thorvg.cli-tools",
+    "thorvg/thorvg.demo.janitor",
+    "thorvg/thorvg.demo.janitor-web",
+    "thorvg/thorvg.example",
+    "thorvg/thorvg.flutter",
+    "thorvg/thorvg.pixel-inspector",
+    "thorvg/thorvg.site",
+    "thorvg/thorvg.svg-compliance",
+    "thorvg/thorvg.swift",
+    "thorvg/thorvg.unity",
+    "thorvg/thorvg.view",
+    "thorvg/thorvg.vscode",
+    "thorvg/thorvg.web",
+    "thorvg/thorvg.web-test"
+  ],
+  "coreMembers": [
+    "alpakaDurumi",
+    "J-unStiN",
+    "jeongsunyong",
+    "DaengDo",
+    "Saususge",
+    "tcpark11"
+  ],
+  "assignmentAuthors": [
+    "alpakaDurumi",
+    "J-unStiN",
+    "jeongsunyong",
+    "DaengDo",
+    "Saususge",
+    "tcpark11",
+    "autlyr21",
+    "chae-dahee",
+    "hd1534",
+    "hwiskim",
+    "inmare",
+    "jinlee0310",
+    "juyonLee00",
+    "KimSH39",
+    "mnchnk",
+    "mungjin01",
+    "nowgnuesLeee",
+    "numkite",
+    "seobinpark",
+    "taejun0",
+    "YoungB0",
+    "zurdhva"
+  ],
+  "members": [
+    {
+      "name": "alpakaDurumi",
+      "profile": "https://github.com/alpakaDurumi",
+      "activities": [
+        {
+          "number": 4750,
+          "title": "cpu_engine: sync repeat-gradient anti-aliasing with transform",
+          "url": "https://github.com/thorvg/thorvg/pull/4750",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-31T08:01:33Z",
+          "updatedAt": "2026-09-02T11:53:38Z"
+        },
+        {
+          "number": 4698,
+          "title": "infra: build fails when asan is enabled (MSYS2)",
+          "url": "https://github.com/thorvg/thorvg/issues/4698",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-23T03:39:24Z",
+          "updatedAt": "2026-09-02T05:47:31Z"
+        },
+        {
+          "number": 4710,
+          "title": "cpu_engine: allow subpixel-aligned axis-aligned rects",
+          "url": "https://github.com/thorvg/thorvg/pull/4710",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-25T12:06:22Z",
+          "updatedAt": "2026-09-02T03:36:19Z"
+        },
+        {
+          "number": 4721,
+          "title": "lottie: fix layer effects dropped by JSON key order",
+          "url": "https://github.com/thorvg/thorvg/pull/4721",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-26T12:40:47Z",
+          "updatedAt": "2026-09-02T03:36:19Z"
+        },
+        {
+          "number": 70,
+          "title": "wgpu: fix the crash on Wayland sessions",
+          "url": "https://github.com/thorvg/thorvg.example/pull/70",
+          "repo": "thorvg/thorvg.example",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-09-01T15:02:25Z",
+          "updatedAt": "2026-09-01T16:12:17Z"
+        },
+        {
+          "number": 4688,
+          "title": "cpu: repeat-gradient anti-aliasing ignores transform",
+          "url": "https://github.com/thorvg/thorvg/issues/4688",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-08-20T00:33:16Z",
+          "updatedAt": "2026-08-29T06:46:58Z"
+        },
+        {
+          "number": 4685,
+          "title": "savers/gif: separate color quantization from the palette search structure",
+          "url": "https://github.com/thorvg/thorvg/pull/4685",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-17T06:33:26Z",
+          "updatedAt": "2026-08-27T06:49:59Z"
+        },
+        {
+          "number": 4446,
+          "title": "lottie: layer effect dropped by JSON key order",
+          "url": "https://github.com/thorvg/thorvg/issues/4446",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-06-09T07:42:10Z",
+          "updatedAt": "2026-08-26T13:21:17Z"
+        },
+        {
+          "number": 4577,
+          "title": "wgpu: unrendered regions make the window transparent on Windows (MSYS2)",
+          "url": "https://github.com/thorvg/thorvg/issues/4577",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-07-19T15:43:15Z",
+          "updatedAt": "2026-08-26T10:56:02Z"
+        },
+        {
+          "number": 4669,
+          "title": "gif: Some parts of the visual colors are still not encoded correctly.",
+          "url": "https://github.com/thorvg/thorvg/issues/4669",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-08-11T04:05:40Z",
+          "updatedAt": "2026-08-20T01:09:11Z"
+        },
+        {
+          "number": 4655,
+          "title": "savers/gif: fix broken gif palette creation",
+          "url": "https://github.com/thorvg/thorvg/pull/4655",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-05T10:55:13Z",
+          "updatedAt": "2026-08-12T07:09:25Z"
+        },
+        {
+          "number": 1758,
+          "title": "gif: a broken gif conversion",
+          "url": "https://github.com/thorvg/thorvg/issues/1758",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2023-11-02T09:16:07Z",
+          "updatedAt": "2026-08-11T04:12:06Z"
+        },
+        {
+          "number": 4497,
+          "title": "common: support build-time log level selection",
+          "url": "https://github.com/thorvg/thorvg/issues/4497",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-06-24T09:52:06Z",
+          "updatedAt": "2026-08-03T04:31:45Z"
+        },
+        {
+          "number": 4174,
+          "title": "renderer: Support actual font face name instead of font file name",
+          "url": "https://github.com/thorvg/thorvg/issues/4174",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-02-24T04:31:00Z",
+          "updatedAt": "2026-07-29T11:57:22Z"
+        },
+        {
+          "number": 3788,
+          "title": "text: support ttc extension",
+          "url": "https://github.com/thorvg/thorvg/issues/3788",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2025-09-08T11:57:03Z",
+          "updatedAt": "2026-07-29T11:53:52Z"
+        },
+        {
+          "number": 4603,
+          "title": "infra: enable the wg engine in the binary size workflow",
+          "url": "https://github.com/thorvg/thorvg/pull/4603",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-27T05:59:40Z",
+          "updatedAt": "2026-07-27T13:43:10Z"
+        },
+        {
+          "number": 4547,
+          "title": "infra: binary size workflow not working on wg_engine",
+          "url": "https://github.com/thorvg/thorvg/issues/4547",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-07-11T16:09:09Z",
+          "updatedAt": "2026-07-27T13:08:27Z"
+        },
+        {
+          "number": 4590,
+          "title": "Revert \"doc: fix incorrect alpha default value in fill()/strokeFill() description\"",
+          "url": "https://github.com/thorvg/thorvg/pull/4590",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-22T10:46:44Z",
+          "updatedAt": "2026-07-24T02:57:55Z"
+        },
+        {
+          "number": 4591,
+          "title": "doc: ambiguous 'default value' phrasing in docs",
+          "url": "https://github.com/thorvg/thorvg/issues/4591",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-22T12:39:40Z",
+          "updatedAt": "2026-07-23T05:43:35Z"
+        },
+        {
+          "number": 4586,
+          "title": "doc: fix incorrect current point description in appendRect()",
+          "url": "https://github.com/thorvg/thorvg/pull/4586",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-21T16:00:54Z",
+          "updatedAt": "2026-07-22T07:26:16Z"
+        },
+        {
+          "number": 4576,
+          "title": "doc: fix incorrect alpha default value in fill()/strokeFill() description",
+          "url": "https://github.com/thorvg/thorvg/pull/4576",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-19T06:57:46Z",
+          "updatedAt": "2026-07-19T10:36:18Z"
+        }
+      ]
+    },
+    {
+      "name": "J-unStiN",
+      "profile": "https://github.com/J-unStiN",
+      "activities": [
+        {
+          "number": 4620,
+          "title": "Wpadded warnings clean up",
+          "url": "https://github.com/thorvg/thorvg/pull/4620",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-07-28T21:22:13Z",
+          "updatedAt": "2026-09-02T03:36:19Z"
+        },
+        {
+          "number": 4618,
+          "title": "clean up compiler padding warnings",
+          "url": "https://github.com/thorvg/thorvg/issues/4618",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-07-28T15:47:42Z",
+          "updatedAt": "2026-08-29T07:37:53Z"
+        },
+        {
+          "number": 4642,
+          "title": "svg: refactor named color assignment",
+          "url": "https://github.com/thorvg/thorvg/issues/4642",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-08-03T03:47:53Z",
+          "updatedAt": "2026-08-25T04:57:56Z"
+        },
+        {
+          "number": 4601,
+          "title": "proposal: Detect struct byte padding during build",
+          "url": "https://github.com/thorvg/thorvg/issues/4601",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-07-25T10:45:04Z",
+          "updatedAt": "2026-08-13T03:40:09Z"
+        },
+        {
+          "number": 4621,
+          "title": "svg: Speed up color lookup with binary search",
+          "url": "https://github.com/thorvg/thorvg/issues/4621",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-28T21:33:59Z",
+          "updatedAt": "2026-08-03T03:53:44Z"
+        },
+        {
+          "number": 4640,
+          "title": "svg: optimize named color lookup with binary search",
+          "url": "https://github.com/thorvg/thorvg/pull/4640",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-01T06:54:43Z",
+          "updatedAt": "2026-08-03T03:47:21Z"
+        }
+      ]
+    },
+    {
+      "name": "jeongsunyong",
+      "profile": "https://github.com/jeongsunyong",
+      "activities": [
+        {
+          "number": 4641,
+          "title": "svg: Clarify null separator handling for invalid style declarations",
+          "url": "https://github.com/thorvg/thorvg/issues/4641",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-08-02T03:14:47Z",
+          "updatedAt": "2026-08-24T08:38:24Z"
+        },
+        {
+          "number": 4605,
+          "title": "SVG: nullptr crash parsing a css @font-face with no trailing ;",
+          "url": "https://github.com/thorvg/thorvg/issues/4605",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-07-27T10:55:49Z",
+          "updatedAt": "2026-07-28T15:42:30Z"
+        },
+        {
+          "number": 4609,
+          "title": "svg/parser: Prevent a crash in font-face declarations",
+          "url": "https://github.com/thorvg/thorvg/pull/4609",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-27T16:34:52Z",
+          "updatedAt": "2026-07-28T15:40:58Z"
+        }
+      ]
+    },
+    {
+      "name": "DaengDo",
+      "profile": "https://github.com/DaengDo",
+      "activities": [
+        {
+          "number": 4349,
+          "title": "lottie: revise bezier interpolator",
+          "url": "https://github.com/thorvg/thorvg/issues/4349",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-04-20T06:47:47Z",
+          "updatedAt": "2026-08-21T06:58:25Z"
+        },
+        {
+          "number": 4653,
+          "title": "wg_engine: fix compiler warning for WgStageBufferSolidColor",
+          "url": "https://github.com/thorvg/thorvg/pull/4653",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-05T08:23:08Z",
+          "updatedAt": "2026-08-05T09:15:24Z"
+        }
+      ]
+    },
+    {
+      "name": "Saususge",
+      "profile": "https://github.com/Saususge",
+      "activities": [
+        {
+          "number": 29,
+          "title": "cpu: AVX optimization",
+          "url": "https://github.com/thorvg/thorvg/issues/29",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2020-09-10T06:51:18Z",
+          "updatedAt": "2026-08-29T22:11:29Z"
+        },
+        {
+          "number": 4697,
+          "title": "gl: optimize Gaussian blur weight calculation",
+          "url": "https://github.com/thorvg/thorvg/pull/4697",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-08-22T20:31:36Z",
+          "updatedAt": "2026-08-28T08:05:05Z"
+        },
+        {
+          "number": 4426,
+          "title": "gl_engine: blur shader optimization",
+          "url": "https://github.com/thorvg/thorvg/issues/4426",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": false,
+          "createdAt": "2026-06-01T02:57:18Z",
+          "updatedAt": "2026-08-28T08:03:11Z"
+        }
+      ]
+    },
+    {
+      "name": "tcpark11",
+      "profile": "https://github.com/tcpark11",
+      "activities": [
+        {
+          "number": 4703,
+          "title": "optimize struct memory usage",
+          "url": "https://github.com/thorvg/thorvg/issues/4703",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-08-25T02:56:58Z",
+          "updatedAt": "2026-08-29T07:38:41Z"
+        },
+        {
+          "number": 4618,
+          "title": "clean up compiler padding warnings",
+          "url": "https://github.com/thorvg/thorvg/issues/4618",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-07-28T15:47:42Z",
+          "updatedAt": "2026-08-29T07:37:53Z"
+        }
+      ]
+    },
+    {
+      "name": "autlyr21",
+      "profile": "https://github.com/autlyr21",
+      "activities": [
+        {
+          "number": 349,
+          "title": "playground: preserve animation state while zooming",
+          "url": "https://github.com/thorvg/thorvg.web/pull/349",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-22T09:04:34Z",
+          "updatedAt": "2026-08-29T04:14:25Z"
+        },
+        {
+          "number": 197,
+          "title": "playground: animation is reset during zooming",
+          "url": "https://github.com/thorvg/thorvg.web/issues/197",
+          "repo": "thorvg/thorvg.web",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-01-22T06:16:05Z",
+          "updatedAt": "2026-08-18T05:41:39Z"
+        }
+      ]
+    },
+    {
+      "name": "chae-dahee",
+      "profile": "https://github.com/chae-dahee",
+      "activities": [
+        {
+          "number": 139,
+          "title": "lottie: can't export to png with webgl canvas",
+          "url": "https://github.com/thorvg/thorvg.web/issues/139",
+          "repo": "thorvg/thorvg.web",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2025-08-21T17:44:57Z",
+          "updatedAt": "2026-09-02T11:15:53Z"
+        },
+        {
+          "number": 3737,
+          "title": "support png saver",
+          "url": "https://github.com/thorvg/thorvg/issues/3737",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2025-08-22T04:38:02Z",
+          "updatedAt": "2026-09-01T01:22:44Z"
+        },
+        {
+          "number": 342,
+          "title": "perf-test: canvas is not resized when the window size changes",
+          "url": "https://github.com/thorvg/thorvg.web/issues/342",
+          "repo": "thorvg/thorvg.web",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-08-03T05:11:38Z",
+          "updatedAt": "2026-08-08T21:19:28Z"
+        },
+        {
+          "number": 343,
+          "title": "perf-test: resize canvas on window changes",
+          "url": "https://github.com/thorvg/thorvg.web/pull/343",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-03T15:25:58Z",
+          "updatedAt": "2026-08-08T21:18:10Z"
+        },
+        {
+          "number": 4581,
+          "title": "infra: OpenMP dependency requirement when OpenMP support is enabled",
+          "url": "https://github.com/thorvg/thorvg/issues/4581",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-20T14:02:29Z",
+          "updatedAt": "2026-07-25T03:56:15Z"
+        },
+        {
+          "number": 4600,
+          "title": "infra: Require OpenMP dependency when enabled",
+          "url": "https://github.com/thorvg/thorvg/pull/4600",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-24T13:53:29Z",
+          "updatedAt": "2026-07-25T03:56:03Z"
+        }
+      ]
+    },
+    {
+      "name": "hd1534",
+      "profile": "https://github.com/hd1534",
+      "activities": [
+        {
+          "number": 337,
+          "title": "infra: WASM build fails when EMSDK path contains spaces",
+          "url": "https://github.com/thorvg/thorvg.web/issues/337",
+          "repo": "thorvg/thorvg.web",
+          "kind": "issue",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-26T14:40:43Z",
+          "updatedAt": "2026-08-03T10:27:55Z"
+        },
+        {
+          "number": 338,
+          "title": "infra: Preserved EMSDK paths containing spaces",
+          "url": "https://github.com/thorvg/thorvg.web/pull/338",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-26T16:06:57Z",
+          "updatedAt": "2026-08-01T05:59:25Z"
+        }
+      ]
+    },
+    {
+      "name": "hwiskim",
+      "profile": "https://github.com/hwiskim",
+      "activities": []
+    },
+    {
+      "name": "inmare",
+      "profile": "https://github.com/inmare",
+      "activities": []
+    },
+    {
+      "name": "jinlee0310",
+      "profile": "https://github.com/jinlee0310",
+      "activities": []
+    },
+    {
+      "name": "juyonLee00",
+      "profile": "https://github.com/juyonLee00",
+      "activities": [
+        {
+          "number": 353,
+          "title": "test(webcanvas): Add unit tests for uncovered Picture APIs",
+          "url": "https://github.com/thorvg/thorvg.web/pull/353",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-08-29T03:30:59Z",
+          "updatedAt": "2026-09-02T11:36:01Z"
+        }
+      ]
+    },
+    {
+      "name": "KimSH39",
+      "profile": "https://github.com/KimSH39",
+      "activities": []
+    },
+    {
+      "name": "mnchnk",
+      "profile": "https://github.com/mnchnk",
+      "activities": [
+        {
+          "number": 3251,
+          "title": "gpu: handling very short closed paths",
+          "url": "https://github.com/thorvg/thorvg/issues/3251",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2025-02-20T01:07:58Z",
+          "updatedAt": "2026-08-21T06:23:05Z"
+        },
+        {
+          "number": 4612,
+          "title": "engines: draw a cap dot for degenerate closed subpaths (M x y Z)",
+          "url": "https://github.com/thorvg/thorvg/pull/4612",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-28T08:34:15Z",
+          "updatedAt": "2026-07-31T14:59:37Z"
+        },
+        {
+          "number": 4627,
+          "title": "api: add origin reference point API for Paint",
+          "url": "https://github.com/thorvg/thorvg/pull/4627",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-29T09:13:12Z",
+          "updatedAt": "2026-07-30T17:34:37Z"
+        }
+      ]
+    },
+    {
+      "name": "mungjin01",
+      "profile": "https://github.com/mungjin01",
+      "activities": [
+        {
+          "number": 4630,
+          "title": "trimpath() only normalizes offsets by one period, contradicting the documented circular range",
+          "url": "https://github.com/thorvg/thorvg/issues/4630",
+          "repo": "thorvg/thorvg",
+          "kind": "issue",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-07-30T04:43:21Z",
+          "updatedAt": "2026-07-31T05:33:28Z"
+        },
+        {
+          "number": 4631,
+          "title": "renderer/trimpath: normalize offsets beyond one period",
+          "url": "https://github.com/thorvg/thorvg/pull/4631",
+          "repo": "thorvg/thorvg",
+          "kind": "pullRequest",
+          "state": "closed",
+          "authored": true,
+          "createdAt": "2026-07-30T07:31:59Z",
+          "updatedAt": "2026-07-30T17:26:47Z"
+        }
+      ]
+    },
+    {
+      "name": "nowgnuesLeee",
+      "profile": "https://github.com/nowgnuesLeee",
+      "activities": [
+        {
+          "number": 340,
+          "title": "infra: bring playground and perf-test into the pnpm workspace",
+          "url": "https://github.com/thorvg/thorvg.web/issues/340",
+          "repo": "thorvg/thorvg.web",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-07-27T06:31:03Z",
+          "updatedAt": "2026-08-24T05:27:00Z"
+        },
+        {
+          "number": 344,
+          "title": " perf-test: retarget workflow to webcanvas",
+          "url": "https://github.com/thorvg/thorvg.web/pull/344",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-08-16T07:19:45Z",
+          "updatedAt": "2026-08-20T05:32:22Z"
+        },
+        {
+          "number": 335,
+          "title": "test(webcanvas): Add unit tests for uncovered Shape APIs",
+          "url": "https://github.com/thorvg/thorvg.web/pull/335",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-26T13:47:01Z",
+          "updatedAt": "2026-08-01T04:31:53Z"
+        },
+        {
+          "number": 336,
+          "title": "ci: skip workflows on test-only changes",
+          "url": "https://github.com/thorvg/thorvg.web/pull/336",
+          "repo": "thorvg/thorvg.web",
+          "kind": "pullRequest",
+          "state": "merged",
+          "authored": true,
+          "createdAt": "2026-07-26T14:17:38Z",
+          "updatedAt": "2026-07-26T14:31:26Z"
+        }
+      ]
+    },
+    {
+      "name": "numkite",
+      "profile": "https://github.com/numkite",
+      "activities": []
+    },
+    {
+      "name": "seobinpark",
+      "profile": "https://github.com/seobinpark",
+      "activities": [
+        {
+          "number": 40,
+          "title": "svg: Add Svg widget for static SVG rendering",
+          "url": "https://github.com/thorvg/thorvg.flutter/pull/40",
+          "repo": "thorvg/thorvg.flutter",
+          "kind": "pullRequest",
+          "state": "open",
+          "authored": true,
+          "createdAt": "2026-07-30T15:35:17Z",
+          "updatedAt": "2026-08-31T10:45:08Z"
+        },
+        {
+          "number": 36,
+          "title": "update flutter issues fixes in thorvg flutter plus",
+          "url": "https://github.com/thorvg/thorvg.flutter/issues/36",
+          "repo": "thorvg/thorvg.flutter",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-04-28T11:00:34Z",
+          "updatedAt": "2026-08-26T10:26:29Z"
+        },
+        {
+          "number": 38,
+          "title": "Support Picture for SVG Rendering",
+          "url": "https://github.com/thorvg/thorvg.flutter/issues/38",
+          "repo": "thorvg/thorvg.flutter",
+          "kind": "issue",
+          "state": "open",
+          "authored": false,
+          "createdAt": "2026-07-27T05:36:33Z",
+          "updatedAt": "2026-08-09T03:00:39Z"
+        }
+      ]
+    },
+    {
+      "name": "taejun0",
+      "profile": "https://github.com/taejun0",
+      "activities": []
+    },
+    {
+      "name": "YoungB0",
+      "profile": "https://github.com/YoungB0",
+      "activities": []
+    },
+    {
+      "name": "zurdhva",
+      "profile": "https://github.com/zurdhva",
+      "activities": []
+    }
+  ]
+}

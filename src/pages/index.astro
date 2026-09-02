@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import CoreProgressDashboard from '../components/CoreProgressDashboard.astro';
 import liveIssues from '../data/live-issues.json';
 import { hasAssignmentTag } from '../lib/post-sections.js';
 import { deriveSummary } from '../lib/summary.js';
@@ -59,6 +60,9 @@ const formatDate = (date: Date) =>
   </section>
 
   <section class="home-dashboard" aria-label="OSSCA 활동 대시보드">
+    <div class="container">
+      <CoreProgressDashboard scope="all" headingLevel="h2" />
+    </div>
     <div class="container home-dashboard__grid">
       <section class="dashboard-panel" aria-labelledby="recent-issues-title">
         <header class="dashboard-panel__header">

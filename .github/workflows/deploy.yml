@@ -16,6 +16,7 @@ permissions:
   contents: read
   discussions: read
   issues: read
+  pull-requests: read
   pages: write
   id-token: write
 
@@ -39,6 +40,11 @@ jobs:
 
       - name: Sync open ThorVG issues
         run: node scripts/sync-issues.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Sync contribution dashboard
+        run: node scripts/sync-contributions.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
 

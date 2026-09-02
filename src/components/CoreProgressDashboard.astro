@@ -1,0 +1,1128 @@
+---
+import contributionData from '../data/core-contributions.json';
+
+type PullRequestState = 'merged' | 'open' | 'closed';
+type ActivityKind = 'issue' | 'pullRequest';
+type DashboardScope = 'core' | 'all';
+type MetricKey =
+  | 'issue-open'
+  | 'issue-closed'
+  | 'issue-total'
+  | 'pr-open'
+  | 'pr-closed'
+  | 'pr-merged'
+  | 'pr-total'
+  | 'contribution-total';
+
+type LinkItem = {
+  number: number;
+  title: string;
+  url: string;
+  repo: string;
+  kind: ActivityKind;
+  state: PullRequestState;
+  authored: boolean;
+};
+
+type Member = {
+  name: string;
+  profile: string;
+  activities: LinkItem[];
+};
+
+type Metric = {
+  key: MetricKey;
+  label: string;
+  value: number;
+  items: LinkItem[];
+  className: string;
+  detail?: string;
+  detailKind?: 'issue-pr';
+};
+
+type MetricGroup = {
+  label: string;
+  className: string;
+  metrics: Metric[];
+};
+
+interface Props {
+  scope?: DashboardScope;
+  title?: string;
+  eyebrow?: string;
+  headingLevel?: 'h2' | 'h3';
+}
+
+const {
+  scope = 'all',
+  title,
+  eyebrow,
+  headingLevel = 'h2',
+} = Astro.props;
+const dashboardTitle = title ?? (scope === 'core' ? 'Core 대시보드' : 'ThorVG 기여 대시보드');
+const dashboardEyebrow = eyebrow ?? (scope === 'core' ? 'CORE 2026 / THORVG' : 'ALL PROJECTS');
+const coreRepository = 'thorvg/thorvg';
+const coreMemberNames = new Set(contributionData.coreMembers.map((name) => name.toLowerCase()));
+const scopeDescription = scope === 'core'
+  ? `Core ${contributionData.coreMembers.length}명 · thorvg/thorvg 단일 프로젝트`
+  : `ThorVG 공개 프로젝트 ${contributionData.repositories.length}개`;
+const syncDate = new Intl.DateTimeFormat('ko-KR', {
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  timeZone: 'Asia/Seoul',
+}).format(new Date(contributionData.generatedAt));
+
+const members: Member[] = contributionData.members
+  .filter((member) => scope === 'all' || coreMemberNames.has(member.name.toLowerCase()))
+  .map((member) => {
+    const activities = member.activities
+      .filter((activity) => scope === 'all' || activity.repo === coreRepository)
+      .map((activity) => ({
+        ...activity,
+        kind: activity.kind as ActivityKind,
+        state: activity.state as PullRequestState,
+      }));
+
+    return {
+      name: member.name,
+      profile: member.profile,
+      activities,
+    };
+  });
+
+const repositoryLabel = (item: LinkItem) => item.repo.replace('thorvg/', '');
+const activityLabel = (item: LinkItem) =>
+  `${repositoryLabel(item)} ${item.kind === 'pullRequest' ? 'PR' : '이슈'} #${item.number}`;
+
+const uniqueItems = (items: LinkItem[]) => [...new Map(items.map((item) => [item.url, item])).values()];
+
+const memberStats = members.map((member) => {
+  const issueItems = uniqueItems(member.activities.filter(({ kind }) => kind === 'issue'));
+  const pullRequestItems = uniqueItems(
+    member.activities.filter(({ kind, authored }) => kind === 'pullRequest' && authored)
+  );
+  const openIssueItems = issueItems.filter(({ state, authored }) => authored && state === 'open');
+  const closedIssueItems = issueItems.filter(({ state, authored }) => authored && state === 'closed');
+  const participatedIssueItems = issueItems;
+  const openPullRequestItems = pullRequestItems.filter(({ state }) => state === 'open');
+  const mergedPullRequestItems = pullRequestItems.filter(({ state }) => state === 'merged');
+  const closedPullRequestItems = pullRequestItems.filter(({ state }) => state === 'closed');
+  const totalItems = [...issueItems, ...pullRequestItems];
+
+  return {
+    ...member,
+    openIssueItems,
+    closedIssueItems,
+    participatedIssueItems,
+    openPullRequestItems,
+    mergedPullRequestItems,
+    closedPullRequestItems,
+    issueItems,
+    pullRequestItems,
+    totalItems,
+    openIssues: openIssueItems.length,
+    closedIssues: closedIssueItems.length,
+    participatedIssues: participatedIssueItems.length,
+    openPullRequests: openPullRequestItems.length,
+    mergedPullRequests: mergedPullRequestItems.length,
+    closedPullRequests: closedPullRequestItems.length,
+    totalIssues: issueItems.length,
+    totalPullRequests: pullRequestItems.length,
+    total: totalItems.length,
+  };
+}).filter((member) => member.total > 0);
+
+if (scope === 'all') {
+  memberStats.sort((a, b) =>
+    b.total - a.total || a.name.localeCompare(b.name, 'en', { sensitivity: 'base' })
+  );
+}
+
+const totalOpenIssueItems = uniqueItems(memberStats.flatMap(({ openIssueItems }) => openIssueItems));
+const totalClosedIssueItems = uniqueItems(memberStats.flatMap(({ closedIssueItems }) => closedIssueItems));
+const totalParticipatedIssueItems = uniqueItems(memberStats.flatMap(({ participatedIssueItems }) => participatedIssueItems));
+const totalOpenPullRequestItems = uniqueItems(memberStats.flatMap(({ openPullRequestItems }) => openPullRequestItems));
+const totalMergedPullRequestItems = uniqueItems(memberStats.flatMap(({ mergedPullRequestItems }) => mergedPullRequestItems));
+const totalClosedPullRequestItems = uniqueItems(memberStats.flatMap(({ closedPullRequestItems }) => closedPullRequestItems));
+const totalIssueItems = uniqueItems(memberStats.flatMap(({ issueItems }) => issueItems));
+const totalPullRequestItems = uniqueItems(memberStats.flatMap(({ pullRequestItems }) => pullRequestItems));
+const totalItems = [...totalIssueItems, ...totalPullRequestItems];
+
+const totals = {
+  openIssues: totalOpenIssueItems.length,
+  closedIssues: totalClosedIssueItems.length,
+  participatedIssues: totalParticipatedIssueItems.length,
+  openPullRequests: totalOpenPullRequestItems.length,
+  mergedPullRequests: totalMergedPullRequestItems.length,
+  closedPullRequests: totalClosedPullRequestItems.length,
+  totalIssues: totalIssueItems.length,
+  totalPullRequests: totalPullRequestItems.length,
+  total: totalItems.length,
+};
+
+const summaryGroups: MetricGroup[] = [
+  {
+    label: 'Issue',
+    className: 'is-issue-group',
+    metrics: [
+      { key: 'issue-open', label: 'Open', value: totals.openIssues, items: totalOpenIssueItems, className: 'is-open' },
+      { key: 'issue-closed', label: 'Closed', value: totals.closedIssues, items: totalClosedIssueItems, className: 'is-closed' },
+      { key: 'issue-total', label: '참여', value: totals.participatedIssues, items: totalParticipatedIssueItems, className: 'is-participated' },
+    ],
+  },
+  {
+    label: 'PR',
+    className: 'is-pr-group',
+    metrics: [
+      { key: 'pr-open', label: 'Open', value: totals.openPullRequests, items: totalOpenPullRequestItems, className: 'is-open' },
+      { key: 'pr-closed', label: 'Closed', value: totals.closedPullRequests, items: totalClosedPullRequestItems, className: 'is-closed' },
+      { key: 'pr-merged', label: 'Merged', value: totals.mergedPullRequests, items: totalMergedPullRequestItems, className: 'is-merged' },
+      { key: 'pr-total', label: 'Total', value: totals.totalPullRequests, items: totalPullRequestItems, className: 'is-total' },
+    ],
+  },
+  {
+    label: 'TOTAL',
+    className: 'is-total-group',
+    metrics: [
+      { key: 'contribution-total', label: 'Issue + PR', value: totals.total, items: totalItems, className: 'is-total', detail: `${totals.totalIssues} Issues + ${totals.totalPullRequests} PRs`, detailKind: 'issue-pr' },
+    ],
+  },
+];
+const sortOptions: { key: MetricKey; label: string }[] = [
+  { key: 'issue-open', label: 'Issue Open' },
+  { key: 'issue-closed', label: 'Issue Closed' },
+  { key: 'issue-total', label: 'Issue 참여' },
+  { key: 'pr-open', label: 'PR Open' },
+  { key: 'pr-closed', label: 'PR Closed' },
+  { key: 'pr-merged', label: 'PR Merged' },
+  { key: 'pr-total', label: 'PR Total' },
+  { key: 'contribution-total', label: 'Total' },
+];
+
+const memberDetails = new Map<string, string>();
+
+for (const member of memberStats) {
+  if (Astro.slots.has(member.name)) {
+    memberDetails.set(member.name, await Astro.slots.render(member.name));
+  }
+}
+---
+
+<section
+  class:list={['core-board', `core-board--${scope}`]}
+  aria-labelledby="core-board-title"
+  data-dashboard-scope={scope}
+>
+  <header class="core-board__header">
+    <div class="core-board__heading">
+      <p class="core-board__eyebrow">{dashboardEyebrow}</p>
+      {headingLevel === 'h2'
+        ? <h2 id="core-board-title" class="core-board__title">{dashboardTitle}</h2>
+        : <h3 id="core-board-title" class="core-board__title">{dashboardTitle}</h3>}
+      <p class="core-board__scope">{scopeDescription}</p>
+    </div>
+    <span class="core-board__status">
+      <span aria-hidden="true"></span>
+      GitHub sync · <time datetime={contributionData.generatedAt}>{syncDate}</time>
+    </span>
+  </header>
+
+  {scope === 'all' && (
+    <nav class="repository-filter" aria-label="기여 프로젝트 필터" data-dashboard-repository-filter>
+      <div class="repository-filter__header">
+        <span class="repository-filter__label">프로젝트</span>
+        <span class="repository-filter__status" role="status" aria-live="polite" data-dashboard-filter-status>
+          {contributionData.repositories.length} / {contributionData.repositories.length} ON
+        </span>
+      </div>
+      <div class="repository-filter__buttons">
+        <button
+          class="repository-toggle repository-toggle--all is-selected"
+          type="button"
+          aria-pressed="true"
+          data-dashboard-toggle-all
+        >전체 끄기</button>
+        {contributionData.repositories.map((repository) => (
+          <button
+            class="repository-toggle is-selected"
+            type="button"
+            aria-pressed="true"
+            data-dashboard-repository={repository}
+          >
+            <span class="repository-toggle__state" aria-hidden="true">ON</span>
+            <span class="repository-toggle__label">{repository}</span>
+          </button>
+        ))}
+      </div>
+      <div class="dashboard-sort">
+        <div class="dashboard-sort__header">
+          <span class="repository-filter__label">정렬</span>
+          <span class="repository-filter__status">내림차순</span>
+        </div>
+        <div class="dashboard-sort__buttons" role="group" aria-label="개인 기여 정렬 기준">
+          {sortOptions.map((option) => (
+            <button
+              class:list={['dashboard-sort__button', option.key === 'contribution-total' && 'is-selected']}
+              type="button"
+              aria-pressed={option.key === 'contribution-total' ? 'true' : 'false'}
+              data-dashboard-sort-key={option.key}
+            >{option.label}</button>
+          ))}
+        </div>
+      </div>
+    </nav>
+  )}
+
+  <div class="core-board__metrics" aria-label="기여 현황 요약" data-dashboard-stat-scope>
+    {summaryGroups.map((group) => (
+      <section class:list={['metric-group', group.className]} aria-label={`${group.label} 통계`}>
+        <h4>{group.label}</h4>
+        <div class="metric-group__items">
+          {group.metrics.map((metric) => (
+            <div
+              class:list={['core-metric', metric.className]}
+              tabindex="0"
+              aria-label={`${group.label} ${metric.label} ${metric.value}건. 항목 목록 열기`}
+              data-dashboard-metric={metric.key}
+              data-dashboard-label={`${group.label} ${metric.label}`}
+            >
+              <span>{metric.label}</span>
+              <strong data-dashboard-metric-value>{metric.value}</strong>
+              {metric.detail && <small data-dashboard-detail={metric.detailKind}>{metric.detail}</small>}
+              <div class="activity-popover" aria-label={`${group.label} ${metric.label} 항목`}>
+                <p>{group.label} · {metric.label} <b data-dashboard-popover-count>{metric.value}</b></p>
+                <ul hidden={metric.items.length === 0}>
+                  {metric.items.map((item) => (
+                    <li data-dashboard-repository-item={item.repo}>
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${activityLabel(item)}: ${item.title} (새 창)`}
+                      >
+                        <span class="activity-popover__ref"><small>{repositoryLabel(item)}</small>#{item.number}</span>
+                        {item.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                <p class="activity-popover__empty" hidden={metric.items.length > 0}>항목 없음</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+
+  <div class="core-board__members">
+    {memberStats.map((member) => (
+        <article
+          class="member-card"
+          data-dashboard-member={member.name}
+          data-dashboard-total={member.total}
+          data-dashboard-name={member.name}
+        >
+          <header class="member-card__header">
+            <a
+              class="member-card__avatar-link"
+              href={member.profile}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${member.name} GitHub 프로필 (새 창)`}
+            >
+              <img
+                class="member-card__avatar"
+                src={`https://github.com/${member.name}.png?size=80`}
+                alt=""
+                width="32"
+                height="32"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              />
+            </a>
+            <h4>
+              <a
+                href={member.profile}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${member.name} GitHub 프로필 (새 창)`}
+              >{member.name}</a>
+            </h4>
+          </header>
+
+          <div class="member-card__stats" aria-label={`${member.name} 기여 집계`} data-dashboard-stat-scope>
+            {([
+              {
+                label: 'Issue',
+                className: 'is-issue-group',
+                metrics: [
+                  { key: 'issue-open', label: 'Open', value: member.openIssues, items: member.openIssueItems, className: 'is-open' },
+                  { key: 'issue-closed', label: 'Closed', value: member.closedIssues, items: member.closedIssueItems, className: 'is-closed' },
+                  { key: 'issue-total', label: '참여', value: member.participatedIssues, items: member.participatedIssueItems, className: 'is-participated' },
+                ],
+              },
+              {
+                label: 'PR',
+                className: 'is-pr-group',
+                metrics: [
+                  { key: 'pr-open', label: 'Open', value: member.openPullRequests, items: member.openPullRequestItems, className: 'is-open' },
+                  { key: 'pr-closed', label: 'Closed', value: member.closedPullRequests, items: member.closedPullRequestItems, className: 'is-closed' },
+                  { key: 'pr-merged', label: 'Merged', value: member.mergedPullRequests, items: member.mergedPullRequestItems, className: 'is-merged' },
+                  { key: 'pr-total', label: 'Total', value: member.totalPullRequests, items: member.pullRequestItems, className: 'is-total' },
+                ],
+              },
+              {
+                label: 'TOTAL',
+                className: 'is-total-group',
+                metrics: [
+                  { key: 'contribution-total', label: 'Issue + PR', value: member.total, items: member.totalItems, className: 'is-total', detail: `${member.totalIssues} Issue + ${member.totalPullRequests} PR`, detailKind: 'issue-pr' },
+                ],
+              },
+            ] as MetricGroup[]).map((group) => (
+              <section class:list={['member-stat-group', group.className]} aria-label={`${member.name} ${group.label} 통계`}>
+                <h5>{group.label}</h5>
+                <div class="member-stat-group__items">
+                  {group.metrics.map((metric) => (
+                    <div
+                      class:list={['member-stat', metric.className]}
+                      tabindex="0"
+                      aria-label={`${member.name} ${group.label} ${metric.label} ${metric.value}건. 항목 목록 열기`}
+                      data-dashboard-metric={metric.key}
+                      data-dashboard-label={`${member.name} ${group.label} ${metric.label}`}
+                    >
+                      <span>{metric.label}</span>
+                      <strong data-dashboard-metric-value>{metric.value}</strong>
+                      {metric.detail && <small data-dashboard-detail={metric.detailKind}>{metric.detail}</small>}
+                      <div class="activity-popover" aria-label={`${member.name} ${group.label} ${metric.label} 항목`}>
+                        <p>{group.label} · {metric.label} <b data-dashboard-popover-count>{metric.value}</b></p>
+                        <ul hidden={metric.items.length === 0}>
+                          {metric.items.map((item) => (
+                            <li data-dashboard-repository-item={item.repo}>
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`${activityLabel(item)}: ${item.title} (새 창)`}
+                              >
+                                <span class="activity-popover__ref"><small>{repositoryLabel(item)}</small>#{item.number}</span>
+                                {item.title}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                        <p class="activity-popover__empty" hidden={metric.items.length > 0}>항목 없음</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {memberDetails.has(member.name) && (
+            <div class="member-card__detail" set:html={memberDetails.get(member.name)} />
+          )}
+        </article>
+    ))}
+  </div>
+</section>
+
+<script>
+  const dashboardCollator = new Intl.Collator('en', { sensitivity: 'base' });
+
+  document.querySelectorAll<HTMLElement>('[data-dashboard-scope="all"]').forEach((board) => {
+    const filter = board.querySelector<HTMLElement>('[data-dashboard-repository-filter]');
+    const filterStatus = board.querySelector<HTMLElement>('[data-dashboard-filter-status]');
+    const toggleAll = board.querySelector<HTMLButtonElement>('[data-dashboard-toggle-all]');
+    const repositoryButtons = Array.from(
+      board.querySelectorAll<HTMLButtonElement>('[data-dashboard-repository]')
+    );
+    const sortButtons = Array.from(
+      board.querySelectorAll<HTMLButtonElement>('[data-dashboard-sort-key]')
+    );
+    const membersContainer = board.querySelector<HTMLElement>('.core-board__members');
+    const cards = Array.from(board.querySelectorAll<HTMLElement>('[data-dashboard-member]'));
+
+    if (
+      !filter ||
+      !filterStatus ||
+      !toggleAll ||
+      !membersContainer ||
+      repositoryButtons.length === 0 ||
+      sortButtons.length === 0
+    ) return;
+
+    const setButtonState = (button: HTMLButtonElement, selected: boolean) => {
+      button.classList.toggle('is-selected', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      const state = button.querySelector<HTMLElement>('.repository-toggle__state');
+      if (state) state.textContent = selected ? 'ON' : 'OFF';
+    };
+
+    const updateStatScope = (statScope: HTMLElement, selectedRepositories: Set<string>) => {
+      const counts = new Map<string, number>();
+
+      statScope.querySelectorAll<HTMLElement>('[data-dashboard-metric]').forEach((metric) => {
+        const items = Array.from(
+          metric.querySelectorAll<HTMLElement>('[data-dashboard-repository-item]')
+        );
+        let count = 0;
+
+        items.forEach((item) => {
+          const visible = selectedRepositories.has(item.dataset.dashboardRepositoryItem ?? '');
+          item.hidden = !visible;
+          if (visible) count += 1;
+        });
+
+        const value = metric.querySelector<HTMLElement>('[data-dashboard-metric-value]');
+        const popoverCount = metric.querySelector<HTMLElement>('[data-dashboard-popover-count]');
+        const list = metric.querySelector<HTMLElement>('.activity-popover ul');
+        const empty = metric.querySelector<HTMLElement>('.activity-popover__empty');
+        const label = metric.dataset.dashboardLabel ?? '';
+
+        if (value) value.textContent = String(count);
+        if (popoverCount) popoverCount.textContent = String(count);
+        if (list) list.hidden = count === 0;
+        if (empty) empty.hidden = count !== 0;
+        metric.setAttribute('aria-label', `${label} ${count}건. 항목 목록 열기`);
+        counts.set(metric.dataset.dashboardMetric ?? '', count);
+      });
+
+      const detail = statScope.querySelector<HTMLElement>('[data-dashboard-detail="issue-pr"]');
+      if (detail) {
+        detail.textContent = `${counts.get('issue-total') ?? 0} Issues + ${counts.get('pr-total') ?? 0} PRs`;
+      }
+
+      return counts;
+    };
+
+    const applyRepositoryFilter = () => {
+      const activeSortKey = sortButtons.find(
+        (button) => button.getAttribute('aria-pressed') === 'true'
+      )?.dataset.dashboardSortKey ?? 'contribution-total';
+      const selectedButtons = repositoryButtons.filter(
+        (button) => button.getAttribute('aria-pressed') === 'true'
+      );
+      const selectedRepositories = new Set(
+        selectedButtons.map((button) => button.dataset.dashboardRepository ?? '')
+      );
+
+      board.querySelectorAll<HTMLElement>('[data-dashboard-stat-scope]').forEach((statScope) => {
+        const counts = updateStatScope(statScope, selectedRepositories);
+        const card = statScope.closest<HTMLElement>('[data-dashboard-member]');
+        if (card) {
+          const total = counts.get('contribution-total') ?? 0;
+          card.dataset.dashboardTotal = String(total);
+          card.dataset.dashboardSortValue = String(counts.get(activeSortKey) ?? 0);
+          card.hidden = total === 0;
+        }
+      });
+
+      cards
+        .sort((a, b) =>
+          Number(b.dataset.dashboardSortValue) - Number(a.dataset.dashboardSortValue) ||
+          Number(b.dataset.dashboardTotal) - Number(a.dataset.dashboardTotal) ||
+          dashboardCollator.compare(a.dataset.dashboardName ?? '', b.dataset.dashboardName ?? '')
+        )
+        .forEach((card) => membersContainer.appendChild(card));
+
+      const allSelected = selectedButtons.length === repositoryButtons.length;
+      const noneSelected = selectedButtons.length === 0;
+      toggleAll.classList.toggle('is-selected', allSelected);
+      toggleAll.setAttribute('aria-pressed', allSelected ? 'true' : noneSelected ? 'false' : 'mixed');
+      toggleAll.textContent = allSelected ? '전체 끄기' : '전체 켜기';
+      filterStatus.textContent = `${selectedButtons.length} / ${repositoryButtons.length} ON`;
+    };
+
+    repositoryButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setButtonState(button, button.getAttribute('aria-pressed') !== 'true');
+        applyRepositoryFilter();
+      });
+    });
+
+    toggleAll.addEventListener('click', () => {
+      const selectAll = repositoryButtons.some(
+        (button) => button.getAttribute('aria-pressed') !== 'true'
+      );
+      repositoryButtons.forEach((button) => setButtonState(button, selectAll));
+      applyRepositoryFilter();
+    });
+
+    sortButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        sortButtons.forEach((candidate) => {
+          const selected = candidate === button;
+          candidate.classList.toggle('is-selected', selected);
+          candidate.setAttribute('aria-pressed', String(selected));
+        });
+        applyRepositoryFilter();
+      });
+    });
+
+    applyRepositoryFilter();
+  });
+</script>
+
+<style>
+  .core-board {
+    width: 100%;
+    margin: var(--space-lg) 0 var(--space-xxl);
+    color: var(--ink);
+    border-block: 1px solid var(--hairline-strong);
+  }
+
+  .core-board__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-lg);
+    padding-block: var(--space-lg);
+  }
+
+  .core-board__heading { min-width: 0; }
+
+  .core-board__eyebrow {
+    margin: 0;
+    color: var(--primary);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .core-board__title {
+    margin: var(--space-xs) 0 0;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.15;
+  }
+
+  .core-board__scope {
+    margin: var(--space-xs) 0 0;
+    color: var(--ink-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .core-board__status {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: var(--space-xs);
+    min-height: 32px;
+    padding: 5px 10px;
+    color: var(--ink-subtle);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .core-board__status > span {
+    width: 6px;
+    height: 6px;
+    background: var(--status-open);
+    border-radius: 50%;
+  }
+
+  .repository-filter {
+    display: grid;
+    gap: var(--space-sm);
+    padding-block: var(--space-md);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .repository-filter__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .repository-filter__label {
+    color: var(--ink-subtle);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .repository-filter__status {
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .repository-filter__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .repository-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: 30px;
+    padding: 4px 8px;
+    color: var(--ink-subtle);
+    background: transparent;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  }
+
+  .repository-toggle:hover,
+  .repository-toggle:focus-visible {
+    color: var(--ink);
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  .repository-toggle.is-selected {
+    color: var(--primary);
+    background: var(--primary-subtle);
+    border-color: color-mix(in srgb, var(--primary) 36%, var(--hairline));
+  }
+
+  .repository-toggle__state {
+    min-width: 18px;
+    color: var(--ink-faint);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .repository-toggle.is-selected .repository-toggle__state { color: var(--primary); }
+
+  .repository-toggle__label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+
+  .repository-toggle--all {
+    justify-content: center;
+    min-width: 66px;
+    color: var(--ink-muted);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .dashboard-sort {
+    display: grid;
+    gap: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .dashboard-sort__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .dashboard-sort__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .dashboard-sort__button {
+    min-height: 30px;
+    padding: 4px 9px;
+    color: var(--ink-subtle);
+    background: transparent;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .dashboard-sort__button:hover,
+  .dashboard-sort__button:focus-visible {
+    color: var(--ink);
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  .dashboard-sort__button.is-selected {
+    color: var(--primary);
+    background: var(--primary-subtle);
+    border-color: color-mix(in srgb, var(--primary) 36%, var(--hairline));
+  }
+
+  .core-board__metrics {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(110px, 1.35fr);
+    border-block: 1px solid var(--hairline);
+  }
+
+  .metric-group {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    border-right: 1px solid var(--hairline);
+  }
+
+  .metric-group:last-child { border-right: 0; }
+
+  .metric-group > h4 {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    min-height: 34px;
+    padding: var(--space-xs) var(--space-sm);
+    color: var(--ink-subtle);
+    border-bottom: 1px solid var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .metric-group__items,
+  .member-stat-group__items {
+    display: grid;
+    min-width: 0;
+  }
+
+  .is-issue-group .metric-group__items,
+  .is-issue-group .member-stat-group__items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .is-pr-group .metric-group__items,
+  .is-pr-group .member-stat-group__items { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .is-total-group .metric-group__items,
+  .is-total-group .member-stat-group__items { grid-template-columns: minmax(0, 1fr); }
+
+  .core-metric {
+    position: relative;
+    display: grid;
+    min-height: 104px;
+    padding: var(--space-md);
+    border-right: 1px solid var(--hairline);
+    cursor: help;
+    outline: none;
+  }
+
+  .core-metric:focus-visible,
+  .member-stat:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--primary);
+  }
+
+  .core-metric:last-child { border-right: 0; }
+  .core-metric span { color: var(--ink-subtle); font-size: 12px; font-weight: 500; }
+  .core-metric strong {
+    align-self: end;
+    color: var(--state-color, var(--ink));
+    font-family: var(--font-mono);
+    font-size: 2.25rem;
+    font-weight: 400;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .core-metric small {
+    margin-top: var(--space-xxs);
+    color: var(--ink-subtle);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .is-participated { --state-color: var(--cat-azure); }
+  .is-merged { --state-color: var(--status-merged); }
+  .is-open { --state-color: var(--status-open); }
+  .is-closed { --state-color: var(--status-closed); }
+  .is-total { --state-color: var(--ink); }
+
+  .core-board__members {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .member-card {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.55fr) minmax(0, 1.45fr);
+    gap: var(--space-md);
+    align-items: start;
+    min-width: 0;
+    padding-block: var(--space-md);
+    border-top: 1px solid var(--hairline);
+  }
+
+  .member-card[hidden] { display: none; }
+
+  .member-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+  }
+
+  .member-card__avatar-link {
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .member-card__avatar {
+    display: block;
+    width: 32px;
+    height: 32px;
+    background: var(--surface-2);
+    border-radius: 50%;
+  }
+
+  .member-card h4 { margin: 0; font-family: var(--font-display); font-size: 15px; font-weight: 600; line-height: 1.3; }
+  .member-card h4 a { color: var(--ink); text-decoration: none; }
+  .member-card h4 a:hover { color: var(--primary-hover); }
+
+  .member-card__detail {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  .member-card__stats {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 4fr) minmax(82px, 1.35fr);
+    min-width: 0;
+  }
+
+  .member-stat-group {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    border-right: 1px solid var(--hairline);
+  }
+
+  .member-stat-group:last-child { border-right: 0; }
+
+  .member-stat-group > h5 {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    min-height: 24px;
+    padding: 3px var(--space-xs);
+    color: var(--ink-faint);
+    border-bottom: 1px solid var(--hairline);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .member-stat {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: var(--space-xs);
+    min-width: 0;
+    min-height: 42px;
+    padding: var(--space-xs) var(--space-sm);
+    border-right: 1px solid var(--hairline);
+    cursor: help;
+    outline: none;
+  }
+
+  .member-stat:last-child { border-right: 0; }
+
+  .member-stat span { color: var(--ink-subtle); font-size: 11px; }
+  .member-stat strong {
+    color: var(--state-color, var(--ink));
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .member-stat small {
+    grid-column: 1 / -1;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+
+  .activity-popover {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% - 4px);
+    left: var(--space-sm);
+    width: min(440px, calc(100vw - 40px));
+    max-height: 300px;
+    padding: var(--space-sm);
+    overflow-y: auto;
+    color: var(--ink);
+    background: var(--surface-1);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-md);
+    box-shadow: 0 14px 32px rgb(0 0 0 / 14%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+  }
+
+  .core-metric:hover .activity-popover,
+  .core-metric:focus-within .activity-popover,
+  .member-stat:hover .activity-popover,
+  .member-stat:focus-within .activity-popover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .is-pr-group .metric-group__items > :last-child .activity-popover,
+  .is-total-group .metric-group__items > :last-child .activity-popover,
+  .is-pr-group .member-stat-group__items > :last-child .activity-popover,
+  .is-total-group .member-stat-group__items > :last-child .activity-popover {
+    right: var(--space-sm);
+    left: auto;
+  }
+
+  .activity-popover p {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin: 0 0 var(--space-xs);
+    color: var(--ink-subtle);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .activity-popover p b {
+    color: var(--state-color, var(--ink));
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+
+  .activity-popover ul {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .activity-popover [hidden] { display: none; }
+
+  .activity-popover li {
+    margin: 0;
+    padding: 0;
+  }
+
+  .activity-popover a {
+    display: grid;
+    grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+    gap: var(--space-xs);
+    padding: 6px;
+    color: var(--ink-subtle);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 11px;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  .activity-popover a:hover,
+  .activity-popover a:focus-visible {
+    color: var(--ink);
+    background: var(--surface-2);
+    outline: none;
+  }
+
+  .activity-popover a .activity-popover__ref {
+    display: grid;
+    align-content: start;
+    gap: 1px;
+    min-width: 0;
+    color: var(--primary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .activity-popover__ref small {
+    grid-column: auto;
+    margin: 0;
+    color: var(--ink-faint);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .activity-popover .activity-popover__empty {
+    margin: 0;
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+
+  @media (max-width: 760px) {
+    .core-board__header { display: grid; gap: 1rem; }
+    .core-board__status { justify-self: start; }
+    .member-card { grid-template-columns: 1fr; gap: var(--space-md); }
+    .member-card__detail { grid-column: 1; }
+  }
+
+  @media (max-width: 520px) {
+    .repository-filter__buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .repository-toggle { width: 100%; max-width: 100%; }
+    .dashboard-sort__buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dashboard-sort__button { width: 100%; }
+    .core-board__metrics,
+    .member-card__stats { grid-template-columns: 1fr; }
+    .metric-group,
+    .member-stat-group {
+      grid-template-rows: auto minmax(0, 1fr);
+      border-right: 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .metric-group:last-child,
+    .member-stat-group:last-child { border-bottom: 0; }
+    .metric-group > h4,
+    .member-stat-group > h5 {
+      min-height: 28px;
+      padding: var(--space-xs) var(--space-sm);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .is-issue-group .metric-group__items,
+    .is-pr-group .metric-group__items,
+    .is-issue-group .member-stat-group__items,
+    .is-pr-group .member-stat-group__items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .core-metric:nth-child(2n),
+    .member-stat:nth-child(2n) { border-right: 0; }
+    .core-metric { min-height: 96px; }
+    .core-metric strong { font-size: 2rem; }
+    .core-metric:nth-child(2n) .activity-popover,
+    .member-stat:nth-child(2n) .activity-popover { right: var(--space-sm); left: auto; }
+  }
+</style>
