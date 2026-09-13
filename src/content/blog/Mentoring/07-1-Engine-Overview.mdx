@@ -1,0 +1,411 @@
+---
+title: "[Core2026] Engine Overview"
+github: "Nor-s"
+date: 2026-09-05
+summary: "CPU와 GPU backend가 공유하는 ThorVG의 Paint tree, RenderMethod 계약, retained rendering 동작을 살펴봅니다."
+tags: ["ThorVG", "Core"]
+draft: false
+---
+import TMathPlayer from '../../../components/TMathPlayer.astro';
+import Disclosure from '../../../components/Disclosure.astro';
+import apiRelationsDiagram from "./IMAGE/07-SW-Overview/api-relations.webp";
+import sceneCompositionScene from "./LUA/sw-overview-scene-composition.lua?url";
+import sceneCompositionPoster from "./IMAGE/07-SW-Overview/scene-composition.webp";
+import renderingModesScene from "./LUA/sw-overview-rendering-modes.lua?url";
+import renderingModesPoster from "./IMAGE/07-SW-Overview/immediate-retained-mode.webp";
+
+# Core2026 &gt; Engine - 7
+
+> [!NOTE]
+> TODO: Mask, Cliping, Viewport, Blending, Matte, Stroke, Dash, Trim, Anti Aliasing, Shape, Picture, Fill Rule
+
+## 1. ThorVG API
+
+### 1.1 API 구조와 데이터 관계
+
+<img src={apiRelationsDiagram.src} width={2400} height={5160} alt="Canvas, Scene, Shape, Picture의 네 섹션으로 나눈 ThorVG API 상속·보유 관계와 Scene·Lottie·SVG 트리 예시" loading="lazy" decoding="async" />
+
+공개 API와 공통 내부 타입의 상속·보유 관계, Scene·Lottie·SVG의 내부 트리 예시입니다. 빈 삼각형은 부모 타입을, 화살표는 보유·참조 대상을 가리킵니다.
+
+- **Canvas → Canvas::Impl → Scene:** 내부 Main Scene에 Paint들을 추가
+- **Scene → Paint 자식 목록:** Shape·Text·Picture뿐 아니라 다른 Scene도 자식으로 보유
+  - Scene 역시 Paint이므로, Scene 안에 Scene을 넣어 트리 구성
+- **Canvas → Canvas::Impl → RenderMethod:** Canvas가 내부 구현을 통해 renderer 보관
+  - `SwRenderer`, `GlRenderer`, `WgRenderer`가 `RenderMethod` 구현
+  - 각 Canvas의 `gen()`에서 대응하는 renderer 선택
+- **Shape → RenderShape → RenderPath:** `ShapeImpl::rs`가 렌더링 상태 보관
+  - `RenderShape::path`에 `RenderPath`, `RenderShape::fill`에 Fill 보관
+  - `RenderPath::pts`는 `Point` 배열, `RenderPath::cmds`는 `PathCommand` 명령 enum 배열
+- **Picture → ImageLoader / Paint / RenderSurface:** `PictureImpl`이 loader와 콘텐츠 데이터 참조
+  - **Lottie(JSON)·SVG:** `vector`의 Paint 트리로 구성
+  - **JPG/JPEG·WebP·PNG 등:** `bitmap`의 RenderSurface에 원본 이미지 픽셀 보관
+  - `RenderSurface::data`, `buf32`, `buf8`은 같은 픽셀 버퍼를 가리키는 union 멤버
+  - 위 이미지 하단의 Lottie·SVG 구조도는 로드 후의 Paint 트리를 단순화한 예시
+    - Lottie의 레이어와 SVG의 `<g>`는 Scene으로, 도형은 Shape로 표현, 이미지 = Picture로  포함
+    - 실제 트리는 파일 내용과 clip·mask·그룹 처리에 따라 상이
+- **Text → Shape:** `TextImpl::shape`에 내부 Shape 보관, fill·render 처리 위임
+- **LottieAnimation → Animation:** Lottie 확장 타입의 상속 관계
+  - `Animation`은 별도로 `Picture`를 보유하며 `frame()`으로 재생 프레임 지정
+
+
+
+<Disclosure title="코드 보기: 공개 API와 공통 내부 타입의 관계">
+
+[`thorvg.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/inc/thorvg.h)의 관련 선언을 발췌했습니다. 구현 매크로와 관계없는 멤버는 생략했습니다.  
+
+- **Canvas:** 렌더링 진입점, root `Scene`과 `RenderMethod` 보관
+  - `SwCanvas`: CPU renderer → 사용자 메모리 버퍼
+  - `GlCanvas`: OpenGL/ES renderer → GL framebuffer
+  - `WgCanvas`: WebGPU renderer → surface 또는 texture
+- **Paint:** transform·opacity·clip·mask·blend 상태를 가진 공통 기반 타입
+  - `Shape`, `Picture`, `Text`, `Scene`이 상속
+  - `Canvas`는 Paint 상속 계층에 포함되지 않음
+- **Scene:** 여러 Paint를 묶는 논리적인 그룹
+  - `Scene::add(Paint*)`로 자식 추가
+  - 다른 Scene을 자식으로 추가하여 장면 그래프 구성
+  - 그룹 합성·효과 처리가 필요한 경우 중간 render target 사용
+
+```cpp
+struct Canvas { /* ... 생략 */ };
+struct SwCanvas final : Canvas { /* ... 생략 */ };
+struct GlCanvas final : Canvas { /* ... 생략 */ };
+struct WgCanvas final : Canvas { /* ... 생략 */ };
+
+struct Paint {
+    Result transform(const Matrix& m) noexcept;
+    // ... 생략
+};
+struct Scene : Paint {
+    Result add(Paint* target, Paint* at = nullptr) noexcept;
+    // ... 생략
+};
+struct Shape : Paint {
+    Result fill(Fill* f) noexcept;
+    Result appendPath(const PathCommand* cmds, uint32_t cmdCnt,
+                      const Point* pts, uint32_t ptsCnt) noexcept;
+    // ... 생략
+};
+struct Picture : Paint { /* ... 생략 */ };
+struct Text : Paint { /* ... 생략 */ };
+
+struct Fill {
+    struct ColorStop {
+        float offset;
+        uint8_t r, g, b, a;
+    };
+    Result colorStops(const ColorStop* colorStops, uint32_t cnt) noexcept;
+    // ... 생략
+};
+struct LinearGradient : Fill { /* ... 생략 */ };
+struct RadialGradient : Fill { /* ... 생략 */ };
+
+struct Animation {
+    Picture* picture() const noexcept;  // Animation이 보유한 Picture
+    // ... 생략
+};
+
+// Lottie 확장 헤더 thorvg_lottie.h
+struct LottieAnimation final : Animation { /* ... 생략 */ };
+```
+
+`LottieAnimation`의 선언은 [`thorvg_lottie.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/loaders/lottie/thorvg_lottie.h)에 있습니다.
+
+</Disclosure>
+
+<Disclosure title="코드 보기: Shape의 RenderPath와 Text의 내부 Shape">
+
+[`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h), [`tvgShape.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgShape.h), [`tvgText.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgText.h)의 관련 멤버를 발췌했습니다.
+
+```cpp
+struct RenderPath {
+    Array<PathCommand> cmds;
+    Array<Point> pts;
+    // ... 생략
+};
+
+struct RenderShape {
+    RenderPath path;
+    Fill* fill = nullptr;
+    // ... 생략
+};
+
+struct ShapeImpl : Shape {
+    Paint::Impl impl;
+    RenderShape rs;
+    // ... 생략
+};
+
+struct TextImpl : Text {
+    Paint::Impl impl;
+    Shape* shape;
+
+    // 내부 Shape 생성
+    TextImpl() : impl(Paint::Impl(this)), shape(Shape::gen())
+    {
+        PAINT(shape)->parent = this;
+        shape->strokeJoin(StrokeJoin::Round);
+    }
+
+    bool render(RenderMethod* renderer, TVG_UNUSED CompositionFlag flag)
+    {
+        if (!loader || !fm.engine) return true;
+        renderer->blend(impl.blendMethod);
+        return PAINT(shape)->render(renderer);
+    }
+    // ... 생략
+};
+```
+
+공개 API `Shape::appendPath()`는 Point 배열을 입력받습니다. 내부에서는 점 배열과 명령 배열을 `RenderPath`로 함께 보관합니다.
+
+`Text::fill()` 역시 [`tvgText.cpp`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgText.cpp)에서 내부 Shape로 위임합니다. 따라서 그림은 Text–Shape–RenderShape–Fill의 보유 관계를 중심으로 표현했습니다.
+
+```cpp
+Result Text::fill(Fill* f) noexcept
+{
+    return to<TextImpl>(this)->shape->fill(f);
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: RenderMethod 인터페이스와 SW·GL·WG 구현체">
+
+`RenderMethod`는 **렌더링 backend를 추상화하는 내부 인터페이스**입니다. Canvas·Paint가 사용하는 공통 렌더링 연산과 CPU·GPU별 구현을 연결합니다.
+
+- **구현체:** `SwRenderer`, `GlRenderer`, `WgRenderer`
+- **공통 계약:** Shape·Image 준비와 렌더링, 합성, 완료 대기
+- **선택 시점:** 각 Canvas의 `gen()`이 구현체를 생성해 `Canvas::Impl::renderer`에 연결
+- **호출 경로:** Canvas → root Scene → Paint → 선택된 renderer
+
+[`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h)의 주요 가상 함수를 발췌했습니다.
+
+```cpp
+struct RenderMethod
+{
+    // ... 공통 상태·기능 생략
+    virtual ~RenderMethod() {}
+    virtual bool preUpdate() = 0;
+    virtual RenderData prepare(const RenderShape& rshape, RenderData data,
+                               const Matrix& transform, const Array<RenderData>& clips,
+                               uint8_t opacity, RenderUpdateFlag flags, bool clipper) = 0;
+    virtual bool postUpdate() = 0;
+    virtual bool preRender() = 0;
+    virtual bool renderShape(RenderData data) = 0;
+    virtual bool renderImage(RenderData data) = 0;
+    virtual bool postRender() = 0;
+    virtual bool sync() = 0;
+
+    virtual RenderCompositor* target(const RenderRegion& region, ColorSpace cs,
+                                     CompositionFlag flags) = 0;
+    virtual bool beginComposite(RenderCompositor* cmp, MaskMethod method,
+                                uint8_t opacity) = 0;
+    virtual bool endComposite(RenderCompositor* cmp) = 0;
+    // ... 나머지 가상 함수 생략
+};
+
+struct SwRenderer : RenderMethod { /* ... 생략 */ };
+struct GlRenderer : RenderMethod { /* ... 생략 */ };
+struct WgRenderer : RenderMethod { /* ... 생략 */ };
+```
+
+구현체의 선언은 [`tvgSwRenderer.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/cpu_engine/tvgSwRenderer.h), [`tvgGlRenderer.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/gpu_engine/gl/tvgGlRenderer.h), [`tvgWgRenderer.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/gpu_engine/wg/tvgWgRenderer.h)에 있습니다.
+
+[`Canvas::Impl`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgCanvas.h#L30-L36)은 root Scene과 함께 실제 backend를 가리키는 `RenderMethod*`를 보관합니다.
+
+```cpp
+struct Canvas::Impl
+{
+    Scene* scene;
+    RenderMethod* renderer;
+    // ... 나머지 멤버·함수 생략
+};
+```
+
+[`SwCanvas::gen()`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgCanvas.cpp#L141-L155) 전체입니다. CPU backend 지원 여부와 초기화 상태를 확인한 뒤 renderer를 생성해 연결합니다.
+
+```cpp
+SwCanvas* SwCanvas::gen(EngineOption op) noexcept
+{
+#ifdef THORVG_CPU_ENGINE_SUPPORT
+    if (engineInit > 0) {
+        auto renderer = new SwRenderer(TaskScheduler::threads(), op);
+        renderer->ref();
+        auto ret = new SwCanvas;
+        ret->pImpl->renderer = renderer;
+        return ret;
+    }
+#endif
+    TVGLOG("RENDERER", "SwCanvas is not supported");
+    return nullptr;
+}
+```
+
+각 Canvas의 `gen()`은 대응하는 `RenderMethod` 구현체를 선택해 `Canvas::Impl::renderer`에 보관합니다.
+
+</Disclosure>
+
+### 1.2 Scene — 트리, 그리기 순서와 그룹
+
+Scene은 여러 Paint를 보관하는 논리적인 그룹입니다. `add()`로 보관한 순서가 z-order를 결정하며, Scene 안에 Scene을 넣어 트리를 만들 수 있습니다.
+
+-  `add()`: 목록의 마지막에 추가
+- `add(paint, at)`: 지정한 `at` 앞에 삽입
+- `draw`: 각 부모의 자식 목록을 앞에서 뒤로 순회
+
+<TMathPlayer scene="sw-overview-scene-composition" source={sceneCompositionScene} poster={sceneCompositionPoster.src} title="Scene의 직접 그리기와 그룹 합성" description="위쪽 Direct와 아래쪽 Group Opacity에서 같은 Scene 트리를 동시에 그리며, 직접 그리기와 Offscreen 그룹 합성을 비교합니다." width={2200} height={2100} />
+
+위쪽 Direct와 아래쪽 Group Opacity는 같은 Paint tree를 사용합니다. 차이는 Scene이라는 자료구조가 아니라 **그룹 전체에 opacity를 적용해야 하는가**에 있습니다.
+
+- `opacity(255)`: 자식은 현재 target에 순서대로 그려질 수 있음
+- `opacity(128)`: 자식의 겹침 결과를 먼저 만든 뒤 그룹 전체에 opacity를 한 번 적용
+- effect·mask·blend: 공통 Scene 로직이 중간 합성을 요청할 수 있는 다른 조건
+
+CPU의 offscreen Surface와 `beginComposite() / endComposite()` 흐름은 <a href={import.meta.env.BASE_URL + 'blog/mentoring/07-7-cpu-engine-postprocessing'}>Compositing &amp; Postprocessing</a>에서 다룹니다.
+
+<Disclosure title="코드 보기: Scene의 부모·자식 관계">
+
+`Canvas` 초기화와 target 연결은 생략한 예시입니다.
+
+```cpp
+auto circle = tvg::Shape::gen();
+auto triangle = tvg::Shape::gen();
+auto square = tvg::Shape::gen();
+
+auto group = tvg::Scene::gen();
+group->add(square);
+group->add(triangle);        // [triangle, square]
+
+canvas->add(circle);
+canvas->add(group);         // [circle, group]
+
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+</Disclosure>
+
+### 1.3 Immediate vs Retained Mode
+
+<TMathPlayer scene="sw-overview-rendering-modes" source={renderingModesScene} poster={renderingModesPoster.src} title="Immediate vs Retained Mode" description="Immediate Mode sends drawing commands for both shapes every frame. Retained Mode keeps the objects and updates only the changed object." width={1600} height={860} />
+
+ThorVG는 **Retained Mode** 렌더링 모델을 지원합니다.
+
+- **Immediate:** 사용자가 장면을 관리하고, 매 frame 필요한 그리기 명령 전달
+- **Retained:** 엔진이 Scene·Paint와 상태를 보관. 사용자는 바뀐 객체를 수정한 뒤 `update()`·`draw()`로 반영
+
+> [Microsoft Learn — Retained Mode Versus Immediate Mode](https://learn.microsoft.com/en-us/windows/win32/learnwin32/retained-mode-versus-immediate-mode)
+>
+> [Wikipedia — Retained mode](https://en.wikipedia.org/wiki/Retained_mode)
+
+### 1.4 Frame lifecycle — update, draw, sync
+
+세 호출은 모든 backend에서 같은 역할 경계를 제공합니다. 실제 계산과 동기화 방식은 선택된 `RenderMethod` 구현이 결정합니다.
+
+
+| 단계         | 공통 계약                                       | 호출 뒤 보장되는 것                                    |
+| ---------- | ------------------------------------------- | ---------------------------------------------- |
+| `update()` | 변경 flag를 Paint tree로 전달하고 backend의 준비 작업 요청 | 준비가 요청됨. 비동기 backend에서는 아직 완료 전일 수 있음          |
+| `draw()`   | Paint tree를 순회하며 준비된 데이터를 현재 target에 기록     | draw가 제출됨                                      |
+| `sync()`   | backend의 미완료 작업을 처리하고 frame 경계 정리           | backend가 frame 작업을 마무리해 다음 Canvas 변경을 시작할 수 있음 |
+
+
+ThorVG의 retained model에서는 Paint 객체와 이전 준비 결과가 유지됩니다. 따라서 다음 frame에는 변경 flag를 기준으로 필요한 범위만 갱신할 수 있습니다.
+
+<TMathPlayer scene="engine-canvas-state-machine" source={import.meta.env.BASE_URL + 'tmath/lifecycle/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/lifecycle/overview.webp'} title="Frame lifecycle — Canvas state machine" description="Follow the five Canvas states through API calls: the internal update() in draw(), call restrictions during Drawing, and the return to Synced after sync()." width={1280} height={1150} />
+
+검은 노드는 현재 `Canvas::Impl::status`입니다. `Painting`은 Paint 목록 변경을, `Damaged`는 target·viewport 변경을 나타냅니다. `Painting`·`Damaged`에서 `draw()`를 호출하면 내부 `update()`로 `Updating`을 거친 뒤 `Drawing`으로 전환합니다.
+
+<Disclosure title="코드 보기: update — Paint tree 준비 요청">
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+```
+
+[`Canvas::Impl::update()`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgCanvas.h#L77-L102) 전체입니다. 상태를 검사한 뒤 `preUpdate()`와 `postUpdate()` 사이에서 root Scene에 update를 전달합니다.
+
+```cpp
+Result update()
+{
+    if (status == Status::Updating) return Result::Success;
+
+    if (status == Status::Drawing) {
+        TVGLOG("RENDERER", "update() was called during drawing.");
+        return Result::InsufficientCondition;
+    }
+
+    auto flag = RenderUpdateFlag::None;
+
+    //TODO: All is too harsh, can be optimized.
+    if (status == Status::Damaged) flag = RenderUpdateFlag::All;
+
+    if (!renderer->preUpdate()) return Result::InsufficientCondition;
+
+    clips.clear();
+
+    auto m = tvg::identity();
+    PAINT(scene)->update(renderer, m, clips, 255, flag);
+
+    if (!renderer->postUpdate()) return Result::InsufficientCondition;
+
+    status = Status::Updating;
+    return Result::Success;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: draw — Paint tree 렌더링">
+
+```text
+Canvas::draw(clear)
+-> Canvas::Impl::draw(clear)
+```
+
+[`Canvas::Impl::draw()`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgCanvas.h#L104-L119) 전체입니다. 중복 draw를 거절하고, `Painting` 또는 `Damaged` 상태이면 먼저 `update()`를 호출합니다. 이후 `preRender()` → Scene 렌더링 → `postRender()` 순서로 진행합니다.
+
+```cpp
+Result draw(bool clear)
+{
+    if (status == Status::Drawing) {
+        TVGLOG("RENDERER", "draw() was called multiple times.");
+        return Result::InsufficientCondition;
+    }
+    if (status == Status::Painting || status == Status::Damaged) update();
+    if (status != Status::Updating) return Result::InsufficientCondition;
+    if (clear && !renderer->clear()) return Result::InsufficientCondition;
+    if (!renderer->preRender()) return Result::InsufficientCondition;
+    if (!PAINT(scene)->render(renderer) || !renderer->postRender()) return Result::InsufficientCondition;
+
+    status = Status::Drawing;
+
+    return Result::Success;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: sync — backend 완료 대기와 상태 전환">
+
+```text
+Canvas::sync()
+-> Canvas::Impl::sync()
+```
+
+[`Canvas::Impl::sync()`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgCanvas.h#L121-L129) 전체입니다. 실제 완료 처리는 선택된 renderer에 위임하며, 성공하면 Canvas 상태를 `Synced`로 바꿉니다.
+
+```cpp
+Result sync()
+{
+    if (status == Status::Synced) return Result::Success;
+    if (renderer->sync()) {
+        status = Status::Synced;
+        return Result::Success;
+    }
+    return Result::Unknown;
+}
+```
+
+</Disclosure>

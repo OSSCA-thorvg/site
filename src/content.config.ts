@@ -14,6 +14,7 @@ const blog = defineCollection({
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
     'no-blog': z.boolean().default(false),
+    'no-series': z.boolean().default(false),
     discussionNumber: z.number().int().positive().optional(),
   }),
 });

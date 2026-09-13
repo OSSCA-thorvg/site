@@ -1,0 +1,3 @@
+# Optional video exports and intermediate render output
+*.mp4
+**/temp/

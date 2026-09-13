@@ -1,0 +1,67 @@
+---
+interface Props {
+  title: string;
+  open?: boolean;
+}
+
+const { title, open = false } = Astro.props;
+---
+
+<details class="mdx-disclosure" open={open}>
+  <summary>
+    <svg class="mdx-disclosure__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
+    <span>{title}</span>
+  </summary>
+  <div class="mdx-disclosure__content">
+    <slot />
+  </div>
+</details>
+
+<style>
+  .mdx-disclosure {
+    min-width: 0;
+    margin-block: var(--space-md);
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+  }
+
+  .mdx-disclosure > summary {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    min-height: 48px;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: inherit;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.6;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mdx-disclosure > summary::-webkit-details-marker { display: none; }
+  .mdx-disclosure > summary:hover { background: var(--surface-3); }
+  .mdx-disclosure > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: -4px; }
+  .mdx-disclosure > summary > span { min-width: 0; overflow-wrap: anywhere; }
+  .mdx-disclosure__chevron { flex: 0 0 16px; margin-top: 4px; color: var(--ink-subtle); transition: transform var(--dur-micro) var(--ease-out); }
+  .mdx-disclosure[open] > summary { border-bottom: 1px solid var(--hairline); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .mdx-disclosure[open] > summary .mdx-disclosure__chevron { transform: rotate(90deg); }
+
+  .mdx-disclosure__content { padding: var(--space-md); }
+  .mdx-disclosure__content > :global(:first-child) { margin-top: 0; }
+  .mdx-disclosure__content > :global(:last-child) { margin-bottom: 0; }
+
+  @media (max-width: 520px) {
+    .mdx-disclosure > summary { padding-inline: var(--space-sm); gap: var(--space-xs); }
+    .mdx-disclosure__content { padding: var(--space-sm); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mdx-disclosure__chevron { transition: none; }
+  }
+</style>

@@ -8,6 +8,8 @@ import {
   renderDiscussionMarkdown,
 } from '../scripts/sync-discussions.mjs';
 
+import { createSeriesIndex, extractSeriesHeading } from '../src/lib/post-series.js';
+
 const readSource = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const discussion = {
@@ -121,4 +123,18 @@ test('Pages build synchronizes discussion lifecycle changes without committing g
   assert.match(workflow, /node scripts\/sync-discussions\.mjs/);
   assert.match(gitignore, /src\/content\/blog\/discussion-\*\.md/);
   assert.doesNotMatch(workflow, /contents: write/);
+});
+
+
+test('freeform Discussion headings preserve nested series metadata through synchronization', () => {
+  const output = renderDiscussionMarkdown({
+    ...discussion,
+    body: '# Core2026 > Renderer Overview > CPU Renderer - 2\n\n픽셀을 그립니다.',
+  });
+  const heading = extractSeriesHeading(output);
+  const series = createSeriesIndex([{ id: 'discussion-42', title: discussion.title, heading }]).get('discussion-42');
+  assert.equal(series.name, 'Core2026');
+  assert.equal(series.children[0].children[0].name, 'CPU Renderer');
+  assert.equal(series.children[0].children[0].entries[0].title, discussion.title);
+  assert.match(output, /summary: "픽셀을 그립니다\."/);
 });

@@ -1,0 +1,21 @@
+---
+title: "[Core2026] CPU Engine - Picture"
+github: "Nor-s"
+date: 2026-09-05
+summary: "Picture의 Bitmap 데이터, Update/Prepare, Sampling 알고리즘과 Clip의 Image RLE 생성을 살펴봅니다."
+tags: ["ThorVG", "Core", "CPU"]
+draft: false
+---
+
+import TMathPlayer from "../../../components/TMathPlayer.astro";
+
+# Core2026 > Engine > CPU Engine - 14
+
+Picture는 Loader가 반환하는 데이터에 따라 Vector와 Bitmap 경로로 나뉩니다. 이 글에서는 Bitmap의 화소가 준비되고, 변환·Sampling·Clip을 거쳐 Surface에 기록되는 과정을 살펴봅니다.
+
+| 입력 | Loader의 결과 | 렌더링 경로 |
+| --- | --- | --- |
+| SVG, Lottie | `Paint*` tree | 자식 Paint의 `update()`·`render()`에 위임 |
+| PNG, JPG, WebP, raw pixels | `RenderSurface*` | `SwImageTask`에서 준비 → Image Raster |
+
+<TMathPlayer scene="picture-overview" source={import.meta.env.BASE_URL + 'tmath/picture/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/picture/overview.webp'} title="Picture Overview" description="Picture의 Vector·Bitmap 분기에서 Image Prepare, Clip RLE 생성, Sampling 선택과 Surface 합성까지 연결합니다. 같은 Bitmap의 Source 색상과 RLE coverage가 최종 출력에 함께 반영됩니다." width={1280} height={3200} />

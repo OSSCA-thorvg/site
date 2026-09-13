@@ -33,7 +33,7 @@ test('Markdown images render as responsive figures instead of MDX-only placehold
     remarkPlugins: [[remarkLottieImages, { base: '/' }]],
   });
   const result = await processor.render('![렌더링 결과](image.png)', {
-    fileURL: new URL('../src/content/blog/blog-writing-guide.md', import.meta.url),
+    fileURL: new URL('../src/content/blog/fixture.md', import.meta.url),
   });
 
   assert.match(result.code, /<figure class="media-figure">/);
@@ -143,10 +143,13 @@ test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', 
   assert.match(css, /\.mermaid-diagram/);
 });
 
-test('writing guide documents the supported GitHub Alert and Mermaid syntax', async () => {
-  const guide = await readSource('src/content/blog/blog-writing-guide.md');
-
-  assert.match(guide, /> \[!NOTE\]/);
-  assert.match(guide, /```mermaid/);
-  assert.match(guide, /NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`/);
+test('nested series metadata is hidden while malformed paths remain readable headings', async () => {
+  const processor = await createMarkdownProcessor({ remarkPlugins: [remarkSeriesHeading] });
+  for (const heading of ['# Core2026 > Renderer Overview > CPU Renderer - 2', '**Core2026 > Renderer Overview - 7**']) {
+    const result = await processor.render(heading + '\n\n본문입니다.\n\n## 실제 목차');
+    assert.doesNotMatch(result.code, /Core2026/);
+    assert.match(result.code, /실제 목차/);
+  }
+  const invalid = await processor.render('# Core2026 > > CPU - 2');
+  assert.match(invalid.code, /<h1/);
 });

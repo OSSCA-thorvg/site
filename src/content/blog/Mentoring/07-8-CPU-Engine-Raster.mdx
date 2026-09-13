@@ -1,0 +1,345 @@
+---
+title: "[Core2026] Pipeline - Draw/Raster"
+github: "Nor-s"
+date: 2026-09-12
+summary: "CPU Engine이 준비된 RenderData를 Shape·Picture별 Raster 함수로 전달하고, 입력 조건과 갱신 영역에 따라 실행 경로를 선택하는 과정을 살펴봅니다."
+tags: ["ThorVG", "Core", "CPU"]
+draft: false
+---
+
+import TMathPlayer from '../../../components/TMathPlayer.astro';
+import Disclosure from '../../../components/Disclosure.astro';
+import dispatchScene from './LUA/raster/dispatch.lua?url';
+import dispatchPoster from './LUA/raster/dispatch.webp';
+import surfaceScene from './LUA/raster/surface.lua?url';
+import surfacePoster from './LUA/raster/surface.webp';
+import shapeFillScene from './LUA/raster/shape-fill.lua?url';
+import shapeFillPoster from './LUA/raster/shape-fill.webp';
+import bitmapFilterScene from './LUA/raster/bitmap-filter.lua?url';
+import bitmapFilterPoster from './LUA/raster/bitmap-filter.webp';
+
+# Core2026 > Engine > CPU Engine > Pipeline - 10
+
+<a href={`${import.meta.env.BASE_URL}blog/mentoring/07-9-cpu-engine-update-prepare`}>Update/Prepare</a>가 RenderData를 만드는 단계라면, Draw/Raster는 그 결과를 현재 Surface에 기록하는 단계입니다.
+
+> [!NOTE]
+> - **분석 기준:** [`cdc1c95`](https://github.com/thorvg/thorvg/tree/cdc1c9596a5edebc159d5623d726febda7595896)
+
+## 1. Overview — 어떤 Raster가 실행되는가?
+
+**Rect, RLE, Direct, Scale, Texture Mapping은 조건에 따라 선택되는 경로입니다.** 한 이미지를 Direct → Nearest → Bilinear → Downscale → Texture Mapping 순서로 처리하는 구조가 아닙니다.
+
+<TMathPlayer scene="raster-dispatch" source={dispatchScene} poster={dispatchPoster.src} title="입력 조건에 따른 Raster 분기" description="Shape Fill·Stroke는 영역과 Color 또는 Color Table을 결합해 Surface에 기록합니다. Image 샘플링, RLE clipping, 출력 방식 선택과 Surface 연산까지 한 지도에서 살펴봅니다." width={1280} height={3280} loop />
+
+### 1.1 Task — 준비 완료 확인과 Raster 실행
+
+Draw도 `SwShapeTask`·`SwImageTask`를 사용합니다. Update에서 반환한 `RenderData`를 같은 Task 타입으로 받아, `done()`으로 준비 완료를 확인한 뒤 보관된 결과를 읽습니다.
+
+| Draw 진입점 | 받는 Task | Raster에서 사용하는 데이터 |
+| --- | --- | --- |
+| `renderShape(data)` | `SwShapeTask` | `shape`의 bbox·Fill/Stroke RLE·Gradient, `rshape`의 색상·Stroke 순서 |
+| `renderImage(data)` | `SwImageTask` | `image`의 픽셀 참조·Filter·RLE, `transform`·`curBox`·`opacity` |
+
+- **실행:** Scene의 Paint 순서를 따라 `renderShape()`·`renderImage()`가 Raster 함수를 직접 호출합니다. `TaskScheduler::request()`로 제출하는 작업은 Update의 준비 작업입니다.
+- **Fill·Stroke:** 전용 Draw Task 없이 같은 `SwShapeTask`의 준비 결과를 사용합니다. `renderShape()` 내부의 `fill`·`stroke` 람다가 Raster 함수를 호출하며, `strokeFirst()` 설정에 따라 실행 순서가 정해집니다.
+- **완료 대기:** `done()`은 준비가 진행 중이면 기다리고, 이미 완료됐으면 바로 진행합니다. 부분 갱신에서는 `preRender()`가 등록된 Task를 먼저 기다려 dirty region을 확정하고 해당 영역을 지웁니다. 전체 redraw는 이 일괄 대기를 건너뛰고 각 `render*()`에서 확인합니다.
+- **기록과 상태 갱신:** `valid`인 Task의 영역에 Raster를 실행한 뒤 `complete()`가 현재 영역을 `prvBox`에 남기고 `nodirty`를 해제합니다. `complete()`는 다음 프레임을 위한 상태 갱신이며, worker 완료 알림은 `Task::operator()`가 담당합니다.
+
+Task의 생성·재사용과 `run(tid)` 내부 준비 과정은 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-9-cpu-engine-update-prepare#12-prepare-task--실행-단위와-renderdata`}>Update/Prepare의 Prepare Task</a>에서 다룹니다.
+
+<Disclosure title="코드 보기: Shape — Task 완료 대기와 Raster">
+
+**호출 흐름 — Shape 기준**
+
+```text
+canvas->draw(true)
+-> Canvas::Impl::draw()
+-> SwRenderer::clear() · preRender()
+-> SceneImpl::render()
+-> Paint::Impl::render()
+-> ShapeImpl::render()
+-> SwRenderer::renderShape(impl.rd)
+-> task->done()
+-> valid이면 Fill·Stroke Raster
+-> task->complete()
+```
+
+아래는 Shape의 진입·종료 구조입니다. `task->valid` 내부는 바로 다음 코드 조각에서 보여줍니다. ([renderShape](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434))
+
+```cpp
+bool SwRenderer::renderShape(RenderData data)
+{
+    auto task = static_cast<SwShapeTask*>(data);
+    if (!task) return false;
+    task->done();
+
+    if (task->valid) {
+        // ... Fill/Stroke 함수 선택, 전체 또는 dirty 영역에 Raster
+    }
+    return task->complete();
+}
+```
+
+**Shape — `task->valid` 내부**
+
+`fill`·`stroke` 람다가 단색과 Gradient를 구분하고, `strokeFirst()`가 실행 순서를 정합니다. 전체 렌더링에서는 Fill에 `shape.bbox`, Stroke에 `curBox`를 사용하며, 부분 갱신에서는 각 영역과 dirty region의 교차 범위에 Raster를 실행합니다.
+
+```cpp
+if (task->valid) {
+    auto fill = [](SwShapeTask* task, SwSurface* surface, const RenderRegion& bbox) {
+        if (auto fill = task->rshape->fill) {
+            rasterGradientShape(surface, &task->shape, bbox, fill, task->opacity);
+        } else {
+            RenderColor c;
+            task->rshape->fillColor(&c.r, &c.g, &c.b, &c.a);
+            c.a = MULTIPLY(task->opacity, c.a);
+            if (c.a > 0) rasterShape(surface, &task->shape, bbox, c);
+        }
+    };
+
+    auto stroke = [](SwShapeTask* task, SwSurface* surface, const RenderRegion& bbox) {
+        if (auto strokeFill = task->rshape->strokeFill()) {
+            rasterGradientStroke(surface, &task->shape, bbox, strokeFill, task->opacity);
+        } else {
+            RenderColor c;
+            if (task->rshape->strokeFill(&c.r, &c.g, &c.b, &c.a)) {
+                c.a = MULTIPLY(task->opacity, c.a);
+                if (c.a > 0) rasterStroke(surface, &task->shape, bbox, c);
+            }
+        }
+    };
+
+    //full scene or partial rendering
+    if (fulldraw || task->nodirty || task->pushed || dirtyRegion.deactivated()) {
+        if (task->rshape->strokeFirst()) {
+            stroke(task, surface, task->curBox);
+            fill(task, surface, task->shape.bbox);
+        } else {
+            fill(task, surface, task->shape.bbox);
+            stroke(task, surface, task->curBox);
+        }
+    } else if (task->curBox.valid()) {
+        for (int idx = 0; idx < RenderDirtyRegion::PARTITIONING; ++idx) {
+            if (!dirtyRegion.partition(idx).intersected(task->curBox)) continue;
+            ARRAY_FOREACH(p, dirtyRegion.get(idx)) {
+                if (task->curBox.max.x <= p->min.x) break;   //dirtyRegion is sorted in x order
+                if (task->rshape->strokeFirst()) {
+                    if (task->rshape->stroke && task->curBox.intersected(*p)) stroke(task, surface, RenderRegion::intersect(task->curBox, *p));
+                    if (task->shape.bbox.intersected(*p)) fill(task, surface, RenderRegion::intersect(task->shape.bbox, *p));
+                } else {
+                    if (task->shape.bbox.intersected(*p)) fill(task, surface, RenderRegion::intersect(task->shape.bbox, *p));
+                    if (task->rshape->stroke && task->curBox.intersected(*p)) stroke(task, surface, RenderRegion::intersect(task->curBox, *p));
+                }
+            }
+        }
+    }
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: Image — Task 완료 대기와 Raster">
+
+**호출 스택 — Bitmap 기준**
+
+```text
+Canvas::draw(clear)
+-> Canvas::Impl::draw(clear)
+-> Paint::Impl::render() [Canvas 내부 Scene]
+-> SceneImpl::render()
+-> Paint::Impl::render() [Picture]
+-> PictureImpl::render() [bitmap]
+-> SwRenderer::renderImage(impl.rd)
+```
+
+[`SwRenderer::renderImage()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381-L431) 전체입니다. `SwImageTask`의 준비를 기다린 뒤 RLE 유무와 `direct`·`scaled`에 따라 Raster 함수를 선택합니다. 전체 또는 dirty 영역에 기록한 뒤 `complete()`를 호출합니다.
+
+```cpp
+bool SwRenderer::renderImage(RenderData data)
+{
+    auto task = static_cast<SwImageTask*>(data);
+    if (!task) return false;
+    task->done();
+
+    if (task->valid) {
+        auto raster = [&](SwSurface* surface, const SwImage& image, const Matrix& transform, const RenderRegion& bbox, uint8_t opacity) {
+            if (bbox.invalid() || bbox.x() >= surface->w || bbox.y() >= surface->h) return true;
+
+            //RLE Image
+            if (image.rle) {
+                if (image.rle->invalid()) return true;
+                if (image.direct) return rasterDirectRleImage(surface, image, bbox, opacity);
+                else if (image.scaled) return rasterScaledRleImage(surface, image, transform, bbox, opacity);
+                else {
+                    //create a intermediate buffer for rle clipping
+                    auto cmp = request(sizeof(pixel_t), false);
+                    cmp->compositor->method = MaskMethod::None;
+                    cmp->compositor->valid = true;
+                    cmp->compositor->image.rle = image.rle;
+                    rasterClear(cmp, bbox.x(), bbox.y(), bbox.w(), bbox.h());
+                    rasterTexmapPolygon(cmp, image, transform, bbox, 255);
+                    return rasterDirectRleImage(surface, cmp->compositor->image, bbox, opacity);
+                }
+            //Whole Image
+            } else {
+                if (image.direct) return rasterDirectImage(surface, image, bbox, opacity);
+                else if (image.scaled) return rasterScaledImage(surface, image, transform, bbox, opacity);
+                else return rasterTexmapPolygon(surface, image, transform, bbox, opacity);
+            }
+        };
+
+        //full scene or partial rendering
+        if (fulldraw || task->nodirty || task->pushed || dirtyRegion.deactivated()) {
+            raster(surface, task->image, task->transform, task->curBox, task->opacity);
+        } else if (task->curBox.valid()) {
+            for (int idx = 0; idx < RenderDirtyRegion::PARTITIONING; ++idx) {
+                if (!dirtyRegion.partition(idx).intersected(task->curBox)) continue;
+                ARRAY_FOREACH(p, dirtyRegion.get(idx)) {
+                    if (task->curBox.max.x <= p->min.x) break;   //dirtyRegion is sorted in x order
+                    if (task->curBox.intersected(*p)) {
+                        auto bbox = RenderRegion::intersect(task->curBox, *p);
+                        raster(surface, task->image, task->transform, bbox, task->opacity);
+                    }
+                }
+            }
+        }
+    }
+    return task->complete();
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 공통 — 부분 갱신 준비와 Task 상태 갱신">
+
+`preRender()`는 부분 갱신에 필요한 영역을 읽기 전에 준비 작업을 기다립니다. 전체 redraw이거나 dirty region 처리가 비활성화되어 있으면 여기서 바로 반환합니다.
+
+```cpp
+bool SwRenderer::preRender()
+{
+    if (!surface) return false;
+    if (fulldraw || dirtyRegion.deactivated()) return true;
+
+    ARRAY_FOREACH(p, tasks) (*p)->done();
+
+    dirtyRegion.commit();
+
+    //clear buffer for partial regions
+    for (int idx = 0; idx < RenderDirtyRegion::PARTITIONING; ++idx) {
+        ARRAY_FOREACH(p, dirtyRegion.get(idx)) {
+            rasterClear(surface, p->x(), p->y(), p->w(), p->h());
+        }
+    }
+
+    return true;
+}
+```
+
+`SwTask::complete()`는 다음 프레임을 위해 현재 영역과 dirty 상태를 갱신합니다.
+
+```cpp
+bool complete()
+{
+    prvBox = valid ? curBox : RenderRegion{};
+    nodirty = false;
+    return true;
+}
+```
+
+[`Canvas::Impl::draw()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgCanvas.h#L104), [`SceneImpl::render()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgScene.h#L130), [`preRender()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L320), [`renderImage()`·`renderShape()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381), [`SwTask::complete()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L80), [`Task::done()`·worker 완료 알림](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.h#L56)
+
+</Disclosure>
+
+### 1.2 Shape — 색의 종류와 그릴 영역
+
+<TMathPlayer scene="raster-shape-fill" source={shapeFillScene} poster={shapeFillPoster.src} title="Shape Fill — Solid와 Gradient" description="같은 RLE 영역과 coverage에 단색 또는 Linear Gradient의 위치별 색을 적용해 Surface를 채웁니다. 두 예시를 위아래에서 비교합니다." width={960} height={580} />
+
+회색 격자는 **그릴 영역과 coverage**입니다. Solid는 **Color**, Gradient는 좌표로 조회한 **Color Table**의 색을 사용해 Surface에 기록합니다.
+
+Shape는 **단색인지 Gradient인지**, **사각형 fast track을 사용할 수 있는지**에 따라 함수를 선택합니다. Stroke는 별도로 준비된 `strokeRle`을 사용하며, 도형 내부를 채우지 않습니다.
+
+- **단색 Fill:** `rasterShape()`
+  - `shape.fastTrack == true`: Rect 범위 순회
+  - 그 외: `shape.rle`의 Span 순회
+- **Gradient Fill:** `rasterGradientShape()`
+  - Rect / RLE 선택 후 Linear·Radial 색상 계산 함수 사용
+  - 전체가 한 색으로 판정되면 단색 경로로 처리 (`fillFetchSolid() = true`, Gradient → Solid 점선 화살표)
+  - 오버뷰의 Gradient 영상: Linear 예제로 위치별 색상과 coverage 적용 비교
+- **Stroke:** `rasterStroke()` / `rasterGradientStroke()`
+  - `shape.strokeRle`의 Span 순회
+
+### 1.3 Bitmap — 변환과 Filter
+
+<TMathPlayer scene="raster-bitmap-filter" source={bitmapFilterScene} poster={bitmapFilterPoster.src} title="Bitmap — 변환과 Filter" description="같은 Bitmap의 Direct, Nearest, Bilinear, Downscale, Texture Mapping 결과를 독립된 예시로 비교합니다. 픽셀 표시 크기를 통일해 확대·축소와 샘플링의 차이를 보여줍니다." width={960} height={870} />
+
+Bitmap은 변환으로 Direct·Scale·Texture Mapping을 먼저 구분합니다. **Scale 경로에 들어왔을 때만** 아래의 축척 기준으로 Nearest·Bilinear·Downscale을 선택합니다.
+
+| 조건 | 선택 경로 | 화소를 읽는 방식 |
+| --- | --- | --- |
+| 확대·회전·기울이기 없이 이동만 적용 | Direct | 정수 offset으로 같은 위치의 원본 화소 읽기 |
+| 축에 평행한 확대·축소, `FilterMethod::Nearest` | Scale → Nearest | 역변환한 위치의 원본 화소 1개 |
+| 축에 평행한 확대·축소, `Bilinear`, `scale >= 0.5` | Scale → Bilinear | 인접한 화소 최대 4개 보간 |
+| 축에 평행한 확대·축소, `Bilinear`, `scale < 0.5` | Scale → Downscale | 커널 안에서 일정 간격으로 고른 화소의 평균 |
+| Direct·Scale에 해당하지 않는 회전·기울이기 | Texture Mapping | 삼각형의 Scanline을 따라 UV 보간 |
+
+- **`scale`:** 변환 행렬의 두 축 길이 중 큰 값
+  - <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-2-cpu-engine-paint#3-sampling--출력-픽셀의-색상-계산`}>Picture의 Sampling 예제</a>는 양의 균일 축척 사용
+  - `0.5`는 Bilinear, `0.5` 미만부터 Downscale
+- **Filter 기본값:** `Bilinear`
+  - Nearest는 `Picture::filter(FilterMethod::Nearest)`로 선택
+  - Texture Mapping도 Filter를 확인하지만 Scale용 Downscale 커널은 사용하지 않음
+
+<Disclosure title="코드 보기: 변환 판정과 Scale의 Filter 선택">
+
+`imagePrepare()`가 기록한 `direct`·`scaled`를 draw에서 사용합니다. 아래 조건의 `equal()`·`zero()`는 부동소수점 허용 오차를 포함합니다.
+
+[`imagePrepare()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwImage.cpp#L62), [`_scaleMethod()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L301), [`PictureImpl::filter`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgPicture.h#L43)
+
+```cpp
+// imagePrepare()
+image.direct = tvg::equal(transform.e11, 1.0f) &&
+               tvg::equal(transform.e22, 1.0f) &&
+               tvg::zero(transform.e12) && tvg::zero(transform.e21);
+
+if (image.direct) {
+    image.ox = -static_cast<int32_t>(nearbyint(transform.e13));
+    image.oy = -static_cast<int32_t>(nearbyint(transform.e23));
+} else {
+    image.scale = scaling(transform);
+    image.scaled = (tvg::zero(transform.e12) && tvg::zero(transform.e21)) ? true : false;
+}
+```
+
+```cpp
+static ImageScaleFilter _scaleMethod(const SwImage& image)
+{
+    if (image.filter == FilterMethod::Bilinear)
+        return image.scale < DOWN_SCALE_TOLERANCE ? _interpDownScaler : _interpUpScaler;
+    return _interpNoScaler;
+}
+```
+
+</Disclosure>
+
+### 1.4 Surface — 초기화·변환·버퍼 연산
+
+하단은 CPU Engine의 Surface 공통 연산입니다. 이 가운데 Draw/Raster가 직접 소유하는 부분은 준비된 source를 현재 target에 기록하는 픽셀 버퍼 함수입니다.
+
+<TMathPlayer scene="raster-surface" source={surfaceScene} poster={surfacePoster.src} title="Surface 공통 연산" description="초기화, 입력 변환, 픽셀 기록, 행·열 전환, 출력 변환을 독립된 예시로 보여줍니다. 막대는 저장된 채널값을 나타내며, Straight alpha 출력 변환은 필요한 타깃에서만 실행됩니다." width={1280} height={1040} />
+
+- **Draw의 픽셀 기록:** `rasterPixel32()`·`rasterTranslucentPixel32()`·`rasterGrayscale8()`
+  - 32비트 색상 / 8비트 coverage, 일반 C / SIMD 구현 선택
+- **Update의 입력 준비:** `rasterConvertCS()` → `rasterPremultiply()`
+- **Compositing의 타깃 관리:** `rasterClear()`와 compositor 설정
+- **Effect의 버퍼 배치:** `rasterXYFlip()`으로 행과 열 전환
+- **Frame 종료:** 필요하면 `postRender()`가 `rasterUnpremultiply()`로 Straight alpha 복원
+
+
+<Disclosure title="코드 참조: Stroke와 Surface 연산">
+
+- **Stroke:** [`rasterStroke()` / `rasterGradientStroke()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1586)
+- **버퍼·타깃:** [`rasterPixel32()` / `rasterCompositor()` / `rasterClear()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1390)
+- **Alpha 표현:** [`rasterUnpremultiply()` / `rasterPremultiply()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1488)
+- **색상·배치:** [`rasterConvertCS()` / `rasterXYFlip()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1624)
+
+</Disclosure>

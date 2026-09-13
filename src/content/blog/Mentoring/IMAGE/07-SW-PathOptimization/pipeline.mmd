@@ -1,0 +1,14 @@
+flowchart TB
+    A[RenderShape.path: commands and float points]
+    A -->|borrow for ordinary fill| B[SwOutline.path]
+    A -->|ordinary or derived path| S[strokeParsePath]
+    B -->|points and matrix| C[utilExport: transform, bounds, quantize]
+    C -->|24.8 storage, 26.6 precision| D[SwOutline.out]
+    B -->|borrowed commands| R[_decomposePath: command walker]
+    D -->|fixed points reused per band| R
+    S -->|expand geometry| T[Left and right border: float points and tags]
+    T -->|transform contiguous spans| U[_exportBorderPath]
+    U -->|fixed points, no synth.pts copy| D
+    U -->|synth.cmds only| R
+    R -->|edges and cells| E[SwRle: coverage spans]
+    E -->|draw and blend| F[Destination pixels]

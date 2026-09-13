@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 
 import { parseCsv } from '../src/lib/csv.js';
 import { extractFirstMedia, resolveBlogMediaUrl } from '../src/lib/blog-media.js';
@@ -40,75 +40,6 @@ test('blog schema requires a GitHub username', async () => {
   assert.match(githubSchema, /\.trim\(\)/);
   assert.match(githubSchema, /\.min\(1\)/);
   assert.match(githubSchema, /\.regex\(/);
-});
-
-test('bundled blog content ships the writing guide and plain template', async () => {
-  const directory = new URL('../src/content/blog/', import.meta.url);
-  const files = await readdir(directory, { recursive: true });
-  const markdownFiles = files.filter((file) => (
-    /\.(?:md|mdx)$/.test(file) && !/^discussion-\d+\.md$/.test(file)
-  ));
-  const [guide, template] = await Promise.all([
-    readSource('src/content/blog/blog-writing-guide.md'),
-    readSource('src/content/blog/TEMPLATE'),
-  ]);
-
-  assert.ok(markdownFiles.includes('blog-writing-guide.md'));
-  assert.ok(files.includes('TEMPLATE'), 'blog directory must include an extensionless TEMPLATE file');
-  assert.match(guide, /^---[\s\S]*?title: "블로그 글쓰는 방법"[\s\S]*?github: "Nor-s"[\s\S]*?tags: \["Notice"\][\s\S]*?---/);
-  for (const requiredGuideText of [
-    '주제는 자유롭게 정하셔도 됩니다',
-    'ThorVG와 관련이 없어도 괜찮습니다',
-    '오늘 공부한 내용',
-    'ThorVG 분석에 관한 내용',
-    '프로젝트 셋팅에 관한 내용',
-    '이슈 분석 해결에 관한 글',
-    '## Frontmatter 작성하기',
-    '`title`',
-    '`github`',
-    '`date`',
-    '`tags`',
-    '`draft`',
-    '## TEMPLATE 사용하기',
-    '`src/content/blog/TEMPLATE`',
-    '## 로컬에서 확인하기',
-    'npm run dev',
-    'npm run build',
-    'npm run preview',
-    '`dist/`',
-    '`BASE_PATH=/site`',
-    '경로와 다를 수 있습니다',
-    '## 미디어 저장 위치',
-    '경로는 항상 MDX 파일 위치 기준입니다',
-    '`./cover.png`',
-    '`src/content/blog/my-post.mdx`',
-    '`src/content/blog/my-post/index.mdx`',
-    '대괄호 안 텍스트는 캡션으로 표시됩니다',
-    '`![렌더링 결과](./render-result.png)`',
-    '## PR 보내기',
-    'Create pull request',
-    '<details className="guide-details">',
-    '<summary>저장소에 직접 Markdown으로 글쓰기</summary>',
-    '제목 끝에 `(WIP)`',
-    '댓글도 같은 Discussion의 답글로 저장됩니다',
-    '기능 추가 아이디어나 불편한 점이 있다면',
-    'https://github.com/OSSCA-thorvg/site/issues/new',
-    'https://github.com/OSSCA-thorvg/site',
-  ]) {
-    assert.ok(guide.includes(requiredGuideText), `writing guide must mention ${requiredGuideText}`);
-  }
-  assert.doesNotMatch(guide, /src\/content\/blog\/my-post-cover\.png/);
-  assert.doesNotMatch(guide, /src\/content\/blog\/my-post-animation\.json/);
-  assert.doesNotMatch(guide, /!\[대표 미디어\]/);
-  assert.doesNotMatch(guide, /`publish` 라벨/);
-  assert.doesNotMatch(guide, /Lottie|lottie|animation\.json|\/lottie\//i);
-  assert.match(template, /^---\ntitle: "글 제목"\ngithub: "github-id"\ndate: \d{4}-\d{2}-\d{2}\ntags: \["thorvg", "study"\]\ndraft: false\n---/);
-  assert.match(template, /!\[\]\(\.\/cover\.png\)/);
-  assert.doesNotMatch(template, /!\[대표 미디어\]/);
-  assert.match(template, /!\[캡션\]\(\.\/cover\.png\)/);
-  assert.match(template, /src\/content\/blog\/my-post\/index\.mdx/);
-  assert.match(template, /미디어 파일은 index\.mdx와 같은 폴더/);
-  assert.doesNotMatch(template, /^\s*author:/m);
 });
 
 test('project docs and local data no longer expose the removed fixture account', async () => {
