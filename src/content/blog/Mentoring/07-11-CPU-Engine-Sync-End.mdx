@@ -1,0 +1,223 @@
+---
+title: "[Core2026] Pipeline - Sync/End"
+github: "Nor-s"
+date: 2026-09-13
+summary: "CPU task의 완료 확인, 지연 삭제와 재사용, Canvas의 Synced 상태 복귀를 짧게 살펴봅니다."
+tags: ["ThorVG", "Core", "CPU"]
+draft: false
+---
+
+import TMathPlayer from '../../../components/TMathPlayer.astro';
+import Disclosure from '../../../components/Disclosure.astro';
+
+# Core2026 > Engine > CPU Engine > Pipeline - 12
+
+## 1. Sync / End
+
+`draw()`가 Raster·Compositing과 `postRender()`까지 수행한 뒤, **`sync()`가 등록된 CPU task와 Canvas 상태를 정리합니다.**
+
+<TMathPlayer scene="cpu-sync-end" source={import.meta.env.BASE_URL + 'tmath/sync/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/sync/overview.webp'} title="Sync / End" description="등록된 task의 완료 확인, 삭제·재사용 분기, 목록 정리와 Synced 복귀를 보여줍니다. 재생 시간은 실제 CPU 처리 시간이 아닙니다." width={1280} height={760} />
+
+- **완료 확인:** 각 task의 `done()`을 호출합니다. 비동기 작업이 남아 있으면 기다리며, Draw에서 이미 `done()`을 마친 task는 바로 반환합니다.
+- **삭제 또는 재사용:** `disposed`인 task는 삭제하고, 나머지는 `pushed = false`로 등록 표시를 해제합니다. 사용 중인 RenderData와 그 안의 RLE는 유지합니다.
+- **종료:** `tasks.clear()`로 목록을 비우고, Canvas가 `Synced` 상태로 돌아갑니다. Update 후 Draw를 생략한 경우에도 이 정리 경로를 거칩니다.
+
+<Disclosure title="코드 보기: task 정리와 Synced 복귀">
+
+```text
+Canvas::sync()
+-> Canvas::Impl::sync()
+```
+
+[`Canvas::Impl::sync()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgCanvas.h#L121)
+
+```cpp
+Result sync()
+{
+    if (status == Status::Synced) return Result::Success;
+    if (renderer->sync()) {
+        status = Status::Synced;
+        return Result::Success;
+    }
+    return Result::Unknown;
+}
+```
+
+```text
+Canvas::sync()
+-> Canvas::Impl::sync()
+-> SwRenderer::sync()
+```
+
+[`SwRenderer::sync()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L272)
+
+```cpp
+bool SwRenderer::sync()
+{
+    //clear if the rendering was not triggered.
+    ARRAY_FOREACH(p, tasks) {
+        (*p)->done();
+        if ((*p)->disposed) delete(*p);
+        else (*p)->pushed = false;
+    }
+    tasks.clear();
+
+    return true;
+}
+```
+
+`done()`의 대기는 [`Task::done()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.h#L56)에서 확인할 수 있습니다.
+
+</Disclosure>
+
+### 1.1. disposed — 언제 삭제를 미루는가
+
+Paint가 소멸하면 `Paint::Impl`의 소멸자가 `renderer->dispose(rd)`를 호출합니다. **task가 목록에 등록된 상태(`pushed == true`)라면 `disposed = true`로 표시하고, Sync에서 `done()` 이후 삭제합니다.** 등록되지 않은 task는 즉시 삭제합니다.
+
+예를 들어 Update 후 `canvas->remove(shape)`가 Shape의 마지막 참조를 해제하면 이 경로를 거칩니다. 별도로 `ref()`를 보유하고 있다면 제거만으로 Shape가 소멸하지는 않습니다. `pushed`는 목록 등록 여부이므로, 작업이 이미 끝난 task도 지연 삭제 대상이 될 수 있습니다.
+
+<Disclosure title="코드 보기: Paint 소멸과 지연 삭제">
+
+Shape의 마지막 참조를 해제하는 경우의 호출 흐름입니다.
+
+```text
+Canvas::remove(shape)
+-> Canvas::Impl::remove()
+-> Scene::remove()
+-> SceneImpl::remove()
+-> Paint::Impl::unref()
+-> Paint::Impl::unrefx()
+-> delete paint — ShapeImpl 소멸
+-> Paint::Impl::~Impl()
+-> SwRenderer::dispose(rd)
+```
+
+[`Paint::Impl`의 소멸자·참조 해제](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgPaint.h#L88), [`SwRenderer::dispose()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L819)
+
+```cpp
+void SwRenderer::dispose(RenderData data)
+{
+    auto task = static_cast<SwTask*>(data);
+    if (task->pushed) task->disposed = true;
+    else delete(task);
+}
+```
+
+**`pushed`가 켜지는 시점**
+
+Update가 `SwRenderer::prepare()` → `prepareCommon()`으로 이어질 때, task를 renderer의 `tasks` 목록에 추가하면서 `pushed = true`로 설정합니다. 새 task뿐 아니라 이전 Sync에서 등록 표시가 해제된 task도 이 경로를 거칩니다.
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> …
+-> SwRenderer::prepare()
+-> SwRenderer::prepareCommon()
+-> pushed = true · tasks.push(task)
+```
+
+[`prepareCommon()`의 목록 등록](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L841)
+
+```cpp
+// prepareCommon() — renderer의 task 목록에 등록할 때 켜집니다.
+if (!task->pushed) {
+    task->pushed = true;
+    tasks.push(task);
+}
+```
+
+이 등록은 `TaskScheduler::request(task)`보다 먼저 수행됩니다. **`pushed`는 작업 실행 중이라는 뜻이 아니라 목록에 등록되어 있다는 뜻입니다.** `done()`으로 작업이 끝나도 유지되며, Sync가 살아 있는 task의 `pushed`를 해제합니다. 따라서 이미 준비를 마친 task도 `pushed == true`이면 삭제를 Sync까지 미룹니다.
+
+</Disclosure>
+
+### 1.2. 재사용 — 같은 task를 다음 작업에 등록
+
+**Sync는 살아 있는 task의 `pushed`만 해제하며, Paint가 보관한 `rd`는 유지합니다.** 다음 Update가 Prepare로 이어지면 기존 `rd`를 전달해 같은 task를 사용하고, `prepareCommon()`에서 목록에 다시 등록합니다.
+
+task 재사용이 모든 준비 결과를 그대로 쓴다는 뜻은 아닙니다. Path·Transform 등의 변경 flag에 따라 RLE 같은 데이터는 다시 준비할 수 있습니다. 변경이 없어 Prepare 자체를 생략하는 경로도 있습니다.
+
+<Disclosure title="코드 보기: 기존 Shape task와 목록 재등록">
+
+Shape의 `prepare()`와 `prepareCommon()` 전체 함수입니다. 호출 흐름의 `…`는 Scene·Paint 순회를 생략한 구간입니다.
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> …
+-> ShapeImpl::update()
+-> SwRenderer::prepare()
+```
+
+[`ShapeImpl::update()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgShape.h#L111)는 `impl.rd`를 전달합니다. [`SwRenderer::prepare()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L873)는 기존 task가 없을 때만 생성합니다.
+
+```cpp
+RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data,
+                               const Matrix& transform, const Array<RenderData>& clips,
+                               uint8_t opacity, RenderUpdateFlag flags, bool clipper)
+{
+    // [재사용] Paint가 보관한 기존 rd로 같은 task를 받습니다.
+    auto task = static_cast<SwShapeTask*>(data);
+    if (task) task->done();
+    else {
+        // [생성] 기존 task가 없을 때만 새로 만듭니다.
+        task = new SwShapeTask;
+        task->rshape = &rshape;
+    }
+
+    task->clipper = clipper;
+
+    return prepareCommon(task, transform, clips, opacity, flags, (opacity == 0 && !clipper));
+}
+```
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> …
+-> ShapeImpl::update()
+-> SwRenderer::prepare()
+-> SwRenderer::prepareCommon()
+```
+
+[`prepareCommon()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
+
+```cpp
+SwTask* SwRenderer::prepareCommon(SwTask* task, const Matrix& transform,
+                                  const Array<RenderData>& clips, uint8_t opacity,
+                                  RenderUpdateFlag flags, bool ready)
+{
+    if (task->disposed) return task;
+
+    task->renderer = this;
+    task->clipBox = RenderRegion::intersect(vport, {{0, 0}, {int32_t(surface->w), int32_t(surface->h)}});
+    task->transform = transform;
+    task->clips = clips;
+    task->dirtyRegion = &dirtyRegion;
+    task->opacity = opacity;
+    task->nodirty = dirtyRegion.deactivated();
+    task->flags[0] = flags;
+    task->valid = false;
+
+    // [목록 재등록] Sync에서 pushed가 해제된 task를 다시 등록합니다.
+    // 새 task도 이 경로로 등록하며, 이미 등록된 task는 중복 추가하지 않습니다.
+    if (!task->pushed) {
+        task->pushed = true;
+        tasks.push(task);
+    }
+
+    if (task->ready(ready)) return task;
+
+    // [작업 제출] 목록 등록과 별도로, 준비가 필요한 flag가 있으면 실행을 요청합니다.
+    if (flags) {
+        // TODO: For deferred process, task scheduler dependency graph might be useful.
+        ARRAY_FOREACH(p, clips) {
+            static_cast<SwTask*>(*p)->done();
+        }
+        TaskScheduler::request(task);
+    }
+
+    return task;
+}
+```
+
+</Disclosure>

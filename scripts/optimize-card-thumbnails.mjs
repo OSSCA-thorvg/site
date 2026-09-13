@@ -90,13 +90,18 @@ const blogJobs = async () => {
       );
       continue;
     }
-    const fileName = `${createHash('sha256').update(fingerprint).digest('hex').slice(0, 12)}.webp`;
+    const position = media.type === 'tmath' ? 'north' : 'centre';
+    const hash = createHash('sha256').update(fingerprint);
+    if (media.type === 'tmath') hash.update(JSON.stringify({position, crop: media.crop}));
+    const fileName = `${hash.digest('hex').slice(0, 12)}.webp`;
     jobs.push({
       key: blogThumbnailKey(postId, media.src),
       fileName,
       outputPath: path.join(blogOutputDirectory, fileName),
       localPath,
       sourceUrl,
+      position,
+      crop: media.crop,
     });
   }
 
@@ -135,11 +140,17 @@ const optimize = async (job) => {
   if (await exists(job.outputPath)) return 'cached';
 
   const source = await loadSource(job);
-  await sharp(source, { animated: false })
-    .rotate()
+  let image = sharp(source, { animated: false }).rotate();
+  if (job.crop) {
+    const {width, height} = await image.metadata();
+    const [left, top, cropWidth, cropHeight] = job.crop;
+    if (left < width && top < height) image = image.extract({left, top,
+      width: Math.min(cropWidth, width - left), height: Math.min(cropHeight, height - top)});
+  }
+  await image
     .resize(HACKATHON_THUMBNAIL_WIDTH, HACKATHON_THUMBNAIL_HEIGHT, {
       fit: 'cover',
-      position: 'centre',
+      position: job.position ?? 'centre',
     })
     .webp({ quality: 72 })
     .toFile(job.outputPath);

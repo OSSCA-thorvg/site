@@ -9,7 +9,7 @@ const posts = (await getCollection(
   ({ data }) => !data.draft && !hasAssignmentTag(data.tags)
 )).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 const visiblePosts = posts.filter(({ data }) => !data['no-blog']);
-const seriesIndex = createSeriesIndex(posts.map((post) => ({
+const seriesIndex = createSeriesIndex(posts.filter(({ data }) => !data['no-series']).map((post) => ({
   id: post.id,
   title: post.data.title,
   heading: extractSeriesHeading(post.body),

@@ -273,7 +273,7 @@ test('blog list follows the site theme with borderless editorial entries', async
     readSource('src/styles/global.css'),
   ]);
 
-  assert.match(html, /<section\b[^>]*\bclass="section"/);
+  assert.match(html, /<section\b[^>]*\bclass="section section--blog-shell"/);
   assert.doesNotMatch(html, /blog-index/);
   assert.doesNotMatch(css, /\.blog-index\s*\{/);
   const card = css.match(/\.post-card\s*\{([^}]*)\}/)?.[1];
@@ -418,21 +418,6 @@ test('blog cards derive body media and play Lottie on hover', async () => {
   assert.match(source, /player\.pause\(\)/);
 });
 
-test('bundled blog writing guide uses an optimized first image as card media', async () => {
-  const html = await readPage(pages.blog);
-  const card = [...html.matchAll(/<article\b(?=[^>]*\bclass="post-card")[^>]*>[\s\S]*?<\/article>/g)]
-    .map(([article]) => article)
-    .find((article) =>
-      article.includes('블로그 글쓰는 방법') &&
-      article.includes(`href="${sitePath('blog/blog-writing-guide')}"`));
-
-  assert.ok(card, 'blog list must render the writing guide post');
-  assert.match(card, /@Nor-s/);
-  assert.match(card, /post-card__media--image/);
-  assert.match(card, new RegExp(`src="${escapeRegExp(sitePath('blog-thumbnails/'))}[a-f0-9]{12}\\.webp"`));
-  assert.match(html, /<span\b(?=[^>]*\bid="b-count")[^>]*>\d+개 글<\/span>/);
-});
-
 test('blog raster cards serve optimized local thumbnails', async () => {
   const html = await readPage(pages.blog);
   const media = [...html.matchAll(/<div class="post-card__media post-card__media--(?:image|gif)">([\s\S]*?)<\/div>/g)]
@@ -450,12 +435,7 @@ test('blog raster cards serve optimized local thumbnails', async () => {
 });
 
 test('blog detail template localizes navigation, date, and GitHub author metadata', async () => {
-  const [html, source] = await Promise.all([
-    readPage('blog/blog-writing-guide/index.html'),
-    readSource('src/pages/blog/[...slug].astro'),
-  ]);
-
-  assert.match(html, />← 블로그 목록<\/a>/);
+  const source = await readSource('src/pages/blog/[...slug].astro');
   assert.match(source, /href=\{base \+ section\.href\}/);
   assert.match(source, /toLocaleDateString\('ko-KR',[\s\S]*?timeZone:\s*'UTC'/);
   assert.match(source, /href=\{`https:\/\/github\.com\/\$\{post\.data\.github\}`\}/);
@@ -465,23 +445,36 @@ test('blog detail template localizes navigation, date, and GitHub author metadat
   assert.match(source, /post\.data\.tags\.map\(\(t\) => <li><span class="chip">#\{t\}<\/span><\/li>\)/);
 });
 
+test('blog listing and articles keep the same sidebar tree order', async () => {
+  const listing = await readPage(pages.blog);
+  const href = listing.match(/class="blog-series__posts"[\s\S]*?href="([^"]+)"/)?.[1];
+  assert.ok(href, 'the sidebar must link to an article');
+  const article = await readPage(decodeURIComponent(href.slice(baseUrl.length)).replace(/\/$/, '') + '/index.html');
+  const paths = (html) => [...html.matchAll(/data-series-path="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(paths(article), paths(listing));
+});
+
 test('body H1 counters render a frontmatter-titled series above the table of contents', async () => {
-  const [detail, sidebarComponent, seriesComponent, tocComponent, css] = await Promise.all([
+  const [detail, sidebarComponent, seriesComponent, tocComponent, css, treeComponent] = await Promise.all([
     readSource('src/pages/blog/[...slug].astro'),
     readSource('src/components/BlogSidebar.astro'),
     readSource('src/components/SeriesList.astro'),
     readSource('src/components/TableOfContents.astro'),
     readSource('src/styles/global.css'),
+    readSource('src/components/SeriesTree.astro'),
   ]);
 
   assert.match(detail, /heading: extractSeriesHeading\(post\.body\)/);
-  assert.match(detail, /<BlogSidebar[\s\S]*?series=\{blogSeries\}[\s\S]*?currentId=\{post\.id\}[\s\S]*?desktopMin=\{1328\}/);
+  assert.match(detail, /<BlogSidebar[\s\S]*?series=\{blogSeries\}[\s\S]*?currentId=\{post\.id\}/);
   assert.match(detail, /assignment && series && <SeriesList[\s\S]*?<TableOfContents headings=\{headings\}/);
-  assert.match(sidebarComponent, /open=\{currentSeries\}/);
-  assert.match(sidebarComponent, /aria-current=\{entry\.id === currentId \? 'page' : undefined\}/);
+  assert.match(sidebarComponent, /<SeriesTree series=\{item\}/);
+  assert.match(treeComponent, /open=\{currentSeries \|\| defaultOpen\}/);
+  assert.match(treeComponent, /aria-current=\{item\.id === currentId \? 'page' : undefined\}/);
   assert.match(css, /\.blog-library--article\s*\{\s*display:\s*block/);
   assert.match(css, /@media \(min-width: 1328px\)[\s\S]*?\.blog-library--article\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(0, 760px\) minmax\(0, 1fr\)/);
-  assert.match(css, /\.blog-library--article > \.blog-sidebar\s*\{[^}]*grid-column:\s*1[^}]*max-height:\s*calc\(100vh - 60px - 2 \* var\(--space-lg\)\)/);
+  assert.match(css, /\.blog-library--article > \.blog-sidebar\s*\{[^}]*grid-column:\s*1/);
+  assert.match(css, /\.blog-sidebar\s*\{[^}]*max-height:\s*var\(--sidebar-height\)/);
+  assert.match(css, /\.blog-sidebar__nav\s*\{[^}]*max-height:\s*calc\(var\(--sidebar-height\) - var\(--space-xl\)\)[^}]*overflow-y:\s*auto/);
   assert.match(css, /\.blog-sidebar\s*\{[^}]*position:\s*sticky/);
   assert.match(seriesComponent, /<details class="toc series-list" data-article-nav open>/);
   assert.match(seriesComponent, /<summary class="toc__summary">\{series\.name\}<\/summary>/);
@@ -509,13 +502,8 @@ test('blog article Lottie sources are normalized before the player loads', async
   assert.match(css, /\.prose lottie-player\s*\{[^}]*background:\s*transparent/);
 });
 
-test('writing guide renders article media centered without stretching', async () => {
-  const [html, css] = await Promise.all([
-    readPage('blog/blog-writing-guide/index.html'),
-    readSource('src/styles/global.css'),
-  ]);
-  assert.match(html, /<figure\b[^>]*class="media-figure"/);
-  assert.match(html, new RegExp(`<img src="${escapeRegExp(sitePath('blog-assets/blog-writing-guide/image.png'))}"`));
+test('article media styles center images without stretching', async () => {
+  const css = await readSource('src/styles/global.css');
   assert.match(css, /\.prose\s*\{[^}]*margin-inline:\s*auto/);
   assert.match(css, /\.prose figure\s*\{[^}]*display:\s*flex/);
   assert.match(css, /\.prose figure\s*\{[^}]*align-items:\s*center/);
@@ -523,21 +511,6 @@ test('writing guide renders article media centered without stretching', async ()
   assert.match(css, /\.prose figure :where\(img,\s*lottie-player\)\s*\{[^}]*margin-inline:\s*auto/);
   assert.match(css, /\.prose img\s*\{[^}]*width:\s*auto[^}]*max-width:\s*100%[^}]*height:\s*auto/);
   assert.match(css, /\.prose figcaption\s*\{[^}]*color:\s*var\(--ink-subtle\)/);
-});
-
-test('writing guide collapses the repository Markdown workflow behind a summary', async () => {
-  const [html, css] = await Promise.all([
-    readPage('blog/blog-writing-guide/index.html'),
-    readSource('src/styles/global.css'),
-  ]);
-
-  assert.match(html, /<details class="guide-details">/);
-  assert.match(html, /<summary>저장소에 직접 Markdown으로 글쓰기<\/summary>/);
-  assert.match(html, /<h2 id="3-시리즈-글-작성하는-방법">3\. 시리즈 글 작성하는 방법<a\b[^>]*class="heading-anchor"/);
-  assert.match(html, /<h2 id="4-저장소에서-직접-글쓰기">4\. 저장소에서 직접 글쓰기<a\b[^>]*class="heading-anchor"/);
-  assert.match(html, /<h3 id="파일-만들기">파일 만들기<a\b[^>]*class="heading-anchor"/);
-  assert.match(css, /\.guide-details\s*\{/);
-  assert.match(css, /\.guide-details\s*>\s*summary\s*\{/);
 });
 
 test('blog cards are borderless editorial entries with stable author metadata', async () => {

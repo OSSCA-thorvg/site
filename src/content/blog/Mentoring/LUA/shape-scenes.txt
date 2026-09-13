@@ -1,0 +1,9 @@
+[
+  "01-path-storage",
+  "02-bezier",
+  "03-bounds",
+  "04-path-rle",
+  "05-stroke",
+  "06-dash",
+  "07-trim"
+]

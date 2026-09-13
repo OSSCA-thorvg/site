@@ -1,0 +1,1754 @@
+---
+title: "[Core2026] Pipeline - Compositing & Postprocessing"
+github: "Nor-s"
+date: 2026-09-12
+summary: "CPU Engine의 offscreen Surface, begin/endComposite와 effect chain의 실행 흐름을 살펴봅니다."
+tags: ["ThorVG", "Core", "CPU"]
+draft: false
+---
+
+import TMathPlayer from '../../../components/TMathPlayer.astro';
+import Disclosure from '../../../components/Disclosure.astro';
+
+# Core2026 > Engine > CPU Engine > Pipeline - 11
+
+<Disclosure title="예제 코드: BG · Scene(A, B) · GaussianBlur → Fill">
+
+본문의 Pipeline 장면은 24×24 Canvas에 BG와 `Scene(A, B)`를 추가한 같은 입력에서 출발합니다. Scene은 자식 전체에 opacity `128`을 적용하고, 두 Shape를 그린 결과에 `GaussianBlur → Fill`을 순서대로 실행합니다.
+
+```cpp
+#include <array>
+#include <memory>
+#include <thorvg.h>
+
+using namespace tvg;
+
+Initializer::init(2);
+{
+    constexpr uint32_t W = 24, H = 24;
+    std::array<uint32_t, W * H> pixels{};
+    auto canvas = std::unique_ptr<SwCanvas>(SwCanvas::gen());
+    canvas->target(pixels.data(), W, W, H, ColorSpace::ABGR8888);
+
+auto bg = Shape::gen();
+bg->appendRect(0, 0, W, H);
+bg->fill(234, 241, 236);
+
+auto a = Shape::gen();
+a->moveTo(7, 5);
+a->lineTo(3, 19);
+a->lineTo(18, 19);
+a->close();
+a->fill(230, 97, 33);
+
+auto b = Shape::gen();
+b->appendCircle(16, 13, 5, 5);
+b->fill(31, 102, 196);
+
+auto scene = Scene::gen();
+scene->add(a);
+scene->add(b);
+scene->opacity(128);
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+
+    canvas->add(bg);
+    canvas->add(scene);
+    canvas->update();
+    canvas->draw(true);
+    canvas->sync();
+}
+Initializer::term();
+```
+
+</Disclosure>
+
+## 1. Pipeline
+
+<TMathPlayer scene="overview" source={`${import.meta.env.BASE_URL}tmath/postprocessing/overview.lua`} title="전체 흐름 · Effect 준비 → Surface 합성" description="Scene Update에서 Shape Task를 요청하고 Effect 파라미터를 준비한 뒤, Draw의 Offscreen 렌더링과 최종 합성으로 이어지는 흐름을 보여줍니다." width={1280} height={2230} />
+
+`SceneImpl::update()`는 자식 Paint의 Update를 호출한 뒤 `renderer->prepare(effect, transform)`으로 Effect 파라미터를 준비합니다. Shape의 Worker Task와 달리 Effect 준비는 호출 스레드에서 실행됩니다.
+
+- GaussianBlur: `rd->kernel`과 확장량 `rd->extends` 계산
+- Fill: `valid = true` 설정
+- Offscreen의 픽셀 처리는 이후 Draw에서 자식 Raster가 끝난 뒤 실행
+
+<Disclosure title="코드 보기: 01. Effect Prepare — Scene Update · Blur/Fill 준비">
+
+**호출 흐름**
+
+```text
+canvas->update()
+-> SceneImpl::update()
+-> 자식 Paint의 update()
+-> SwRenderer::prepare(effect, transform)
+-> effectGaussianBlurUpdate() / effectFillUpdate()
+```
+
+자식 Paint의 준비 작업을 요청한 뒤, 호출 스레드에서 Effect 파라미터를 준비합니다. Blur의 `rd`는 kernel·확장량을 담는 데이터이며, Offscreen 픽셀 버퍼는 이후 Draw에서 확보합니다.
+
+[SceneImpl::update()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L86)
+
+```cpp
+bool update(RenderMethod* renderer, const Matrix& transform, Array<RenderData>& clips, uint8_t opacity, RenderUpdateFlag flag, TVG_UNUSED bool clipper)
+{
+    if (paints.empty()) return true;
+
+    if (needComposition(opacity)) {
+        /* Overriding opacity value. If this scene is half-translucent,
+           It must do intermediate composition with that opacity value. */
+        this->opacity = opacity;
+        opacity = 255;
+    }
+
+    //allow partial rendering?
+    auto recover = fixed ? renderer->partial(true) : false;
+
+    // 1. 자식 Update에서 Shape 등의 Task 준비를 요청합니다.
+    for (auto paint : paints) {
+        PAINT(paint)->update(renderer, transform, clips, opacity, flag, false);
+    }
+
+    //recover the condition
+    if (fixed) renderer->partial(recover);
+
+    // 2. 자식 Task의 완료를 기다리지 않고, 여기서 Effect 파라미터를 준비합니다.
+    if (effects) {
+        ARRAY_FOREACH(p, *effects) {
+            renderer->prepare(*p, transform);
+        }
+    }
+
+    //this viewport update is more performant than in bounds(). No idea.
+    vport = renderer->viewport();
+
+    if (fixed) {
+        auto pt = fsize * transform;
+        vport.intersect({{int32_t(round(transform.e13)), int32_t(round(transform.e23))}, {int32_t(round(pt.x)), int32_t(round(pt.y))}});
+    } else {
+        vdirty = true;
+    }
+
+    //bounds(renderer) here hinders parallelization
+    //TODO: we can bring the precise effects region here
+    if (fixed || effects) impl.damage(vport);
+
+    return true;
+}
+```
+
+[SwRenderer::prepare(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L678)
+
+```cpp
+void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
+{
+    // Effect 종류에 맞는 Update 함수를 호출합니다. 별도 SwTask를 요청하지 않습니다.
+    switch (effect->type) {
+        case SceneEffect::GaussianBlur: effectGaussianBlurUpdate(static_cast<RenderEffectGaussianBlur*>(effect), transform); break;
+        case SceneEffect::DropShadow: effectDropShadowUpdate(static_cast<RenderEffectDropShadow*>(effect), transform); break;
+        case SceneEffect::Fill: effectFillUpdate(static_cast<RenderEffectFill*>(effect)); break;
+        case SceneEffect::Tint: effectTintUpdate(static_cast<RenderEffectTint*>(effect)); break;
+        case SceneEffect::Tritone: effectTritoneUpdate(static_cast<RenderEffectTritone*>(effect)); break;
+        default: break;
+    }
+}
+```
+
+[SwGaussianBlur](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L30)
+
+```cpp
+struct SwGaussianBlur
+{
+    static constexpr int MAX_LEVEL = 3;
+    int level;
+    int kernel[MAX_LEVEL];
+    int extends;
+};
+```
+
+[effectGaussianBlurUpdate()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156)
+
+```cpp
+void effectGaussianBlurUpdate(RenderEffectGaussianBlur* params, const Matrix& transform)
+{
+    // 1. 준비 데이터를 최초 할당하거나, 기존 rd를 재사용합니다.
+    if (!params->rd) params->rd = tvg::malloc<SwGaussianBlur>(sizeof(SwGaussianBlur));
+    auto rd = static_cast<SwGaussianBlur*>(params->rd);
+
+    //compute box kernel sizes
+    auto scale = sqrt(transform.e11 * transform.e11 + transform.e12 * transform.e12);
+    // 2. transform의 scale을 반영한 sigma의 제곱(분산)을 전달합니다.
+    rd->extends = _gaussianInit(rd, std::pow(params->sigma * scale, 2), params->quality);
+
+    //invalid
+    if (rd->extends == 0) {
+        params->valid = false;
+        return;
+    }
+
+    // 3. Draw의 effect 순회에서 실행할 수 있도록 표시합니다.
+    params->valid = true;
+}
+```
+
+[_gaussianInit()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L112)
+
+```cpp
+static int _gaussianInit(SwGaussianBlur* data, float sigma, int quality)
+{
+    // 이 함수의 sigma 인자는 표준편차가 아닌 분산입니다.
+    const auto MAX_LEVEL = SwGaussianBlur::MAX_LEVEL;
+
+    if (tvg::zero(sigma)) return 0;
+
+    data->level = int(SwGaussianBlur::MAX_LEVEL * ((quality - 1) * 0.01f)) + 1;
+
+    //compute box kernel sizes
+    auto wl = (int) sqrt((12 * sigma / MAX_LEVEL) + 1);
+    if (wl % 2 == 0) --wl;
+    auto wu = wl + 2;
+    auto mi = (12 * sigma - MAX_LEVEL * wl * wl - 4 * MAX_LEVEL * wl - 3 * MAX_LEVEL) / (-4 * wl - 4);
+    auto m = int(mi + 0.5f);
+    auto extends = 0;
+
+    // 각 box filter의 반경을 저장하고, 반경의 합을 확장량으로 반환합니다.
+    for (int i = 0; i < data->level; i++) {
+        data->kernel[i] = ((i < m ? wl : wu) - 1) / 2;
+        extends += data->kernel[i];
+    }
+
+    return extends;
+}
+```
+
+[effectFillUpdate()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L488)
+
+```cpp
+void effectFillUpdate(RenderEffectFill* params)
+{
+    // Fill 색상은 Scene::add()에서 저장되어 있습니다. 여기서는 valid만 설정합니다.
+    params->valid = true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 02. Effect 등록 · 순차 실행 — GaussianBlur → Fill">
+
+**호출 흐름**
+
+```text
+scene->add(SceneEffect::GaussianBlur, ...)
+-> Scene::add()
+-> SceneImpl::add()
+-> effects->push(blur)
+
+scene->add(SceneEffect::Fill, ...)
+-> Scene::add()
+-> SceneImpl::add()
+-> effects->push(fill)
+```
+
+위 예제에서 Effect를 등록하는 부분입니다. `effects` 배열의 순서가 `GaussianBlur → Fill`이 됩니다.
+
+```cpp
+// 1. Scene(A, B)에 Blur를 먼저 등록합니다.
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+
+// 2. Blur 결과에 적용할 Fill을 다음에 등록합니다.
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+```
+
+[Scene::add(SceneEffect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.cpp#L60)
+
+```cpp
+Result Scene::add(SceneEffect effect, ...) noexcept
+{
+    va_list args;
+    va_start(args, effect);
+    auto ret = to<SceneImpl>(this)->add(effect, args);
+    va_end(args);
+    return ret;
+}
+```
+
+[SceneImpl::add(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L400)
+
+```cpp
+Result add(SceneEffect effect, va_list& args)
+{
+    if (effect == SceneEffect::Clear) return resetEffects();
+
+    if (!this->effects) this->effects = new Array<RenderEffect*>;
+
+    RenderEffect* re = nullptr;
+
+    switch (effect) {
+        case SceneEffect::GaussianBlur: {
+            re = RenderEffectGaussianBlur::gen(args);
+            break;
+        }
+        case SceneEffect::DropShadow: {
+            re = RenderEffectDropShadow::gen(args);
+            break;
+        }
+        case SceneEffect::Fill: {
+            re = RenderEffectFill::gen(args);
+            break;
+        }
+        case SceneEffect::Tint: {
+            re = RenderEffectTint::gen(args);
+            break;
+        }
+        case SceneEffect::Tritone: {
+            re = RenderEffectTritone::gen(args);
+            break;
+        }
+        default: break;
+    }
+
+    if (!re) return Result::InvalidArguments;
+
+    // 호출된 순서대로 Effect를 배열 끝에 추가합니다.
+    this->effects->push(re);
+
+    return Result::Success;
+}
+```
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> target()
+-> beginComposite()
+-> 자식 A·B render()
+-> SwRenderer::render(cmp, GaussianBlur, false)
+-> SwRenderer::render(cmp, Fill, false)
+-> endComposite()
+```
+
+자식 Raster가 끝나면 유효한 Effect를 배열 순서대로 실행합니다. 이 예제는 Effect가 두 개이므로 `direct = false`이며, Fill이 Blur가 처리한 Offscreen을 이어받습니다.
+
+[SceneImpl::render()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L130)
+
+```cpp
+bool render(RenderMethod* renderer, CompositionFlag flag)
+{
+    if (paints.empty()) return true;
+
+    RenderCompositor* cmp = nullptr;
+    // its parent is already in composition mode, maybe parasitize its surface
+    auto incomposite = (uint8_t(CompositionFlag::PostProcessing) & uint8_t(flag)) && !effects;
+    auto ret = true;
+
+    renderer->blend(impl.blendMethod);
+
+    // 1. 자식을 그릴 Offscreen을 선택하고 합성 정보를 설정합니다.
+    if (!incomposite && impl.cmpFlag) {
+        cmp = renderer->target(bounds(), renderer->colorSpace(), impl.cmpFlag);
+        renderer->beginComposite(cmp, MaskMethod::None, opacity);
+    }
+
+    // 2. A와 B를 현재 Offscreen에 순서대로 그립니다.
+    for (auto paint : paints) {
+        ret &= paint->pImpl->render(renderer, impl.cmpFlag);
+    }
+
+    if (cmp) {
+        //Apply post effects if any.
+        if (effects) {
+            //Notify the possibility of the direct composition of the effect result to the origin surface.
+            auto direct = (effects->count == 1) & (impl.marked(CompositionFlag::PostProcessing));
+            // 3. 등록 순서대로 GaussianBlur → Fill을 실행합니다.
+            ARRAY_FOREACH(p, *effects) {
+                if ((*p)->valid) renderer->render(cmp, *p, direct);
+            }
+        }
+        // 4. Effect 처리가 끝나면 부모 Surface로 복귀해 합성합니다.
+        renderer->endComposite(cmp);
+    }
+
+    return ret;
+}
+```
+
+[SwRenderer::render(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+
+```cpp
+bool SwRenderer::render(RenderCompositor* cmp, const RenderEffect* effect, bool direct)
+{
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    if (p->image.channelSize != sizeof(uint32_t)) {
+        TVGERR("SW_ENGINE", "Not supported grayscale Gaussian Blur!");
+        return false;
+    }
+
+    //TODO: Support grayscale effects.
+    if (p->recoverSfc->channelSize != sizeof(uint32_t)) direct = false;
+
+    switch (effect->type) {
+        case SceneEffect::GaussianBlur: {
+            return effectGaussianBlur(p, request(surface->channelSize, true), static_cast<const RenderEffectGaussianBlur*>(effect));
+        }
+        case SceneEffect::DropShadow: {
+            auto cmp1 = request(surface->channelSize, true);
+            cmp1->compositor->valid = false;   //prevent a conflict with cmp2 request.
+            auto cmp2 = request(surface->channelSize, true);
+            SwSurface* surfaces[] = {cmp1, cmp2};
+            auto ret = effectDropShadow(p, surfaces, static_cast<const RenderEffectDropShadow*>(effect), direct);
+            cmp1->compositor->valid = true;
+            return ret;
+        }
+        case SceneEffect::Fill: {
+            return effectFill(p, static_cast<const RenderEffectFill*>(effect), direct);
+        }
+        case SceneEffect::Tint: {
+            return effectTint(p, static_cast<const RenderEffectTint*>(effect), direct);
+        }
+        case SceneEffect::Tritone: {
+            return effectTritone(p, static_cast<const RenderEffectTritone*>(effect), direct);
+        }
+        default: return false;
+    }
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 03. Offscreen 버퍼 — request · target">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::target(region, colorSpace, flags)
+-> SwRenderer::request(channelSize, square)
+-> 캐시 재사용 또는 픽셀 버퍼 할당
+-> rasterClear()
+-> surface = Offscreen
+```
+
+`request()`가 버퍼를 확보하고, `target()`이 부모 컨텍스트를 저장한 뒤 렌더 타겟을 전환합니다. 이 예제의 첫 Draw에서는 Offscreen 하나를 할당하며, Blur의 Scratch는 Effect 실행 중에 별도로 요청합니다.
+
+[SwRenderer::request()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L586)
+
+```cpp
+SwSurface* SwRenderer::request(int channelSize, bool square)
+{
+    SwSurface* cmp = nullptr;
+    uint32_t w, h;
+
+    // 1. 후처리 전치를 위해 양쪽 크기가 같은 버퍼를 요청할 수 있습니다.
+    if (square) {
+        //Same Dimensional Size is demanded for the Post Processing Fast Flipping
+        w = h = std::max(surface->w, surface->h);
+    } else {
+        w = surface->w;
+        h = surface->h;
+    }
+
+    //Use cached data
+    // 2. 재사용 가능하고 채널 수·크기가 일치하는 캐시를 찾습니다.
+    ARRAY_FOREACH(p, compositors) {
+        auto cur = *p;
+        if (cur->compositor->valid && cur->compositor->image.channelSize == channelSize) {
+            if (w == cur->w && h == cur->h) {
+                cmp = *p;
+                break;
+            }
+        }
+    }
+
+    //New Composition
+    if (!cmp) {
+        //Inherits attributes from main surface
+        cmp = new SwSurface(surface);
+        cmp->compositor = new SwCompositor;
+        // 3. 캐시가 없으면 여기서 실제 픽셀 저장 공간을 할당합니다.
+        cmp->compositor->image.data = tvg::malloc<pixel_t>(channelSize * w * h);
+        cmp->w = cmp->compositor->image.w = w;
+        cmp->h = cmp->compositor->image.h = h;
+        cmp->stride = cmp->compositor->image.stride = w;
+        cmp->compositor->image.direct = true;
+        cmp->compositor->valid = true;
+        cmp->channelSize = cmp->compositor->image.channelSize = channelSize;
+
+        compositors.push(cmp);
+    }
+
+    //Sync. This may have been modified by post-processing.
+    // 4. 후처리에서 저장 공간이 바뀔 수 있으므로 Surface의 포인터를 맞춥니다.
+    cmp->data = cmp->compositor->image.data;
+
+    return cmp;
+}
+```
+
+[SwRenderer::target(region)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L633)
+
+```cpp
+RenderCompositor* SwRenderer::target(const RenderRegion& region, ColorSpace cs, CompositionFlag flags)
+{
+    auto bbox = RenderRegion::intersect(region, {{0, 0}, {int32_t(surface->w), int32_t(surface->h)}});
+    if (bbox.invalid()) return nullptr;
+
+    // 1. PostProcessing 플래그가 있으면 정사각형 버퍼를 요청합니다.
+    auto cmp = request(CHANNEL_SIZE(cs), (flags & CompositionFlag::PostProcessing));
+    // 2. endComposite()에서 복구할 부모 Surface와 compositor를 보관합니다.
+    cmp->compositor->recoverSfc = surface;
+    cmp->compositor->recoverCmp = surface->compositor;
+    // 선택한 버퍼를 사용 중으로 표시합니다.
+    cmp->compositor->valid = false;
+    cmp->compositor->bbox = bbox;
+
+    /* TODO: Currently, only blending might work.
+       Blending and composition must be handled together. */
+    // 3. 이번에 사용할 영역을 비웁니다.
+    rasterClear(cmp, bbox.x(), bbox.y(), bbox.w(), bbox.h());
+
+    //Switch render target
+    // 4. 이후 자식 Raster가 이 Offscreen에 기록하도록 전환합니다.
+    surface = cmp;
+
+    return cmp->compositor;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 04. beginComposite — 합성 방식 · opacity">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::target()
+-> SwRenderer::beginComposite(cmp, MaskMethod::None, 128)
+```
+
+`target()`에서 선택한 Offscreen에 합성 방식과 그룹 opacity를 설정합니다. 이 예제는 `MaskMethod::None`이므로 렌더 타겟이 Offscreen으로 유지됩니다.
+
+[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)
+
+```cpp
+bool SwRenderer::beginComposite(RenderCompositor* cmp, MaskMethod method, uint8_t opacity)
+{
+    if (!cmp) return false;
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    // 1. 이 예제는 None과 그룹 opacity 128을 저장합니다.
+    p->method = method;
+    p->opacity = opacity;
+
+    //Current Context?
+    // 2. Mask가 지정된 경우에는 부모 Surface로 전환하고 mask compositor를 연결합니다.
+    if (p->method != MaskMethod::None) {
+        surface = p->recoverSfc;
+        surface->compositor = p;
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 05. endComposite — 부모 Surface 복구 · 최종 합성">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> GaussianBlur → Fill 처리 완료
+-> SwRenderer::endComposite(cmp)
+-> 부모 Surface·compositor 복구
+-> rasterDirectImage(surface, image, bbox, opacity)
+```
+
+부모 Surface를 복구한 뒤, Offscreen 결과에 그룹 opacity를 반영하여 합성합니다. `valid = true`는 해당 버퍼를 이후 요청에서 재사용할 수 있음을 표시합니다.
+
+[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+
+```cpp
+bool SwRenderer::endComposite(RenderCompositor* cmp)
+{
+    if (!cmp) return false;
+
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    //Recover Context
+    // 1. 이 예제에서는 BG가 남아 있는 Canvas Surface로 복귀합니다.
+    surface = p->recoverSfc;
+    surface->compositor = p->recoverCmp;
+
+    //only invalid (currently used) surface can be composited
+    // 2. 단일 Effect의 direct 경로 등에서 이미 합성했다면 중복 처리를 생략합니다.
+    if (p->valid) return true;
+    // 버퍼를 재사용 가능한 상태로 돌립니다.
+    p->valid = true;
+
+    //Default is alpha blending
+    if (p->method == MaskMethod::None) {
+        // 3. GaussianBlur → Fill 결과를 opacity 128로 기존 Canvas 위에 합성합니다.
+        return rasterDirectImage(surface, p->image, p->bbox, p->opacity);
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+## 2. Compositing Pipeline
+
+<TMathPlayer scene="effect-pipeline" title="beginComposite부터 endComposite까지" description="Offscreen 선택과 beginComposite 설정, A·B 렌더링과 Effect 체인, endComposite 내부의 Canvas 복구와 최종 합성을 하나의 흐름으로 보여줍니다." width={960} height={800} />
+
+```cpp
+auto scene = Scene::gen();
+scene->add(a);
+scene->add(b);
+scene->opacity(128);
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+```
+
+`target()`으로 Offscreen을 선택하고, [`beginComposite()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)에서 합성 방식과 그룹 opacity를 설정합니다. [`endComposite()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)는 Canvas를 복구한 뒤 [`rasterDirectImage()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1634)로 결과를 합성합니다.
+
+**Effect 체인은 앞선 Effect의 결과를 다음 Effect에 전달합니다.** Blur가 처리한 Offscreen을 Fill이 그대로 이어받아 색을 바꾸며, 이 예제의 임시 버퍼는 Offscreen 1개와 Blur scratch 1개입니다.
+
+**Canvas의 BG는 Effect 처리 동안 유지됩니다.** Effect 체인이 끝난 이미지 전체에 그룹 opacity를 적용하여, 기존 Canvas 위에 한 번 합성합니다.
+
+### 2.1. beginComposite
+
+<TMathPlayer scene="begin" title="Canvas에서 Offscreen으로" description="Canvas 픽셀을 유지한 채 recoverSfc에 컨텍스트를 보관하고 새 렌더 타겟과 합성 파라미터를 설정합니다." width={960} height={540} />
+
+**렌더 타겟을 바꾸는 함수는 `target()`입니다.** 기존 Canvas Surface를 `recoverSfc`에 보관하고, 요청한 offscreen의 처리 영역을 비운 뒤 `surface = cmp`로 전환합니다.
+
+**이어지는 `beginComposite()`는 합성 방식과 그룹 opacity를 설정합니다.** 이 예제는 `MaskMethod::None`, Scene opacity `128`이며, Canvas의 BG 픽셀은 유지됩니다.
+
+- 처리 영역: 자식 bounds에 Effect 확장량을 더한 뒤 viewport와 교차
+- 버퍼 크기: 후처리의 전치를 위해 현재 Surface의 긴 변을 기준으로 정사각형 확보
+- 이 예제: offscreen 1개, Blur scratch는 아직 요청하지 않은 상태
+- 재사용: `request()`는 크기·채널이 맞는 사용 가능한 캐시를 우선 선택
+
+<Disclosure title="코드 보기: target → beginComposite — Offscreen을 렌더 타겟으로 선택">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> A/B Scene의 SceneImpl::render()
+-> SwRenderer::target(region)
+-> request()
+-> rasterClear()
+-> SwRenderer::beginComposite()
+```
+
+target은 기존 Surface를 보관하고 offscreen으로 전환합니다. 이 예제의 beginComposite는 MaskMethod::None으로 합성 방식과 opacity를 설정합니다.
+
+[SwRenderer::target()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L633)
+
+```cpp
+RenderCompositor* SwRenderer::target(const RenderRegion& region, ColorSpace cs, CompositionFlag flags)
+{
+    auto bbox = RenderRegion::intersect(region, {{0, 0}, {int32_t(surface->w), int32_t(surface->h)}});
+    if (bbox.invalid()) return nullptr;
+
+    auto cmp = request(CHANNEL_SIZE(cs), (flags & CompositionFlag::PostProcessing));
+    cmp->compositor->recoverSfc = surface;
+    cmp->compositor->recoverCmp = surface->compositor;
+    cmp->compositor->valid = false;
+    cmp->compositor->bbox = bbox;
+
+    /* TODO: Currently, only blending might work.
+       Blending and composition must be handled together. */
+    rasterClear(cmp, bbox.x(), bbox.y(), bbox.w(), bbox.h());
+
+    //Switch render target
+    surface = cmp;
+
+    return cmp->compositor;
+}
+```
+
+[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)
+
+```cpp
+bool SwRenderer::beginComposite(RenderCompositor* cmp, MaskMethod method, uint8_t opacity)
+{
+    if (!cmp) return false;
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    p->method = method;
+    p->opacity = opacity;
+
+    //Current Context?
+    if (p->method != MaskMethod::None) {
+        surface = p->recoverSfc;
+        surface->compositor = p;
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: 임시 버퍼 — 캐시 재사용과 신규 할당">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::target(region)
+-> SwRenderer::request()
+-> 캐시 재사용 또는 새 버퍼 할당
+```
+
+request는 크기·채널이 맞는 사용 가능한 버퍼를 우선 재사용합니다. endComposite의 valid=true는 이후 재사용할 수 있음을 표시합니다.
+
+[SwRenderer::request() — 캐시 검색과 할당](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L600)
+
+```cpp
+ARRAY_FOREACH(p, compositors) {
+    auto cur = *p;
+    if (cur->compositor->valid && cur->compositor->image.channelSize == channelSize) {
+        if (w == cur->w && h == cur->h) {
+            cmp = *p;
+            break;
+        }
+    }
+}
+
+//New Composition
+if (!cmp) {
+    //Inherits attributes from main surface
+    cmp = new SwSurface(surface);
+    cmp->compositor = new SwCompositor;
+    cmp->compositor->image.data = tvg::malloc<pixel_t>(channelSize * w * h);
+    cmp->w = cmp->compositor->image.w = w;
+    cmp->h = cmp->compositor->image.h = h;
+    cmp->stride = cmp->compositor->image.stride = w;
+    cmp->compositor->image.direct = true;
+    cmp->compositor->valid = true;
+    cmp->channelSize = cmp->compositor->image.channelSize = channelSize;
+
+    compositors.push(cmp);
+}
+```
+
+</Disclosure>
+
+### 2.2. renderShape
+
+<TMathPlayer scene="raster" title="준비 데이터와 Offscreen Raster" description="renderShape가 Task의 완료를 기다린 뒤 준비된 RLE를 읽고, rasterShape가 A와 B를 같은 Offscreen에 기록합니다." width={960} height={720} />
+
+**Scene은 자식 Paint를 등록 순서대로 렌더링하며, 각 `renderShape()`는 현재 `surface`에 픽셀을 기록합니다.** 따라서 A와 B는 Canvas가 아닌, 앞 단계에서 선택한 offscreen에 합쳐집니다.
+
+**그림 왼쪽의 `SwShapeTask · A/B`는 Prepare에서 준비한 데이터를 보관하는 객체입니다.** 가운데의 `renderShape()`가 같은 객체를 `RenderData`로 받아 `done()`으로 준비 완료를 기다립니다. 이 예제의 단색 Fill은 `rasterShape()` → `_rasterRle()`를 통해 현재 Offscreen에 기록되며, `run()`을 다시 호출하지 않습니다.
+
+**이 예제의 A·B Task opacity는 모두 `255`입니다.** 그룹 opacity `128`은 자식마다 적용하지 않고 마지막 합성에 사용하므로 겹치는 영역을 하나의 그룹으로 처리합니다.
+
+- A: RLE 50개 → B: RLE 39개, 같은 픽셀 위치에는 나중에 그린 B의 결과 반영
+- 필터 입력: path·gradient 객체가 아니라 합성된 premultiplied RGBA 이미지
+- Canvas Surface: BG를 그린 상태로 유지
+
+<Disclosure title="코드 보기: Prepare의 Task를 RenderData로 읽는 renderShape">
+
+**Prepare — 준비 작업과 결과 저장소 생성**
+
+```text
+ShapeImpl::update()
+-> SwRenderer::prepare(rs, impl.rd, ...)
+```
+
+`prepare()`는 기존 `SwShapeTask`를 재사용하거나 생성하고, `prepareCommon()`이 반환한 같은 포인터를 `RenderData`로 돌려줍니다. `ShapeImpl::update()`는 이를 `impl.rd`에 보관합니다.
+
+[SwRenderer::prepare()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L872)
+
+```cpp
+RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data, const Matrix& transform, const Array<RenderData>& clips, uint8_t opacity, RenderUpdateFlag flags, bool clipper)
+{
+    auto task = static_cast<SwShapeTask*>(data);
+    if (task) task->done();
+    else {
+        task = new SwShapeTask;
+        task->rshape = &rshape;
+    }
+
+    task->clipper = clipper;
+
+    return prepareCommon(task, transform, clips, opacity, flags, (opacity == 0 && !clipper));
+}
+```
+
+갱신이 필요하면 `prepareCommon()`에서 `TaskScheduler::request(task)`로 준비 작업을 요청합니다. `SwShapeTask::run()`은 이 요청으로 실행됩니다. Worker가 있으면 비동기로 처리하고, 없으면 요청한 자리에서 실행합니다. ([prepareCommon()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828), [TaskSchedulerImpl::request()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.cpp#L148))
+
+**Draw — 같은 RenderData를 읽어 현재 Surface에 기록**
+
+```text
+SceneImpl::render()
+-> Paint::Impl::render() [자식 A 또는 B]
+-> ShapeImpl::render()
+-> SwRenderer::renderShape(impl.rd)
+```
+
+`data`를 `SwShapeTask*`로 되돌린 뒤 `done()`으로 준비 완료를 확인합니다. 그다음 보관된 `shape`·`rshape`·`opacity`를 사용해 Fill·Stroke Raster 함수를 직접 호출합니다. 여기에는 `TaskScheduler::request()`나 `run()` 호출이 없습니다. 이 예제의 `surface`는 앞서 `beginComposite()`가 선택한 offscreen입니다.
+
+[SwRenderer::renderShape()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434)
+
+```cpp
+bool SwRenderer::renderShape(RenderData data)
+{
+    auto task = static_cast<SwShapeTask*>(data);
+    if (!task) return false;
+    task->done();
+
+    if (task->valid) {
+        auto fill = [](SwShapeTask* task, SwSurface* surface, const RenderRegion& bbox) {
+            if (auto fill = task->rshape->fill) {
+                rasterGradientShape(surface, &task->shape, bbox, fill, task->opacity);
+            } else {
+                RenderColor c;
+                task->rshape->fillColor(&c.r, &c.g, &c.b, &c.a);
+                c.a = MULTIPLY(task->opacity, c.a);
+                if (c.a > 0) rasterShape(surface, &task->shape, bbox, c);
+            }
+        };
+
+        auto stroke = [](SwShapeTask* task, SwSurface* surface, const RenderRegion& bbox) {
+            if (auto strokeFill = task->rshape->strokeFill()) {
+                rasterGradientStroke(surface, &task->shape, bbox, strokeFill, task->opacity);
+            } else {
+                RenderColor c;
+                if (task->rshape->strokeFill(&c.r, &c.g, &c.b, &c.a)) {
+                    c.a = MULTIPLY(task->opacity, c.a);
+                    if (c.a > 0) rasterStroke(surface, &task->shape, bbox, c);
+                }
+            }
+        };
+
+        //full scene or partial rendering
+        if (fulldraw || task->nodirty || task->pushed || dirtyRegion.deactivated()) {
+            if (task->rshape->strokeFirst()) {
+                stroke(task, surface, task->curBox);
+                fill(task, surface, task->shape.bbox);
+            } else {
+                fill(task, surface, task->shape.bbox);
+                stroke(task, surface, task->curBox);
+            }
+        } else if (task->curBox.valid()) {
+            for (int idx = 0; idx < RenderDirtyRegion::PARTITIONING; ++idx) {
+                if (!dirtyRegion.partition(idx).intersected(task->curBox)) continue;
+                ARRAY_FOREACH(p, dirtyRegion.get(idx)) {
+                    if (task->curBox.max.x <= p->min.x) break;   //dirtyRegion is sorted in x order
+                    if (task->rshape->strokeFirst()) {
+                        if (task->rshape->stroke && task->curBox.intersected(*p)) stroke(task, surface, RenderRegion::intersect(task->curBox, *p));
+                        if (task->shape.bbox.intersected(*p)) fill(task, surface, RenderRegion::intersect(task->shape.bbox, *p));
+                    } else {
+                        if (task->shape.bbox.intersected(*p)) fill(task, surface, RenderRegion::intersect(task->shape.bbox, *p));
+                        if (task->rshape->stroke && task->curBox.intersected(*p)) stroke(task, surface, RenderRegion::intersect(task->curBox, *p));
+                    }
+                }
+            }
+        }
+    }
+    return task->complete();
+}
+```
+
+**`done()` — 작업 실행이 아닌 완료 대기**
+
+```text
+SwRenderer::renderShape(impl.rd)
+-> task->done()
+-> Task::done()
+```
+
+아래는 스레드 지원 빌드의 전체 함수입니다. 대기할 작업이 없으면 바로 반환하며, 준비가 진행 중이면 완료 신호를 기다립니다. 스레드 미지원 빌드에서는 `done()`이 빈 함수입니다.
+
+[Task::done()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.h#L56)
+
+```cpp
+void done()
+{
+    if (!pending) return;
+
+    unique_lock<mutex> lock(mtx);
+    while (!ready) cv.wait(lock);
+    pending = false;
+}
+```
+
+`renderShape()` 끝의 `task->complete()`도 `run()`을 실행하지 않습니다. 현재 영역을 다음 프레임의 이전 영역으로 남기고 `nodirty`를 해제합니다.
+
+</Disclosure>
+
+Fill·Stroke의 Raster 경로 선택은 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-8-cpu-engine-raster`}>Draw/Raster</a>에서 이어집니다. 이 절에서 중요한 차이는 같은 Raster가 Canvas 대신 현재 선택된 offscreen에 기록된다는 점입니다.
+
+### 2.3. Effect chain
+
+<TMathPlayer scene="chain" title="GaussianBlur에서 Fill로" description="Blur가 Offscreen과 Scratch를 번갈아 사용하고 Fill이 그 결과를 같은 Offscreen에서 수정합니다." width={960} height={540} />
+
+**Effect 루프는 앞 Effect가 만든 이미지를 다음 Effect의 입력으로 사용합니다.** 이 예제는 `effects[0] = GaussianBlur`, `effects[1] = Fill`이며, 두 Effect가 끝날 때까지 Canvas에는 기록하지 않습니다.
+
+**GaussianBlur만 scratch를 추가로 요청하고, Fill은 같은 offscreen을 제자리에서 수정합니다.** 그림의 두 물리 버퍼는 Blur 동안 서로 역할을 바꾸지만, Shape를 그릴 렌더 타겟을 scratch로 전환하는 것은 아닙니다.
+
+- Blur: 수평 3회 → 전치 → 수직 3회 → 역전치, 이 설정의 최종 결과는 원래 Offscreen에 저장
+- Fill: Blur 결과의 alpha를 사용해 RGB 교체, 추가 버퍼 0개
+- 임시 픽셀 버퍼: offscreen 1개 + scratch 1개, Canvas Surface는 별도
+- 루프 종료 후에만 `endComposite()` 호출
+
+<Disclosure title="코드 보기: Effect chain — 등록 순서대로 실행">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> A/B Scene의 SceneImpl::render()
+-> 자식 Paint 렌더링
+-> effects 순회
+-> SwRenderer::render(cmp, effect, direct)
+-> effect*()
+```
+
+유효한 Effect를 등록 순서대로 실행합니다. 이 예제는 Effect가 두 개이므로 direct가 false입니다.
+
+[SceneImpl::render() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L130)
+
+```cpp
+bool render(RenderMethod* renderer, CompositionFlag flag)
+{
+    if (paints.empty()) return true;
+
+    RenderCompositor* cmp = nullptr;
+    // its parent is already in composition mode, maybe parasitize its surface
+    auto incomposite = (uint8_t(CompositionFlag::PostProcessing) & uint8_t(flag)) && !effects;
+    auto ret = true;
+
+    renderer->blend(impl.blendMethod);
+
+    if (!incomposite && impl.cmpFlag) {
+        cmp = renderer->target(bounds(), renderer->colorSpace(), impl.cmpFlag);
+        renderer->beginComposite(cmp, MaskMethod::None, opacity);
+    }
+
+    for (auto paint : paints) {
+        ret &= paint->pImpl->render(renderer, impl.cmpFlag);
+    }
+
+    if (cmp) {
+        //Apply post effects if any.
+        if (effects) {
+            // [핵심 1] 단일 Effect일 때 부모 Surface로 직접 합성할 가능성을 전달합니다.
+            // 이 예제는 GaussianBlur + Fill 두 개이므로 direct = false입니다.
+            auto direct = (effects->count == 1) & (impl.marked(CompositionFlag::PostProcessing));
+
+            // [핵심 2] 등록 순서대로 유효한 Effect를 실행합니다: GaussianBlur → Fill.
+            // 앞 Effect가 처리한 Offscreen을 다음 Effect가 이어받습니다.
+            ARRAY_FOREACH(p, *effects) {
+                if ((*p)->valid) renderer->render(cmp, *p, direct);
+            }
+        }
+        // Effect 체인이 끝난 뒤 부모 Surface로 복귀해 결과를 합성합니다.
+        renderer->endComposite(cmp);
+    }
+
+    return ret;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="단일 Effect의 direct 최적화">
+
+**Effect가 하나인 경우에는 부모 Surface에 직접 합성할 가능성을 전달합니다.** `direct`는 자식을 그릴 중간 입력 이미지가 없어지는 의미가 아닙니다.
+
+- Fill·Tint·Tritone: 직접 합성 완료 후 `cmp->valid = true`, 후속 일반 합성 생략
+- DropShadow: 그림자를 부모에 먼저 합성하고 본체를 이후 합성
+- GaussianBlur: 중간 버퍼를 필터링한 뒤 일반 합성 사용
+- 현재 예제: Effect가 두 개이므로 `direct = false`
+
+**호출 흐름 — Fill 하나만 등록한 경우**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> target() · beginComposite()
+-> 자식 A·B를 Offscreen에 렌더링
+-> direct = true
+-> SwRenderer::render(cmp, effect, direct)
+-> effectFill(): 부모 Surface에 직접 합성
+-> cmp->valid = true
+-> endComposite(): 부모 컨텍스트 복구 후 중복 합성 생략
+```
+
+앞의 예제에서 Effect를 Fill 하나로 바꾸면 이 경로를 확인할 수 있습니다.
+
+```cpp
+// 기존 GaussianBlur → Fill 체인을 지우고 Fill 하나만 등록합니다.
+scene->add(SceneEffect::Clear);
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+[SceneImpl::render() — direct 조건](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L154)
+
+```cpp
+// [핵심 1] Effect가 하나이고 PostProcessing 플래그가 있을 때 direct 가능성을 전달합니다.
+// 실제 직접 합성 여부는 아래 CPU Effect 구현에서 결정합니다.
+auto direct = (effects->count == 1) & (impl.marked(CompositionFlag::PostProcessing));
+ARRAY_FOREACH(p, *effects) {
+    if ((*p)->valid) renderer->render(cmp, *p, direct);
+}
+```
+
+[SwRenderer::render(effect) — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+
+```cpp
+bool SwRenderer::render(RenderCompositor* cmp, const RenderEffect* effect, bool direct)
+{
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    if (p->image.channelSize != sizeof(uint32_t)) {
+        TVGERR("SW_ENGINE", "Not supported grayscale Gaussian Blur!");
+        return false;
+    }
+
+    //TODO: Support grayscale effects.
+    // 부모 Surface가 32-bit 형식이 아니면 direct를 해제합니다.
+    if (p->recoverSfc->channelSize != sizeof(uint32_t)) direct = false;
+
+    switch (effect->type) {
+        case SceneEffect::GaussianBlur: {
+            // GaussianBlur에는 direct를 전달하지 않습니다. 필터링 후 endComposite()에서 합성합니다.
+            return effectGaussianBlur(p, request(surface->channelSize, true), static_cast<const RenderEffectGaussianBlur*>(effect));
+        }
+        case SceneEffect::DropShadow: {
+            auto cmp1 = request(surface->channelSize, true);
+            cmp1->compositor->valid = false;   //prevent a conflict with cmp2 request.
+            auto cmp2 = request(surface->channelSize, true);
+            SwSurface* surfaces[] = {cmp1, cmp2};
+            auto ret = effectDropShadow(p, surfaces, static_cast<const RenderEffectDropShadow*>(effect), direct);
+            cmp1->compositor->valid = true;
+            return ret;
+        }
+        case SceneEffect::Fill: {
+            // Fill·Tint·Tritone은 direct를 받아 부모 Surface에 바로 합성할 수 있습니다.
+            return effectFill(p, static_cast<const RenderEffectFill*>(effect), direct);
+        }
+        case SceneEffect::Tint: {
+            return effectTint(p, static_cast<const RenderEffectTint*>(effect), direct);
+        }
+        case SceneEffect::Tritone: {
+            return effectTritone(p, static_cast<const RenderEffectTritone*>(effect), direct);
+        }
+        default: return false;
+    }
+}
+```
+
+**Fill — 부모 Surface 기록과 후속 합성 생략**
+
+[effectFill() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L494)
+
+```cpp
+bool effectFill(SwCompositor* cmp, const RenderEffectFill* params, bool direct)
+{
+    // direct에서는 최종 합성까지 수행하므로 그룹 opacity를 미리 반영합니다.
+    auto opacity = direct ? MULTIPLY(params->color[3], cmp->opacity) : params->color[3];
+
+    auto& bbox = cmp->bbox;
+    auto w = size_t(bbox.max.x - bbox.min.x);
+    auto h = size_t(bbox.max.y - bbox.min.y);
+    auto color = cmp->recoverSfc->join(params->color[0], params->color[1], params->color[2], 255);
+
+    TVGLOG("SW_ENGINE", "Fill region(%d, %d, %d, %d), param(%d %d %d %d)", bbox.min.x, bbox.min.y, bbox.max.x, bbox.max.y, params->color[0], params->color[1], params->color[2], params->color[3]);
+
+    if (direct) {
+        // [핵심 2] 입력은 Offscreen, 출력은 부모 Surface입니다.
+        auto dbuffer = cmp->recoverSfc->buf32 + (bbox.min.y * cmp->recoverSfc->stride + bbox.min.x);
+        auto sbuffer = cmp->image.buf32 + (bbox.min.y * cmp->image.stride + bbox.min.x);
+        for (size_t y = 0; y < h; ++y) {
+            auto dst = dbuffer;
+            auto src = sbuffer;
+            for (size_t x = 0; x < w; ++x, ++dst, ++src) {
+                auto a = MULTIPLY(opacity, A(*src));
+                auto tmp = ALPHA_BLEND(color, a);
+                // Fill 색상과 입력 alpha로 만든 결과를 부모의 기존 픽셀 위에 합성합니다.
+                *dst = tmp + ALPHA_BLEND(*dst, 255 - a);
+            }
+            dbuffer += cmp->recoverSfc->stride;
+            sbuffer += cmp->image.stride;
+        }
+        // [핵심 3] 합성을 마쳤으므로 endComposite()의 추가 픽셀 합성을 생략합니다.
+        cmp->valid = true;  //no need the subsequent composition
+    } else {
+        // 일반 경로는 Offscreen만 수정합니다. 부모 합성은 endComposite()가 수행합니다.
+        auto dbuffer = cmp->image.buf32 + (bbox.min.y * cmp->image.stride + bbox.min.x);
+        for (size_t y = 0; y < h; ++y) {
+            auto dst = dbuffer;
+            for (size_t x = 0; x < w; ++x, ++dst) {
+                *dst = ALPHA_BLEND(color, MULTIPLY(opacity, A(*dst)));
+            }
+            dbuffer += cmp->image.stride;
+        }
+    }
+    return true;
+}
+```
+
+`Tint`와 `Tritone`도 direct 분기에서 `recoverSfc`에 결과를 합성한 뒤 `cmp->valid = true`를 설정합니다. ([effectTint()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L544), [effectTritone()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L610))
+
+**DropShadow — 그림자를 먼저 합성하고 본체는 유지**
+
+DropShadow는 부모 Surface에 그림자를 먼저 합성한 뒤 원본 이미지를 `cmp->image`에 남깁니다. `cmp->valid`를 true로 바꾸지 않으므로 `endComposite()`에서 본체를 추가로 합성합니다.
+
+[effectDropShadow() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L402)
+
+```cpp
+bool effectDropShadow(SwCompositor* cmp, SwSurface* surface[2], const RenderEffectDropShadow* params, bool direct)
+{
+    //FIXME: if the body is partially visible due to clipping, the shadow also becomes partially visible.
+
+    auto data = static_cast<SwDropShadow*>(params->rd);
+    auto& bbox = cmp->bbox;
+    auto w = (bbox.max.x - bbox.min.x);
+    auto h = (bbox.max.y - bbox.min.y);
+
+    //outside the screen
+    if (abs(data->offset.x) >= w || abs(data->offset.y) >= h) return true;
+
+    SwImage* buffer[] = {&surface[0]->compositor->image, &surface[1]->compositor->image};
+    auto color = cmp->recoverSfc->join(params->color[0], params->color[1], params->color[2], 255);
+    auto stride = cmp->image.stride;
+    auto front = cmp->image.buf32;
+    auto back = buffer[1]->buf32;
+
+    auto opacity = direct ? MULTIPLY(params->color[3], cmp->opacity) : params->color[3];
+
+    TVGLOG("SW_ENGINE", "DropShadow region(%d, %d, %d, %d) params(%f %f %f), level(%d)", bbox.min.x, bbox.min.y, bbox.max.x, bbox.max.y, params->angle, params->distance, params->sigma, data->level);
+
+    //no filter required
+    if (data->extends == 0)  {
+        // Blur가 없는 경우에도 그림자만 부모 Surface에 직접 합성합니다.
+        if (direct) {
+            _dropShadowNoFilter(cmp->recoverSfc->buf32, cmp->image.buf32, cmp->recoverSfc->stride, cmp->image.stride, cmp->recoverSfc->w, cmp->recoverSfc->h, bbox, data->offset, color, opacity, direct);
+        } else {
+            _dropShadowNoFilter(buffer[1], &cmp->image, bbox, data->offset, color);
+            std::swap(cmp->image.buf32, buffer[1]->buf32);
+        }
+        return true;
+    }
+
+    //saving the original image in order to overlay it into the filtered image.
+    _dropShadowFilter(back, front, stride, w, h, bbox, data->kernel[0], color, false);
+    std::swap(front, buffer[0]->buf32);
+    std::swap(front, back);
+
+    //horizontal
+    for (int i = 1; i < data->level; ++i) {
+        _dropShadowFilter(back, front, stride, w, h, bbox, data->kernel[i], color, false);
+        std::swap(front, back);
+    }
+
+    //vertical
+    rasterXYFlip(front, back, stride, w, h, bbox, false);
+    std::swap(front, back);
+
+    for (int i = 0; i < data->level; ++i) {
+        _dropShadowFilter(back, front, stride, h, w, bbox, data->kernel[i], color, true);
+        std::swap(front, back);
+    }
+
+    rasterXYFlip(front, back, stride, h, w, bbox, true);
+    std::swap(cmp->image.buf32, back);
+
+    //draw to the main surface directly
+    // [핵심 4] 필터링한 그림자는 부모에 합성하고, cmp->image를 원본 본체로 복원합니다.
+    if (direct) {
+        _dropShadowShift(cmp->recoverSfc->buf32, cmp->image.buf32, cmp->recoverSfc->stride, cmp->image.stride, cmp->recoverSfc->w, cmp->recoverSfc->h, bbox, data->offset, opacity, direct);
+        // cmp->valid는 false로 유지하여 endComposite()가 본체를 합성하도록 합니다.
+        std::swap(cmp->image.buf32, buffer[0]->buf32);
+        return true;
+    }
+
+    //draw to the intermediate surface
+    rasterClear(surface[1], bbox.min.x, bbox.min.y, w, h);
+    _dropShadowShift(buffer[1]->buf32, cmp->image.buf32, buffer[1]->stride, cmp->image.stride, buffer[1]->w, buffer[1]->h, bbox, data->offset, opacity, direct);
+    std::swap(cmp->image.buf32, buffer[1]->buf32);
+
+    //compositing shadow and body
+    auto s = buffer[0]->buf32 + (bbox.min.y * buffer[0]->stride + bbox.min.x);
+    auto d = cmp->image.buf32 + (bbox.min.y * cmp->image.stride + bbox.min.x);
+
+    for (auto y = 0; y < h; ++y) {
+        rasterTranslucentPixel32(d, s, w, 255);
+        s += buffer[0]->stride;
+        d += cmp->image.stride;
+    }
+
+    return true;
+}
+```
+
+**endComposite — 컨텍스트는 복구하고, 완료한 합성은 생략**
+
+[SwRenderer::endComposite() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+
+```cpp
+bool SwRenderer::endComposite(RenderCompositor* cmp)
+{
+    if (!cmp) return false;
+
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    //Recover Context
+    // direct로 이미 합성했더라도 부모 Surface와 compositor는 먼저 복구합니다.
+    surface = p->recoverSfc;
+    surface->compositor = p->recoverCmp;
+
+    //only invalid (currently used) surface can be composited
+    // [핵심 5] Fill·Tint·Tritone이 직접 합성을 마쳤다면 여기서 종료합니다.
+    if (p->valid) return true;
+    p->valid = true;
+
+    //Default is alpha blending
+    if (p->method == MaskMethod::None) {
+        // GaussianBlur 결과, DropShadow 본체, 일반 Effect 체인은 여기서 합성합니다.
+        return rasterDirectImage(surface, p->image, p->bbox, p->opacity);
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+### 2.4. endComposite
+
+<TMathPlayer scene="composite" title="endComposite — 부모 Surface 복구와 합성" description="부모 Surface와 compositor를 복구하고 임시 버퍼를 재사용 가능 상태로 표시한 뒤, Effect 이미지를 기존 Canvas에 합성합니다. MaskMethod::None 경로입니다." width={960} height={920} />
+
+**`endComposite()`는 렌더 타겟을 기존 Canvas Surface로 되돌린 뒤 결과를 합성합니다.** Canvas를 새로 만들거나 배경을 다시 그리는 과정이 아니라, 보존된 BG 위에 Effect 결과를 기록하는 과정입니다.
+
+이 예제는 사용 중인 compositor의 `MaskMethod::None` 경로입니다. 부모 컨텍스트를 복구한 뒤 `p->valid = true`로 재사용 가능 상태를 표시하고, `rasterDirectImage()`가 그룹 opacity를 반영해 기존 Canvas에 합성합니다. 이미 `valid`인 compositor는 컨텍스트 복구 후 합성 없이 반환합니다.
+
+<Disclosure title="코드 보기: endComposite → rasterDirectImage — Canvas에 최종 합성">
+
+**호출 흐름**
+
+```text
+canvas->draw()
+-> A/B Scene의 SceneImpl::render()
+-> effects 처리 완료
+-> SwRenderer::endComposite()
+-> rasterDirectImage()
+```
+
+렌더 타겟을 Canvas Surface로 되돌린 뒤, offscreen의 결과에 그룹 opacity를 반영해 합성합니다.
+
+[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+
+```cpp
+bool SwRenderer::endComposite(RenderCompositor* cmp)
+{
+    if (!cmp) return false;
+
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    //Recover Context
+    surface = p->recoverSfc;
+    surface->compositor = p->recoverCmp;
+
+    //only invalid (currently used) surface can be composited
+    if (p->valid) return true;
+    p->valid = true;
+
+    //Default is alpha blending
+    if (p->method == MaskMethod::None) {
+        return rasterDirectImage(surface, p->image, p->bbox, p->opacity);
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+### 2.5. postRender
+
+<TMathPlayer scene="output" title="Effect 루프 이후의 출력 정리" description="Scene 렌더링 반환 후 출력 형식을 확인하고 프레임 갱신 상태를 정리합니다." width={960} height={750} />
+
+**`postRender()`는 Main Scene 렌더링이 돌아온 뒤 호출되며 Scene의 Effect 루프 밖에 있습니다.** 이 장면은 Compositing이 끝난 위치만 연결합니다.
+
+현재 예제의 `ABGR8888`은 premultiplied 바이트를 유지합니다. `ABGR8888S`·`ARGB8888S`에서는 unpremultiply 경로를 사용하지만, alpha가 `255`인 픽셀은 값이 바뀌지 않습니다.
+
+`draw()`가 반환된 뒤의 task 정리와 Canvas 상태 복귀는 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-11-cpu-engine-sync-end`}>Sync/End</a>에서 이어집니다.
+
+> [!NOTE]
+> **Premultiplied는 RGB에 alpha를 미리 곱해 저장하는 표현입니다.** 내부 합성에서는 RGB를 정규화하는 나눗셈을 생략할 수 있어 계산이 간단해집니다. 보간·Blur처럼 이웃 픽셀의 채널값을 평균할 때도, alpha가 0인 픽셀의 숨은 RGB가 경계색에 섞이는 것을 피할 수 있습니다.
+>
+> 최종 출력은 호출자가 요청한 표현에 맞춥니다. `ABGR8888S`·`ARGB8888S`에서는 `postRender()`가 RGB를 복원하고, `ABGR8888`·`ARGB8888`에서는 Premultiplied를 유지합니다.
+
+## 3. Effect Details
+
+Effect의 공통 준비 경로는 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-9-cpu-engine-update-prepare#appendix-scene-effect--파라미터-준비`}>Update/Prepare의 Appendix</a>에서 다룹니다.
+
+24 × 24 pixels · native CPU values · slowed for inspection.
+
+### 3.1. GaussianBlur — Separable passes
+
+<TMathPlayer scene="blur" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/blur.lua'} title="Read front, write back, swap" description="Six box-filter passes and two transposes update Offscreen and Scratch." width={960} height={800} />
+
+<Disclosure title="API & source: GaussianBlur">
+
+```cpp
+// sigma, direction, border, quality
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+```
+
+Prepare computes radii and bounds during `update()`; filtering runs during `draw()`. Here, `sigma = 1.4`, both directions, clamped edges and quality `100` produce three radius-1 passes per axis.
+
+```cpp
+// effectGaussianBlurUpdate(): kernel preparation
+auto scale = sqrt(transform.e11 * transform.e11 +
+                  transform.e12 * transform.e12);
+rd->extends = _gaussianInit(rd,
+    std::pow(params->sigma * scale, 2), params->quality);
+```
+
+**Call path**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::render(effect)
+-> request(Scratch)
+-> effectGaussianBlur()
+-> _gaussianFilter()
+-> rasterXYFlip()
+```
+
+Each pass reads one buffer and writes the other. Transposition reuses horizontal access for vertical filtering.
+
+[SwRenderer::render() — GaussianBlur dispatch](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L780)
+
+```cpp
+case SceneEffect::GaussianBlur: {
+    return effectGaussianBlur(p, request(surface->channelSize, true), static_cast<const RenderEffectGaussianBlur*>(effect));
+}
+```
+
+**Scratch 버퍼 확보 — 캐시 재사용 또는 신규 할당**
+
+```text
+SceneImpl::render()
+-> SwRenderer::render(cmp, effect, direct)
+-> SwRenderer::request(surface->channelSize, true)
+```
+
+위 GaussianBlur 분기의 `request(..., true)`가 Scratch로 쓸 `SwSurface`를 반환합니다. **매번 새로 할당하는 것은 아니며**, 크기와 채널 크기가 맞는 사용 가능한 캐시를 먼저 찾고, 없을 때 `tvg::malloc()`으로 픽셀 버퍼를 만듭니다. `square = true`는 행·열 전치를 위해 현재 Surface의 긴 변을 기준으로 정사각형 버퍼를 확보한다는 뜻입니다.
+
+[SwRenderer::request() — 전체 함수](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L585)
+
+```cpp
+SwSurface* SwRenderer::request(int channelSize, bool square)
+{
+    SwSurface* cmp = nullptr;
+    uint32_t w, h;
+
+    if (square) {
+        //Same Dimensional Size is demanded for the Post Processing Fast Flipping
+        w = h = std::max(surface->w, surface->h);
+    } else {
+        w = surface->w;
+        h = surface->h;
+    }
+
+    //Use cached data
+    ARRAY_FOREACH(p, compositors) {
+        auto cur = *p;
+        if (cur->compositor->valid && cur->compositor->image.channelSize == channelSize) {
+            if (w == cur->w && h == cur->h) {
+                cmp = *p;
+                break;
+            }
+        }
+    }
+
+    //New Composition
+    if (!cmp) {
+        //Inherits attributes from main surface
+        cmp = new SwSurface(surface);
+        cmp->compositor = new SwCompositor;
+        cmp->compositor->image.data = tvg::malloc<pixel_t>(channelSize * w * h);
+        cmp->w = cmp->compositor->image.w = w;
+        cmp->h = cmp->compositor->image.h = h;
+        cmp->stride = cmp->compositor->image.stride = w;
+        cmp->compositor->image.direct = true;
+        cmp->compositor->valid = true;
+        cmp->channelSize = cmp->compositor->image.channelSize = channelSize;
+
+        compositors.push(cmp);
+    }
+
+    //Sync. This may have been modified by post-processing.
+    cmp->data = cmp->compositor->image.data;
+
+    return cmp;
+}
+```
+
+반환된 Surface는 아래 `effectGaussianBlur()`의 두 번째 인자입니다. `cmp->image.buf32`가 초기 `front`(Offscreen), `surface->compositor->image.buf32`가 초기 `back`(Scratch)이 됩니다. 이 요청은 Shape를 그릴 현재 타깃을 바꾸지 않으며, 필터는 두 버퍼를 읽기·쓰기 용도로 번갈아 사용합니다.
+
+```text
+SwRenderer::render(cmp, effect, direct)
+-> effectGaussianBlur(p, 반환된 Scratch Surface, params)
+```
+
+[effectGaussianBlur()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L175)
+
+```cpp
+bool effectGaussianBlur(SwCompositor* cmp, SwSurface* surface, const RenderEffectGaussianBlur* params)
+{
+    auto& buffer = surface->compositor->image;
+    auto data = static_cast<SwGaussianBlur*>(params->rd);
+    auto& bbox = cmp->bbox;
+    auto w = (bbox.max.x - bbox.min.x);
+    auto h = (bbox.max.y - bbox.min.y);
+    auto stride = cmp->image.stride;
+    auto front = cmp->image.buf32;
+    auto back = buffer.buf32;
+    auto swapped = false;
+
+    TVGLOG("SW_ENGINE", "GaussianFilter region(%d, %d, %d, %d) params(%f %d %d), level(%d)", bbox.min.x, bbox.min.y, bbox.max.x, bbox.max.y, params->sigma, params->direction, params->border, data->level);
+
+    /* It is best to take advantage of the Gaussian blur’s separable property
+       by dividing the process into two passes. horizontal and vertical.
+       We can expect fewer calculations. */
+
+    //horizontal
+    if (params->direction != 2) {
+        for (int i = 0; i < data->level; ++i) {
+            _gaussianFilter(reinterpret_cast<uint8_t*>(back), reinterpret_cast<uint8_t*>(front), stride, w, h, bbox, data->kernel[i], false);
+            std::swap(front, back);
+            swapped = !swapped;
+        }
+    }
+
+    //vertical. x/y flipping and horionztal access is pretty compatible with the memory architecture.
+    if (params->direction != 1) {
+        rasterXYFlip(front, back, stride, w, h, bbox, false);
+        std::swap(front, back);
+
+        for (int i = 0; i < data->level; ++i) {
+            _gaussianFilter(reinterpret_cast<uint8_t*>(back), reinterpret_cast<uint8_t*>(front), stride, h, w, bbox, data->kernel[i], true);
+            std::swap(front, back);
+            swapped = !swapped;
+        }
+
+        rasterXYFlip(front, back, stride, h, w, bbox, true);
+        std::swap(front, back);
+    }
+
+    if (swapped) std::swap(cmp->image.buf8, buffer.buf8);
+
+    return true;
+}
+```
+
+**`_gaussianFilter()` — 한 방향의 Box Filter 실행**
+
+```text
+SceneImpl::render()
+-> SwRenderer::render(cmp, effect, direct)
+-> effectGaussianBlur()
+-> _gaussianFilter()
+```
+
+`src`의 채널별 누적합을 이동시키며 `2 × dimension + 1`개 샘플의 평균을 `dst`에 기록합니다. 수직 방향도 전치한 버퍼에 같은 함수를 적용합니다. 아래 호출 경로는 기본 `border = 0`을 사용하며, 경계 밖 인덱스는 `_gaussianRemap()`에서 가장자리로 제한합니다.
+
+[_gaussianFilter() — 전체 함수](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L63), [_gaussianRemap()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L54)
+
+```cpp
+template<int border = 0>
+static void _gaussianFilter(uint8_t* dst, uint8_t* src, int32_t stride, int32_t w, int32_t h, const RenderRegion& bbox, int32_t dimension, bool flipped)
+{
+    if (flipped) {
+        src += (bbox.min.x * stride + bbox.min.y) << 2;
+        dst += (bbox.min.x * stride + bbox.min.y) << 2;
+    } else {
+        src += (bbox.min.y * stride + bbox.min.x) << 2;
+        dst += (bbox.min.y * stride + bbox.min.x) << 2;
+    }
+
+    auto iarr = 1.0f / (dimension + dimension + 1);
+    auto end = w - 1;
+
+    #pragma omp parallel for
+    for (int y = 0; y < h; ++y) {
+        auto p = y * stride;
+        auto i = p * 4;                 //current index
+        auto l = -(dimension + 1);      //left index
+        auto r = dimension;             //right index
+        int acc[4] = {0, 0, 0, 0};      //sliding accumulator
+
+        //initial accumulation
+        for (int x = l; x < r; ++x) {
+            auto id = (_gaussianRemap<border>(end, x) + p) * 4;
+            acc[0] += src[id++];
+            acc[1] += src[id++];
+            acc[2] += src[id++];
+            acc[3] += src[id];
+        }
+        //perform filtering
+        for (int x = 0; x < w; ++x, ++r, ++l) {
+            auto rid = (_gaussianRemap<border>(end, r) + p) * 4;
+            auto lid = (_gaussianRemap<border>(end, l) + p) * 4;
+            acc[0] += src[rid++] - src[lid++];
+            acc[1] += src[rid++] - src[lid++];
+            acc[2] += src[rid++] - src[lid++];
+            acc[3] += src[rid] - src[lid];
+            //ignored rounding for the performance. It should be originally: acc[idx] * iarr + 0.5f
+            dst[i++] = static_cast<uint8_t>(acc[0] * iarr);
+            dst[i++] = static_cast<uint8_t>(acc[1] * iarr);
+            dst[i++] = static_cast<uint8_t>(acc[2] * iarr);
+            dst[i++] = static_cast<uint8_t>(acc[3] * iarr);
+        }
+    }
+}
+```
+
+</Disclosure>
+
+### 3.2. Tint — Luma to color
+
+<TMathPlayer scene="tint" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/tint.lua'} title="Read → map → mix → write" description="A pixel travels from Offscreen through luma, intensity and alpha back to its address." width={960} height={800} />
+
+<Disclosure title="API & source: Tint">
+
+```cpp
+scene->opacity(128);
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+// black RGB, white RGB, intensity(%)
+scene->add(SceneEffect::Tint, 31, 51, 97, 255, 199, 102, 75.0);
+```
+
+This `Blur → Tint` example uses `direct = false`. Intensity `75%` becomes byte `191`; the pixel loop also applies compositor opacity `128`.
+
+**Call path**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::render(effect)
+-> effectTint(direct = false)
+-> luma() / INTERPOLATE()
+-> write ALPHA_BLEND() to Offscreen
+```
+
+[`effectTint()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L544), [`luma()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L103)
+
+```cpp
+// effectTint(): non-direct pixel loop
+for (size_t x = 0; x < w; ++x, ++dst) {
+    auto val = INTERPOLATE(white, black, luma((uint8_t*)dst));
+    if (params->intensity < 255) {
+        val = INTERPOLATE(val, *dst, params->intensity);
+    }
+    *dst = ALPHA_BLEND(val, MULTIPLY(opacity, A(*dst)));
+}
+```
+
+</Disclosure>
+
+### 3.3. Tritone — Two branches, three colors
+
+<TMathPlayer scene="tritone" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/tritone.lua'} title="Luma selects the color pair" description="Two selected pixels follow luma-dependent interpolation and write back in place." width={960} height={800} />
+
+<Disclosure title="API & source: Tritone">
+
+```cpp
+scene->opacity(128);
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+// shadow RGB, midtone RGB, highlight RGB, original mix
+scene->add(SceneEffect::Tritone,
+    28, 51, 97, 224, 99, 48, 255, 224, 143, 64);
+```
+
+The bright-pixel inset is a separate input: opacity `173`, blender `111`. It shows the upper branch without changing the main A·B trace.
+
+**Call path**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::render(effect)
+-> effectTritone(direct = false)
+-> luma() / _trintone()
+-> INTERPOLATE() / ALPHA_BLEND()
+-> write to the same Offscreen pixel
+```
+
+[`_trintone()` · `effectTritone()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L592), [`SceneEffect API`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/inc/thorvg.h#L274), [`effect dispatch`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+
+```cpp
+// _trintone(): luma branch
+if (l < 128) {
+    auto a = std::min(l * 2, 255);
+    return ALPHA_BLEND(s, 255 - a) + ALPHA_BLEND(m, a);
+} else {
+    auto a = 2 * std::max(0, l - 128);
+    return ALPHA_BLEND(m, 255 - a) + ALPHA_BLEND(h, a);
+}
+
+// effectTritone(): non-direct pixel loop, blender != 0
+for (size_t x = 0; x < w; ++x, ++dst) {
+    *dst = ALPHA_BLEND(
+        INTERPOLATE(*dst,
+            _trintone(shadow, midtone, highlight, luma((uint8_t*)dst)),
+            params->blender),
+        MULTIPLY(A(*dst), opacity));
+}
+```
+
+</Disclosure>
+
+### 3.4. SceneEffect::Fill — Recolor through alpha
+
+<TMathPlayer scene="fill" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/fill.lua'} title="Read alpha, recolor, overwrite" description="Read the stored alpha, compute new RGBA from the Fill color and effect opacity, then overwrite the same Offscreen pixel." width={960} height={800} />
+
+<Disclosure title="API & source: Fill">
+
+```cpp
+scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
+// fill RGB, effect opacity
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+```
+
+**Call path**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::render(effect)
+-> effectFill()
+-> direct == false
+```
+
+The non-direct loop uses effect opacity; group opacity is applied later by `endComposite()`.
+
+[effectFill() — non-direct loop](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L496)
+
+```cpp
+auto opacity = direct ? MULTIPLY(params->color[3], cmp->opacity) : params->color[3];
+
+auto& bbox = cmp->bbox;
+auto w = size_t(bbox.max.x - bbox.min.x);
+auto h = size_t(bbox.max.y - bbox.min.y);
+auto color = cmp->recoverSfc->join(params->color[0], params->color[1], params->color[2], 255);
+
+// ... intervening code omitted
+
+auto dbuffer = cmp->image.buf32 + (bbox.min.y * cmp->image.stride + bbox.min.x);
+for (size_t y = 0; y < h; ++y) {
+    auto dst = dbuffer;
+    for (size_t x = 0; x < w; ++x, ++dst) {
+        *dst = ALPHA_BLEND(color, MULTIPLY(opacity, A(*dst)));
+    }
+    dbuffer += cmp->image.stride;
+}
+```
+
+</Disclosure>
+
+### 3.5. DropShadow — Alpha, offset, composite
+
+<TMathPlayer scene="shadow" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/shadow.lua'} title="Filter alpha, shift shadow, restore body" description="The original stays in place while its filtered alpha moves onto Canvas, followed by the body." width={960} height={800} />
+
+<Disclosure title="API & source: DropShadow">
+
+```cpp
+scene->opacity(128);
+// shadow RGB, opacity, angle, distance, blur sigma, quality
+scene->add(SceneEffect::DropShadow,
+    32, 40, 52, 180, 135.0, 4.0, 1.4, 100);
+```
+
+This single-effect example uses `direct = true`: two scratch surfaces preserve the body and filter alpha. The shadow reaches Canvas first; `endComposite()` overlays the body.
+
+```cpp
+// effectDropShadowUpdate(): integer offset
+auto radian = tvg::deg2rad(90.0f - params->angle)
+            - tvg::radian(transform);
+rd->offset = {
+    (int32_t)((params->distance * scale) * cosf(radian)),
+    (int32_t)(-1.0f * (params->distance * scale) * sinf(radian))
+};
+```
+
+**Call path**
+
+```text
+canvas->draw()
+-> SceneImpl::render()
+-> SwRenderer::render(effect) / request 2 scratch surfaces
+-> effectDropShadow(direct = true)
+-> _dropShadowFilter() / rasterXYFlip()
+-> _dropShadowShift() / restore original image
+-> endComposite()
+-> rasterDirectImage(body)
+```
+
+[`effectDropShadow()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L402), [`single-effect direct dispatch`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L154)
+
+```cpp
+// After filtering and inverse transpose: direct path
+if (direct) {
+    _dropShadowShift(cmp->recoverSfc->buf32, cmp->image.buf32,
+        cmp->recoverSfc->stride, cmp->image.stride,
+        cmp->recoverSfc->w, cmp->recoverSfc->h,
+        bbox, data->offset, opacity, direct);
+    std::swap(cmp->image.buf32, buffer[0]->buf32);
+    return true;
+}
+// SceneImpl::render() then calls endComposite(cmp).
+```
+
+</Disclosure>
+
+#### 3.5.1. Effect order
+
+Use either sequence on a fresh `Scene(A, B)`. Effects run in registration order.
+
+**DropShadow → Fill**
+
+```cpp
+scene->opacity(128);
+scene->add(SceneEffect::DropShadow,
+    32, 40, 52, 180, 135.0, 4.0, 1.4, 100);
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+```
+
+**Fill → DropShadow**
+
+```cpp
+scene->opacity(128);
+scene->add(SceneEffect::Fill, 49, 150, 123, 255);
+scene->add(SceneEffect::DropShadow,
+    32, 40, 52, 180, 135.0, 4.0, 1.4, 100);
+```
+
+<TMathPlayer scene="order" title="DropShadow → Fill vs. Fill → DropShadow" description="Recoloring before or after shadow generation produces different shadow colors." />
+
+*Separate illustrative input; floating-point model.*

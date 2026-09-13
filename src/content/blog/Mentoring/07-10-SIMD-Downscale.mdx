@@ -1,0 +1,123 @@
+---
+title: "[Core2026] SIMD: Image Down Scale"
+github: "Nor-s"
+date: 2026-09-13
+summary: "DownScale의 샘플 선택과 정수 평균을 유지하면서 NEON으로 픽셀 채널을 함께 누적한 PR #4797을 두 개의 영상으로 살펴봅니다."
+tags: ["ThorVG", "Core"]
+draft: false
+---
+import TMathPlayer from '../../../components/TMathPlayer.astro';
+import Disclosure from '../../../components/Disclosure.astro';
+
+# Core2026 > Issue - 17
+
+[PR #4797 — cpu_engine: accelerate image downscaling with NEON](https://github.com/thorvg/thorvg/pull/4797)은 이미지 축소 중 반복되는 계산을 SIMD 를 통해 줄인 사례입니다.
+
+## 1. Image: DownScale
+
+<TMathPlayer scene="simd-downscale" source={import.meta.env.BASE_URL + 'tmath/simd/downscale.lua'} poster={import.meta.env.BASE_URL + 'tmath/simd/posters/downscale.webp'} title="DownScale: 샘플 선택과 채널 평균" description="집과 해가 있는 72×48 이미지 전체를 12×8로 축소합니다. 한 출력 픽셀에 대응하는 9개 샘플을 함께 모아 Sum / 9로 결과 색을 만듭니다." width={1280} height={920} />
+
+샘플링 영역에서 일정 간격으로 픽셀을 읽습니다.  픽셀의 채널 `A·C1·C2·C3`을 총합해서 평균을 내는 간단한 방식입니다.
+
+- **영역:** 중심 주변 `2n × 2n`, 
+  -  경계에서는 잘라서 사용
+- **간격:** `floor(n / 2) + 1`; 
+  - `n = 3`: 6×6 영역에서 9개 샘플 선택
+
+<Disclosure title="코드 보기: 01. API · 호출 흐름 · scalar 누적">
+
+**API 예제**
+
+```cpp
+auto image = Picture::gen();
+image->load("sample.png");
+image->scale(1.0f / 6.0f);
+image->filter(FilterMethod::Bilinear);
+canvas->add(image);
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+**호출 흐름** 
+
+```text
+canvas->draw(true)
+-> SwRenderer::renderImage()
+-> rasterScaledImage()
+-> _rasterScaledImageDispatch<false>()
+-> _rasterScaledImage()
+-> _scaleMethod()
+-> _interpDownScaler()
+-> cInterpDownScaler() / neonInterpDownScaler()
+```
+
+`_scaleMethod()`는 `Bilinear`이고 `image.scale < 0.5`인 경우 DownScale 경로를 선택합니다. 이 예제의 scale은 `1/6`, 내부 sample size는 `n = 3`입니다.
+
+**DownScale 함수 전체 — `cInterpDownScaler()`**
+
+```cpp
+static inline uint32_t cInterpDownScaler(const uint32_t* img, uint32_t stride, uint32_t w, TVG_UNUSED uint32_t h, float sx, TVG_UNUSED float sy, int32_t miny, int32_t maxy, int32_t n)
+{
+    size_t c[4] = {0, 0, 0, 0};
+
+    auto minx = static_cast<int32_t>(sx) - n;
+    if (minx < 0) minx = 0;
+
+    auto maxx = static_cast<int32_t>(sx) + n;
+    if (maxx >= static_cast<int32_t>(w)) maxx = w;
+
+    auto inc = (n / 2) + 1;
+    n = 0;
+
+    auto src = img + minx + miny * stride;
+
+    for (auto y = miny; y < maxy; y += inc) {
+        auto p = src;
+        for (auto x = minx; x < maxx; x += inc, p += inc) {
+            c[0] += A(*p);
+            c[1] += C1(*p);
+            c[2] += C2(*p);
+            c[3] += C3(*p);
+            ++n;
+        }
+        src += (stride * inc);
+    }
+
+    c[0] /= n;
+    c[1] /= n;
+    c[2] /= n;
+    c[3] /= n;
+
+    return (c[0] << 24) | (c[1] << 16) | (c[2] << 8) | c[3];
+}
+```
+
+반복이 끝나면 `c[0..3]`을 count로 나눕니다. `C1·C2·C3`는 packed pixel의 채널 위치를 뜻합니다. 영상은 `0xAA_RR_GG_BB` 입력을 사용합니다.
+
+원본: [`_scaleMethod()`](https://github.com/thorvg/thorvg/blob/1b96000210eda02e12f2a59fac140e08d449f2bb/src/renderer/cpu_engine/tvgSwRaster.cpp#L275), [`cInterpDownScaler()`](https://github.com/thorvg/thorvg/blob/1b96000210eda02e12f2a59fac140e08d449f2bb/src/renderer/cpu_engine/tvgSwRasterC.h#L24)
+
+</Disclosure>
+
+## 2. SIMD: Down Scale
+
+<TMathPlayer scene="simd-neon" source={import.meta.env.BASE_URL + 'tmath/simd/neon.lua'} poster={import.meta.env.BASE_URL + 'tmath/simd/posters/neon.webp'} title="NEON: 채널 병렬 누적" description="Before | After를 끝까지 유지하며 scalar의 c[4]와 NEON의 uint16x8_t sum을 나란히 비교합니다. 같은 샘플 픽셀을 복제해 8개 byte lane으로 보고, 16-bit lane에 동시에 누적합니다. 아래쪽 네 lane을 추출하고 순서를 복원한 뒤 scalar와 같은 평균 픽셀을 만듭니다." width={1280} height={1100} />
+
+9개 샘플을 읽는 예제입니다. NEON의 `vaddw_u8`은 byte들을 16-bit로 넓히면서 각 lane의 합을 함께 갱신하므로, 샘플마다 채널을 따로 추출하고 더하는 작업을 줄입니다.
+
+- **복제·재해석:** 픽셀 하나 → 같은 픽셀 두 개 → `[C3 C2 C1 A]` 두 묶음
+- **병렬 누적:** 8개 lane이 함께 갱신되며, 복제된 양쪽 절반의 합은 동일
+- **결과 복원:** 아래쪽 4개 lane → `A C1 C2 C3` 순서 → 32-bit 값 → 정수 평균
+
+## 3. 결과 
+
+
+| Benchmark             | main 대비 FPS |
+| --------------------- | -----------: |
+| Image — Default       | +9.97%      |
+| Image — Rotation      | −0.24%      |
+| MultiImage — Default  | +3.78%      |
+| MultiImage — Rotation | −0.21%      |
+
+
+. [PR 본문의 Perf](https://github.com/thorvg/thorvg/pull/4797)

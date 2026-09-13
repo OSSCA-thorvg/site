@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "project": "tmath",
+  "projectVersion": "0.1.0",
+  "sourceCommit": "38d8576a5edb",
+  "sourceDirty": true,
+  "buildDate": "2026-08-27",
+  "toolchain": {
+    "emscripten": "4.0.19",
+    "buildType": "minsize",
+    "optimization": ["-Oz", "-flto"],
+    "renderer": "ThorVG CPU engine",
+    "thorvg": "1.1.1",
+    "lua": "5.4.8"
+  },
+  "features": {
+    "javascriptBuilder": true,
+    "luaRuntime": true,
+    "retainedLuaRuntime": true,
+    "canvasRgba": true,
+    "lottieSaver": true,
+    "glRenderer": false,
+    "renderEngineSelection": true,
+    "latex": false,
+    "interactiveUi": true,
+    "interactiveInput": true,
+    "audio": true,
+    "runtimeSoundEvents": true,
+    "diagramAuthoring": true,
+    "chartAuthoring": true
+  },
+  "artifacts": [
+    {
+      "path": "tmath-wasm.js",
+      "bytes": 25462,
+      "sha256": "60bcb5842dc197cfb0666e9fd4931ce24425a2ad013db60a5a0bf65ea0d05161"
+    },
+    {
+      "path": "tmath-wasm.wasm",
+      "bytes": 902940,
+      "sha256": "54f5ba5cd18b7ace58b61eb6eb2af5c113db9bf0d7e5057b767a9e8778462f8e"
+    },
+    {
+      "path": "client.js",
+      "bytes": 47062,
+      "sha256": "e68af8c8803451e735fde0b12c53859530adabb387b8b4b372272324f4b1e438"
+    },
+    {
+      "path": "client.d.ts",
+      "bytes": 11132,
+      "sha256": "e3459a9e5b881fd65d613c9c2e9b67baa6f51946014216e12a21b8bbc900e502"
+    },
+    {
+      "path": "bindings.js",
+      "bytes": 41996,
+      "sha256": "682348d2d46bcb37a8aa8cd359cdc1869d5856b7d86bbcb915f23a1cf4e1cbaa"
+    },
+    {
+      "path": "bindings.d.ts",
+      "bytes": 14368,
+      "sha256": "022c3384280f927cc2f77040a270d871185cb49cdd2177eec6ae5a6b997333a8"
+    },
+    {
+      "path": "Pretendard.ttf",
+      "bytes": 2725828,
+      "sha256": "6d0af5258997aec7354a6e340fc2325ba321c410ca48b3af858c8c3d6e92a324"
+    },
+    {
+      "path": "Pretendard-OFL.txt",
+      "bytes": 4418,
+      "sha256": "85fce85e25260b03777bf10373d3bd9363b9da96d9e0ca86a280dd37ed7667a0"
+    },
+    {
+      "path": "IBMPlexSansKR-SemiBold.ttf",
+      "bytes": 2481868,
+      "sha256": "c1640995dae522401987918ac5caf90c2d7ecc90552216b653c97754fa941eb3"
+    },
+    {
+      "path": "IBM-Plex-Sans-KR-OFL.txt",
+      "bytes": 4362,
+      "sha256": "d741e57d5f865e294df801f96b7b5161a88b211df65887e4358d271c9fc5fb4f"
+    },
+    {
+      "path": "SourceSerif4-Semibold.ttf",
+      "bytes": 272088,
+      "sha256": "36db62940cb5728b12b1802476dc7fcf4c6c519a7bdd476ba23a4e555fc4655f"
+    },
+    {
+      "path": "Source-Serif-4-OFL.txt",
+      "bytes": 4492,
+      "sha256": "75784a295293a8992f5a8d99210566e0064a012e6dab6731305e3787f15896c7"
+    }
+  ]
+}

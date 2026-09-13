@@ -89,17 +89,14 @@ test('hardcoded assignment authors cover the public ThorVG project family', asyn
   }
 });
 
-test('Home and Core mentoring reuse one dashboard with different repository scopes', async () => {
-  const [home, mentoring, dashboard] = await Promise.all([
+test('dashboard supports repository scopes and Home uses all repositories', async () => {
+  const [home, dashboard] = await Promise.all([
     readSource('src/pages/index.astro'),
-    readSource('src/content/blog/Mentoring/01-DashBoard.mdx'),
     readSource('src/components/CoreProgressDashboard.astro'),
   ]);
 
   assert.match(home, /import CoreProgressDashboard from ['"]\.\.\/components\/CoreProgressDashboard\.astro['"]/);
   assert.match(home, /<CoreProgressDashboard scope="all" headingLevel="h2"\s*\/>/);
-  assert.match(mentoring, /import CoreProgressDashboard from ['"]\.\.\/\.\.\/\.\.\/components\/CoreProgressDashboard\.astro['"]/);
-  assert.match(mentoring, /<CoreProgressDashboard scope="core" headingLevel="h3">/);
   assert.match(dashboard, /activity\.repo === coreRepository/);
   assert.match(dashboard, /scope === 'all'/);
   assert.match(dashboard, /repositoryLabel\(item\)/);
@@ -114,9 +111,8 @@ test('Home and Core mentoring reuse one dashboard with different repository scop
 });
 
 test('Home renders all hardcoded authors in Total order with project toggles', async () => {
-  const [html, coreHtml, dataSource] = await Promise.all([
+  const [html, dataSource] = await Promise.all([
     readSource('dist/index.html'),
-    readSource('dist/blog/mentoring/01-dashboard/index.html'),
     readSource('src/data/core-contributions.json'),
   ]);
   const data = JSON.parse(dataSource);
@@ -162,11 +158,6 @@ test('Home renders all hardcoded authors in Total order with project toggles', a
       b.total - a.total || a.name.localeCompare(b.name, 'en', { sensitivity: 'base' })
     );
   assert.deepEqual(renderedMembers, expectedMembers);
-
-  const coreRenderedMembers = (coreHtml.match(/<article\b(?=[^>]*data-dashboard-member=)[^>]*>/g) ?? [])
-    .map((tag) => tag.match(/data-dashboard-member="([^"]+)"/)?.[1]);
-  assert.deepEqual(coreRenderedMembers, coreMembers);
-  assert.doesNotMatch(coreHtml, /<nav\b[^>]*data-dashboard-repository-filter/);
 
   if (crossProjectActivity) {
     assert.ok(html.includes(crossProjectActivity.url));

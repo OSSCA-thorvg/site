@@ -1,0 +1,45 @@
+---
+import type { PostSeries } from '../lib/post-series.js';
+
+interface Props {
+  series: PostSeries;
+  currentId?: string;
+  defaultOpen?: boolean;
+  rootName?: string;
+}
+
+const { series, currentId, defaultOpen = false, rootName = series.name } = Astro.props;
+const currentSeries = Boolean(currentId && series.entries.some((entry) => entry.id === currentId));
+const base = import.meta.env.BASE_URL;
+const displayTitle = (title: string) => {
+  const rootPrefix = `[${rootName}]`;
+  let result = title.startsWith(rootPrefix) ? title.slice(rootPrefix.length).trim() : title;
+  const groupPrefix = `${series.name} - `;
+  if (result.startsWith(groupPrefix)) result = result.slice(groupPrefix.length);
+  return result || title;
+};
+---
+<details class:list={['blog-series', { 'is-current': currentSeries }]} data-series-path={series.key} open={currentSeries || defaultOpen}>
+  <summary>
+    <span class="blog-series__name">{series.name}</span>
+    <svg class="blog-series__chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 4 4 4-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+  </summary>
+  <ol class="blog-series__posts">
+    {series.children.map((item) => item.type === 'series' ? (
+      <li class="blog-series__branch">
+        <Astro.self series={item} currentId={currentId} rootName={rootName} />
+      </li>
+    ) : (
+      <li class="blog-series__post" data-series-number={item.number}>
+        <a
+          href={base + 'blog/' + item.id}
+          aria-current={item.id === currentId ? 'page' : undefined}
+          title={item.title}
+          data-series-topic={displayTitle(item.title)}
+        >
+          <span>{displayTitle(item.title)}</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+</details>

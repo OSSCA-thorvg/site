@@ -7,13 +7,14 @@ import SeriesList from '../../components/SeriesList.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
 import { getCollection, render } from 'astro:content';
 import { hasAssignmentTag } from '../../lib/post-sections.js';
-import { createSeriesIndex, extractSeriesHeading } from '../../lib/post-series.js';
+import { createSeriesIndex, extractSeriesHeading, getSeriesTrail } from '../../lib/post-series.js';
 import { deriveSummary } from '../../lib/summary.js';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog', ({ data }) => !data.draft);
-  const blogPosts = posts.filter((post) => !hasAssignmentTag(post.data.tags));
-  const seriesSources = blogPosts.map((post) => ({
+  const blogPosts = posts.filter((post) => !hasAssignmentTag(post.data.tags))
+    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+  const seriesSources = blogPosts.filter(({ data }) => !data['no-series']).map((post) => ({
     id: post.id,
     title: post.data.title,
     heading: extractSeriesHeading(post.body),
@@ -33,6 +34,7 @@ export async function getStaticPaths() {
 }
 
 const { post, series, blogSeries, blogPostCount } = Astro.props;
+const seriesTrail = getSeriesTrail(series, post.id);
 const { Content, headings } = await render(post);
 const base = import.meta.env.BASE_URL;
 const hasToc = headings.some((heading) => heading.depth === 2 || heading.depth === 3);
@@ -48,14 +50,13 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
 });
 ---
 <Base title={post.data.title} description={post.data.summary || deriveSummary(post.body ?? '')} active={section.active}>
-  <section class="section">
+  <section class:list={['section', { 'section--blog-shell': !assignment }]}>
     <div class:list={{ 'blog-library': !assignment, 'blog-library--article': !assignment }}>
       {!assignment && (
         <BlogSidebar
           series={blogSeries}
           postCount={blogPostCount}
           currentId={post.id}
-          desktopMin={1328}
         />
       )}
       <div class:list={{ 'blog-library__content': !assignment }}>
@@ -63,6 +64,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
       <a class="btn btn--ghost article-back" href={base + section.href}>← {section.label} 목록</a>
       <header class="article-head">
         <h1 class="page-title">{post.data.title}</h1>
+        {seriesTrail.length > 1 && <p class="article-series-path" aria-label="시리즈 경로">{seriesTrail.join(" › ")}</p>}
         <div class="article-head__meta">
           <a
             class="post-card__author"

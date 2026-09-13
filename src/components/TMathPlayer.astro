@@ -1,0 +1,99 @@
+---
+import { defaultTMathPoster } from '../lib/tmath-media.js';
+interface Props {
+  scene: string;
+  title: string;
+  description: string;
+  source?: string;
+  /** Static preview of the final playable frame; playback starts at time zero. */
+  poster?: string;
+  crop?: [number, number, number, number];
+  end?: number;
+  hold?: number;
+  loop?: boolean;
+  autoplay?: boolean;
+  width?: number;
+  height?: number;
+}
+const {scene, title, description, source, poster, crop, end, hold, loop = false, autoplay = false, width = 960, height = 640} = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<tmath-player data-scene={scene} data-autoplay={autoplay ? "true" : undefined} data-loop={loop ? "true" : undefined} data-source={source} data-crop={crop?.join(",")} data-end={end} data-hold={hold} data-base={base} data-state="paused" aria-label={title}>
+  <div class="tmath-stage" style={`aspect-ratio: ${crop ? `${crop[2]} / ${crop[3]}` : `${width} / ${height}`}`}>
+    <img src={poster ?? defaultTMathPoster(scene, base)} alt={description} width={width} height={height} loading="lazy" decoding="async" />
+    <canvas width={width} height={height} aria-label={description} role="img" hidden></canvas>
+    <button class="tmath-screen" type="button" data-toggle aria-label={`${title} 재생`} aria-pressed="false"></button>
+    <span class="tmath-loading" aria-hidden="true"></span>
+  </div>
+  <div class="tmath-controls-zone">
+    <div class="tmath-controls" role="group" aria-label="재생 조작">
+      <button type="button" data-play aria-label="재생" aria-pressed="false">
+        <svg data-icon="play" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z" fill="currentColor" /></svg>
+        <svg data-icon="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zm6 0h4v14h-4z" fill="currentColor" /></svg>
+      </button>
+      <input data-seek type="range" min="0" max="1" step="0.01" value="0" disabled aria-label="재생 위치" />
+      <output data-time>0:00</output>
+      <details class="tmath-settings" data-settings>
+        <summary aria-label="재생 설정">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.7 2.1-2 .9-2-.5-2 3.5 1.5 1.6V13l-1.5 1.6 2 3.5 2-.5 2 .9L9 21h4l.7-2.5 2-.9 2 .5 2-3.5L18.2 13v-2.4l1.5-1.6-2-3.5-2 .5-2-.9L13 3Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="11" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        </summary>
+        <label class="tmath-speed-menu">배속
+          <select data-speed aria-label="재생 속도">
+            <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+          </select>
+        </label>
+      </details>
+      <button type="button" data-fullscreen aria-label="전체 화면">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <p class="tmath-error" data-error role="alert" hidden></p>
+  <span class="tmath-status" data-status aria-live="polite"></span>
+  <noscript><p>JavaScript를 켜면 애니메이션을 재생할 수 있습니다.</p></noscript>
+</tmath-player>
+
+<script>
+  import '../scripts/tmath-player';
+</script>
+
+<style>
+  tmath-player { position: relative; display: block; margin: 1.5rem 0; background: #fff; isolation: isolate; }
+  tmath-player[data-scene="overview"]:not(:fullscreen) { width: 100%; margin-inline: auto; }
+  .tmath-stage { position: relative; }
+  .tmath-stage img, .tmath-stage canvas { display: block; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; object-fit: contain; }
+  .tmath-stage [hidden] { display: none; }
+  .tmath-screen { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; background: transparent; border: 0; cursor: pointer; }
+  .tmath-screen:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+  .tmath-controls-zone { position: absolute; inset: auto 0 0; height: 76px; display: flex; align-items: end; padding: 0 8px 8px; pointer-events: none; }
+  .tmath-controls-zone::before { content: ''; position: absolute; inset: 0; pointer-events: auto; }
+  .tmath-controls { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; width: 100%; padding: 5px 8px; background: rgb(22 24 27 / 92%); color: #fff; border-radius: 5px; opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .15s, transform .15s, visibility .15s; pointer-events: auto; }
+  .tmath-controls-zone:hover .tmath-controls,
+  tmath-player:has(:focus-visible) .tmath-controls,
+  tmath-player[data-controls="visible"] .tmath-controls,
+  tmath-player:has(details[open]) .tmath-controls { opacity: 1; visibility: visible; transform: none; }
+  .tmath-controls button, .tmath-controls summary { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 32px; border: 0; padding: 4px; background: none; color: inherit; cursor: pointer; border-radius: 3px; }
+  .tmath-controls button:hover, .tmath-controls summary:hover { background: rgb(255 255 255 / 13%); }
+  .tmath-controls svg { width: 21px; height: 21px; }
+  .tmath-controls summary { list-style: none; }
+  .tmath-controls summary::-webkit-details-marker { display: none; }
+  .tmath-controls input { flex: 1; width: 0; min-width: 28px; margin: 0; accent-color: #fff; cursor: pointer; }
+  .tmath-controls output { font: 11px var(--font-mono, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tmath-controls :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .tmath-controls [data-icon="pause"], tmath-player[data-state="playing"] [data-icon="play"] { display: none; }
+  tmath-player[data-state="playing"] [data-icon="pause"] { display: block; }
+  .tmath-settings { position: relative; margin: 0; padding: 0; border: 0; }
+  .tmath-speed-menu { position: absolute; bottom: 43px; right: 0; display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: 5px; background: #202226; color: #fff; font-size: 12px; white-space: nowrap; }
+  .tmath-speed-menu select { background: #303237; color: #fff; border: 1px solid #73777c; border-radius: 3px; padding: 4px; font: inherit; }
+  .tmath-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .tmath-error { position: absolute; inset: auto 12px 65px; margin: 0 !important; padding: 10px; font-size: 13px; background: var(--canvas); color: var(--status-closed); }
+  .tmath-loading { display: none; position: absolute; left: calc(50% - 13px); top: calc(50% - 13px); width: 26px; height: 26px; border: 2px solid #cbd0d5; border-top-color: #323941; border-radius: 50%; animation: tmath-spin .8s linear infinite; pointer-events: none; }
+  tmath-player[data-state="loading"] .tmath-loading { display: block; }
+  tmath-player:fullscreen { display: grid; place-items: center; margin: 0; background: #fff; }
+  tmath-player:fullscreen .tmath-stage { width: 100%; height: 100%; aspect-ratio: auto; }
+  @keyframes tmath-spin { to { transform: rotate(360deg); } }
+  @media (max-width: 480px) { .tmath-controls { gap: 5px; padding: 5px; } .tmath-controls-zone { padding: 0 5px 5px; } }
+  @media (hover: none) { tmath-player[data-state="paused"] .tmath-controls { opacity: 1; visibility: visible; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .tmath-controls { transition: none; } }
+</style>

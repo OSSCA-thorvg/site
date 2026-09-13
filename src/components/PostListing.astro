@@ -7,16 +7,7 @@ import { resolveBlogThumbnail } from '../lib/blog-thumbnails.js';
 import { sortPostTags } from '../lib/post-sections.js';
 import { deriveSummary } from '../lib/summary.js';
 
-interface SeriesEntry {
-  id: string;
-  title: string;
-  number: number;
-}
-
-interface PostSeries {
-  name: string;
-  entries: SeriesEntry[];
-}
+import type { PostSeries } from '../lib/post-series.js';
 
 interface Props {
   posts: CollectionEntry<'blog'>[];
@@ -55,7 +46,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
 });
 ---
 <Base title={title} active={active}>
-  <section class="section">
+  <section class:list={['section', { 'section--blog-shell': series.length > 0 }]}>
     <div class:list={{ 'blog-library': series.length > 0 }}>
       {series.length > 0 && (
         <BlogSidebar series={series} postCount={posts.length} />

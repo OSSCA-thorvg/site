@@ -21,10 +21,6 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 - **자율 기여**
     - **분석/스터디하면서 기여 활동 진행**
 
-#### Core 일정
-
-- 9/6 일요일
-- ~
 
 #### 주요 일정
 
@@ -32,6 +28,30 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 - 10월 (3일 또는 4일) - 오프라인 모임 (전체)
 
 </MentoringMemberDetails>
+
+<MentoringMemberDetails name="2026-09-19~20">
+
+1. 진행사항 Sync
+2. CPU Engine / GPU Engine 
+
+</MentoringMemberDetails>
+
+<MentoringMemberDetails name="2026-09-12~13">
+
+1. 진행사항 Sync
+2. CPU Engine
+3. 작업 사례: SIMD
+
+</MentoringMemberDetails>
+
+<MentoringMemberDetails name="2026-09-06">
+
+1. 진행사항 Sync
+2. CPU Engine Overview
+3. 작업 사례: Conic Gradient 
+
+</MentoringMemberDetails>
+
 
 <MentoringMemberDetails name="2026-08-29">
 
@@ -46,43 +66,29 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 <MentoringMemberDetails name="이슈 추천">
 
 **CPU Engine**
-- 이미지 성능 최적화 (Image Direct, Image Rotate...) (특수 케이스에서 대략 20% ~ 70% 성능향상 예상)
+- Raster 성능 최적화 (Image Direct, Image Rotate...)
     - [NEON #30](https://github.com/thorvg/thorvg/issues/30)
     - [AVX #29](https://github.com/thorvg/thorvg/issues/29)
-    - [WEB SIMD(question)](https://github.com/thorvg/thorvg/issues/4094)
-    - 분석 & 스터디, Co-author
-- [CPU Gradient AA #4688](https://github.com/thorvg/thorvg/issues/4688)
-    - Fill 방식이 Repeat 방식인 Transform 경우, 경계 Anti-Aliasing이 적용되지 않는 문제
-    - LUT (Lookup Table) 기반 Gradient AA 적용 시, Repeat 경계에서 LUT를 재사용하지 못하는 문제
-        - Transform Animation 시 LUT 를 상시 파괴 하지 않는 방향 (경계값에서 파괴)
-        - 성능과 바이너리 영향 최소화하는 방향
+    - [WEB SIMD](https://github.com/thorvg/thorvg/issues/4094)
+- Curve: https://github.com/thorvg/thorvg/issues/4782
+
 
 **Infra**
-- **workflow 최적화 방안 ISSUE화**
-    - github action workflow(ubuntu unit test, memcheck) -> 병렬 실행 시간 단축
-    - clone: ref depth=0, ref depth=1 (shallow clone) -> workflow 실행 시간 단축
+- **workflow**: 
+    - Clang-format test: https://github.com/thorvg/thorvg/issues/4766
+    - Remove Redundant Build Tests: https://github.com/thorvg/thorvg/issues/4756
+
 - **unit test line coverage 측정 & 코드 리팩터링**
     - 커버리지 낮은 부분에 대한 테스트 코드 추가
         - meson + lcov + genhtml
     - 사용되지 않은 코드 정리
     - 개선할만한 부분 이슈화
-- **툴**
-    - thorvg.pixel-inspector, thovg.view
-- **멀티 플랫폼 통합**
-    - thorvg.swift, thorvg.android
-        - 게임을 제외한 그래픽스 산업에서는 IOS/Android Graphics 통합 경험을 요구하기도 한다.
-        - ex. 카카오 모빌리티, Snow, 네이버 등
 
-**Saver**
-- [#2166 — gif: support an external gif saver](https://github.com/thorvg/thorvg/issues/2166)
-- [#3737 — support png saver](https://github.com/thorvg/thorvg/issues/3737)
-    - WEB 과 연계
-        - [#124 — save2png exports empty image](https://github.com/thorvg/thorvg.view/issues/124)
-        - [#139 — lottie: can't export to png with webgl canvas](https://github.com/thorvg/thorvg.web/issues/139)
 
 **Loader**
+- SVG compliance: https://github.com/thorvg/thorvg.svg-compliance
 
-- 오픈소스 -> 보안 업데이트, 성능 개선, 버그 수정, 커스텀
+- 오픈소스 -> 보안 업데이트, 성능 개선, 버그 수정, 커스텀 등등 자율
     - [#4485 — webp: upgrade the webp decoder with the latest libwebp](https://github.com/thorvg/thorvg/issues/4485)
     - [#2250 - jerryscript: replace the jerryscript memory allocator](https://github.com/thorvg/thorvg/issues/2250)
         - JS 인터프리터 JerryScript의 메모리 -> 메모리 System 으로 교체하는작업
@@ -90,15 +96,10 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
         - Lottie 의 Expression 기능 과 연관
 
 > [!IMPORTANT]
-> 이슈 진행시 주의사항
-> - ThorVG 에서 오픈된 이슈 중 몇몇은 실제적 사용사례가 없으면 반영안하는 경우가 존재
-> - 명확한 재현가능한 버그, 확실한 품질 개선 등이 아니면 PR이 merge 되지 않을 수 있음
->
-> - 성능 측정
+> - 성능 측정시 수정사항에 알맞는 방법으로 
 >    - thorvg.benchmark
->    - thorvg.example
->
-> 여기서 추천된 Saver, Loader, Gradient AA 는 Merge 가능성이 낮을 수 있음
+>    - thorvg.example (Lottie, Animation ...)
+> - 여러번 측정, Median, Mean 등 값으로 성능 측정치 PR 에 작성
 
 </MentoringMemberDetails>
 

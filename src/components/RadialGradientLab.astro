@@ -1,0 +1,1006 @@
+<section class="radial-lab" data-radial-lab data-phase="1" aria-label="ThorVG Radial Gradient 실습">
+  <span class="sr-only" data-status aria-live="polite">렌더러 준비 중</span>
+
+  <div class="radial-lab__steps" role="group" aria-label="P에서 색상을 구하는 순서">
+    <button type="button" data-phase-button="1" aria-pressed="true">1. P 입력</button>
+    <button type="button" data-phase-button="2" aria-pressed="false">2. P를 지나는 원</button>
+    <button type="button" data-phase-button="3" aria-pressed="false">3. 색상 조회</button>
+  </div>
+  <p class="radial-lab__step-note" data-step-note>P는 색을 구할 픽셀입니다. 먼저 P − F를 구합니다.</p>
+
+  <div class="radial-lab__stage">
+    <canvas data-canvas width="680" height="360" aria-label="조작 가능한 Radial Gradient 결과"></canvas>
+    <svg data-overlay viewBox="0 0 680 360" role="img" aria-label="입력 P에서 Radial 색상 위치를 구하는 과정">
+      <defs>
+        <pattern id="radial-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" />
+        </pattern>
+        <linearGradient data-table-gradient gradientUnits="userSpaceOnUse">
+          <stop data-table-stop="0" offset="0" stop-color="#ff5a36"></stop>
+          <stop data-table-stop="1" offset="0.5" stop-color="#ffd166"></stop>
+          <stop data-table-stop="2" offset="1" stop-color="#176bff"></stop>
+        </linearGradient>
+        <marker id="radial-pad-arrow" data-pad-arrow viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 8 4 L 0 8 Z" fill="#ffd166"></path>
+        </marker>
+      </defs>
+      <rect class="radial-lab__grid" width="680" height="360" fill="url(#radial-grid)"></rect>
+
+      <line class="radial-lab__center-line" data-center-line></line>
+      <line class="radial-lab__center-extension" data-center-extension></line>
+      <line class="radial-lab__radius-line" data-end-radius-line></line>
+      <line class="radial-lab__radius-line" data-start-radius-line></line>
+      <circle class="radial-lab__boundary radial-lab__boundary--end" data-end-circle></circle>
+      <circle class="radial-lab__boundary radial-lab__boundary--start" data-start-circle></circle>
+
+      <circle class="radial-lab__stop-ring" data-stop-ring="0"></circle>
+      <circle class="radial-lab__stop-ring" data-stop-ring="1"></circle>
+      <circle class="radial-lab__stop-ring" data-stop-ring="2"></circle>
+
+      <g data-phase-view="1">
+        <line class="radial-lab__input-vector" data-input-vector></line>
+        <text class="radial-lab__diagram-label radial-lab__math-label" data-input-label>q = P − F</text>
+      </g>
+      <g data-phase-view="2">
+        <circle class="radial-lab__probe-ring" data-probe-ring></circle>
+        <line class="radial-lab__sample-line" data-probe-distance></line>
+        <line class="radial-lab__probe-radius" data-probe-radius></line>
+        <line class="radial-lab__probe-gap" data-probe-gap></line>
+        <circle class="radial-lab__sample-center" data-probe-center r="4"></circle>
+        <text class="radial-lab__diagram-label radial-lab__math-label" data-probe-center-label>보간 원 중심</text>
+        <text class="radial-lab__diagram-label radial-lab__pad-label" data-probe-radius-label>원 반지름</text>
+      </g>
+      <g data-phase-view="3">
+      <circle class="radial-lab__sample-ring" data-sample-ring></circle>
+      <line class="radial-lab__sample-line" data-sample-line></line>
+      <circle class="radial-lab__sample-center" data-sample-center r="3"></circle>
+
+      <line class="radial-lab__table-shadow" data-table-shadow></line>
+      <line class="radial-lab__table-axis" data-table-axis></line>
+      <line class="radial-lab__table-guide" data-table-guide></line>
+      <line class="radial-lab__table-extension" data-table-extension></line>
+      <path class="radial-lab__table-lookup" data-table-lookup></path>
+      <line class="radial-lab__pad-link" data-pad-link></line>
+      <circle class="radial-lab__raw-sample" data-raw-sample r="6"></circle>
+      <path class="radial-lab__offscreen" data-offscreen d="M -8 -6 L 0 0 L -8 6"></path>
+      <circle class="radial-lab__pad-halo" data-pad-halo r="18"></circle>
+      <g class="radial-lab__stop-marker" data-stop-marker="0" aria-hidden="true"><circle r="7"></circle></g>
+      <g class="radial-lab__stop-marker" data-stop-marker="1" aria-hidden="true"><circle r="7"></circle></g>
+      <g class="radial-lab__stop-marker" data-stop-marker="2" aria-hidden="true"><circle r="7"></circle></g>
+      <circle class="radial-lab__table-sample" data-table-sample r="4"></circle>
+      <text class="radial-lab__diagram-label" data-table-label>Color Table</text>
+      <text class="radial-lab__diagram-label radial-lab__math-label" data-center-label>보간 원 중심</text>
+      <text class="radial-lab__diagram-label radial-lab__math-label" data-radius-label>반지름</text>
+      <text class="radial-lab__diagram-label radial-lab__math-label" data-raw-label>t</text>
+      <text class="radial-lab__diagram-label radial-lab__pad-label" data-pad-label>Pad(t) = 1</text>
+
+      </g>
+      <text class="radial-lab__diagram-label" data-direction-label>d = C − F</text>
+      <text class="radial-lab__diagram-label" data-start-progress>시작 원 · 0</text>
+      <text class="radial-lab__diagram-label" data-end-progress>끝 원 · 1</text>
+
+      <g class="radial-lab__handle radial-lab__handle--center" data-handle="center" tabindex="0" role="slider" aria-label="끝 원 중심 C">
+        <circle r="13"></circle>
+        <text x="0" y="4">C</text>
+      </g>
+      <g class="radial-lab__handle radial-lab__handle--focal" data-handle="focal" tabindex="0" role="slider" aria-label="시작 원 초점 F">
+        <circle r="13"></circle>
+        <text x="0" y="4">F</text>
+      </g>
+      <g class="radial-lab__handle radial-lab__handle--radius" data-handle="endRadius" tabindex="0" role="slider" aria-label="끝 원 반지름 R">
+        <circle r="11"></circle>
+        <text x="0" y="4">R</text>
+      </g>
+      <g class="radial-lab__handle radial-lab__handle--radius" data-handle="startRadius" tabindex="0" role="slider" aria-label="시작 원 반지름 FR">
+        <circle r="11"></circle>
+        <text x="0" y="4">FR</text>
+      </g>
+      <g class="radial-lab__handle radial-lab__handle--sample" data-handle="sample" tabindex="0" role="slider" aria-label="샘플 픽셀 P">
+        <circle r="11"></circle>
+        <path d="M -5 0 H 5 M 0 -5 V 5"></path>
+        <text x="17" y="4">P</text>
+      </g>
+    </svg>
+    <p class="radial-lab__hint">점을 드래그하거나 방향키로 이동</p>
+  </div>
+
+  <div class="radial-lab__metrics" aria-live="polite">
+    <span><small>시작 원 F / FR</small><b data-start>(310, 145) / 20</b></span>
+    <span><small>끝 원 C / R</small><b data-end>(365, 185) / 145</b></span>
+    <span><small>입력 P</small><b data-p-value></b></span>
+    <span data-phase-view="3"><small>P에서 구한 t</small><b data-t>0.65</b></span>
+    <span data-phase-view="3"><small data-spread-formula>u = clamp(t, 0, 1)</small><b data-clamped-t>0.65</b></span>
+    <span data-phase-view="3"><small>Table index</small><b data-index>665</b></span>
+    <i data-phase-view="3" data-sample-color aria-hidden="true"></i>
+  </div>
+
+  <div class="radial-lab__formulas" data-phase-view="1" aria-live="polite">
+    <span><small>q = P − F</small><b data-q-value></b></span>
+    <span><small>d = C − F</small><b data-d-value></b></span>
+    <span><small>Δr = r − fr</small><b data-dr-value></b></span>
+  </div>
+  <div class="radial-lab__trial" data-phase-view="2">
+    <p>중심 = F + t(C − F), 반지름 = fr + t(r − fr)</p>
+    <p>0 ≤ t ≤ 1이면 중심은 F–C 선분 위, 범위 밖이면 연장선 위에 있습니다.</p>
+    <p>|q − t·d|² = (fr + t·Δr)²</p>
+    <div class="radial-lab__formulas">
+      <span><small>진행률 후보 t</small><b data-trial-t></b></span>
+      <span><small>P까지 거리</small><b data-trial-distance></b></span>
+      <span><small>원 반지름</small><b data-trial-radius></b></span>
+      <span><small>거리와 반지름 비교</small><b data-trial-state></b></span>
+    </div>
+  </div>
+  <div class="radial-lab__formulas" data-phase-view="3" aria-live="polite">
+    <span><small>원 중심 = F + t(C − F)</small><b data-center-value></b></span>
+    <span><small>반지름 = fr + t(r − fr)</small><b data-radius-value></b></span>
+    <span><small>|P − 원 중심|² = 반지름²</small><b data-circle-value></b></span>
+  </div>
+
+  <div class="radial-lab__controls">
+    <fieldset class="radial-lab__stops">
+      <legend class="sr-only">Color Stops</legend>
+      <label class="radial-lab__stop">
+        <input data-color="0" type="color" value="#ff5a36" aria-label="시작 Color Stop" />
+        <span>
+          <output data-offset-output>0.00</output>
+          <input data-offset type="range" min="0" max="100" value="0" aria-label="Color Stop 1 offset" />
+        </span>
+      </label>
+      <label class="radial-lab__stop">
+        <input data-color="1" type="color" value="#ffd166" aria-label="중간 Color Stop" />
+        <span>
+          <output data-offset-output>0.50</output>
+          <input data-offset type="range" min="0" max="100" value="50" aria-label="Color Stop 2 offset" />
+        </span>
+      </label>
+      <label class="radial-lab__stop">
+        <input data-color="2" type="color" value="#176bff" aria-label="끝 Color Stop" />
+        <span>
+          <output data-offset-output>1.00</output>
+          <input data-offset type="range" min="0" max="100" value="100" aria-label="Color Stop 3 offset" />
+        </span>
+      </label>
+    </fieldset>
+
+    <label class="radial-lab__spread">
+      <span>범위 처리</span>
+      <select data-spread aria-label="Radial Gradient 범위 처리">
+        <option value="Pad">Pad · 끝 색 유지</option>
+        <option value="Repeat">Repeat · 반복</option>
+        <option value="Reflect">Reflect · 왕복</option>
+      </select>
+    </label>
+    <button class="radial-lab__reset" data-reset type="button">초기화</button>
+  </div>
+
+  <p>이 예제는 Canvas 전체를 덮는 Shape 에 Radial Gradient 를 적용한 예제입니다.</p>
+
+  <ul class="radial-lab__note">
+    <li><b>P</b>: 샘플 픽셀</li>
+    <li><b>F / FR</b>: 시작 원의 중심/반지름 (진행률 0)</li>
+    <li><b>C / R</b>: 끝 원의 중심/반지름 (진행률 1)</li>
+    <li><b>t</b>: 중심과 반지름을 보간해 P를 지나는 원을 찾은 진행률</li>
+    <li><b>2번 버튼</b>: 원을 찾는 과정 다시 재생</li>
+  </ul>
+</section>
+
+<script>
+  import ThorVG from '@thorvg/webcanvas';
+  import { spreadT, spreadFormula, drawGradientPreview } from '../lib/gradient-spread.mjs';
+  type SpreadMode = 'Pad' | 'Repeat' | 'Reflect';
+  import wasmUrl from '../../node_modules/@thorvg/webcanvas/dist/thorvg.wasm?url';
+
+  const WIDTH = 680;
+  const HEIGHT = 360;
+  const GEOMETRY_GAP = 4;
+  const initialGeometry = {
+    center: { x: 365, y: 185 },
+    focal: { x: 310, y: 145 },
+    sample: { x: 440, y: 112 },
+    r: 145,
+    fr: 20,
+  };
+
+  type Point = { x: number; y: number };
+  type PointName = 'center' | 'focal' | 'sample';
+  type HandleName = PointName | 'endRadius' | 'startRadius';
+  type RadialLabElement = HTMLElement & { __radialLabCleanup?: () => void };
+  type ThorVGGlobal = typeof globalThis & {
+    __thorvgSwPromise?: ReturnType<typeof ThorVG.init>;
+  };
+
+  const thorvgGlobal = globalThis as ThorVGGlobal;
+  const loadThorVG = () => thorvgGlobal.__thorvgSwPromise ??= ThorVG.init({ renderer: 'sw', locateFile: (file) => file.endsWith('.wasm') ? wasmUrl : file });
+
+  const parseHex = (hex: string) => [
+    Number.parseInt(hex.slice(1, 3), 16),
+    Number.parseInt(hex.slice(3, 5), 16),
+    Number.parseInt(hex.slice(5, 7), 16),
+    255,
+  ] as const;
+
+  const mixHex = (fromHex: string, toHex: string, ratio: number) => {
+    const from = parseHex(fromHex);
+    const to = parseHex(toHex);
+    const channels = [0, 1, 2].map((index) => Math.round(from[index] + (to[index] - from[index]) * ratio));
+    return `rgb(${channels.join(', ')})`;
+  };
+
+  document.querySelectorAll<HTMLElement>('[data-radial-lab]').forEach((rootElement, rootIndex) => {
+    const root = rootElement as RadialLabElement;
+    root.__radialLabCleanup?.();
+    const controller = new AbortController();
+    const listenerOptions = { signal: controller.signal };
+
+    const canvasElement = root.querySelector<HTMLCanvasElement>('[data-canvas]')!;
+    const overlay = root.querySelector<SVGSVGElement>('[data-overlay]')!;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const startOutput = root.querySelector<HTMLElement>('[data-start]')!;
+    const endOutput = root.querySelector<HTMLElement>('[data-end]')!;
+    const tOutput = root.querySelector<HTMLElement>('[data-t]')!;
+    const indexOutput = root.querySelector<HTMLElement>('[data-index]')!;
+    const sampleColor = root.querySelector<HTMLElement>('[data-sample-color]')!;
+    const resetButton = root.querySelector<HTMLButtonElement>('[data-reset]')!;
+    const spreadSelect = root.querySelector<HTMLSelectElement>('[data-spread]')!;
+    const spreadMode = () => spreadSelect.value as SpreadMode;
+    const spreadCaption = root.querySelector<HTMLElement>('[data-spread-formula]')!;
+    const colorInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-color]'));
+    const offsetInputs = Array.from(root.querySelectorAll<HTMLInputElement>('[data-offset]'));
+    const offsetOutputs = Array.from(root.querySelectorAll<HTMLOutputElement>('[data-offset-output]'));
+    const stopRings = Array.from(root.querySelectorAll<SVGCircleElement>('[data-stop-ring]'));
+    const tableGradient = root.querySelector<SVGLinearGradientElement>('[data-table-gradient]')!;
+    const tableStops = Array.from(root.querySelectorAll<SVGStopElement>('[data-table-stop]'));
+    const tableAxis = root.querySelector<SVGLineElement>('[data-table-axis]')!;
+    const tableLines = Array.from(root.querySelectorAll<SVGLineElement>('[data-table-shadow], [data-table-axis], [data-table-guide]'));
+    const stopMarkers = Array.from(root.querySelectorAll<SVGGElement>('[data-stop-marker]'));
+    const tableSample = root.querySelector<SVGCircleElement>('[data-table-sample]')!;
+    const tableLookup = root.querySelector<SVGPathElement>('[data-table-lookup]')!;
+    const tableExtension = root.querySelector<SVGLineElement>('[data-table-extension]')!;
+    const rawSample = root.querySelector<SVGCircleElement>('[data-raw-sample]')!;
+    const offscreen = root.querySelector<SVGPathElement>('[data-offscreen]')!;
+    const padLink = root.querySelector<SVGLineElement>('[data-pad-link]')!;
+    const padHalo = root.querySelector<SVGCircleElement>('[data-pad-halo]')!;
+    const padArrow = root.querySelector<SVGMarkerElement>('[data-pad-arrow]')!;
+    const centerLabel = root.querySelector<SVGTextElement>('[data-center-label]')!;
+    const radiusLabel = root.querySelector<SVGTextElement>('[data-radius-label]')!;
+    const directionLabel = root.querySelector<SVGTextElement>('[data-direction-label]')!;
+    const rawLabel = root.querySelector<SVGTextElement>('[data-raw-label]')!;
+    const padLabel = root.querySelector<SVGTextElement>('[data-pad-label]')!;
+    const clampedOutput = root.querySelector<HTMLElement>('[data-clamped-t]')!;
+    const centerValue = root.querySelector<HTMLElement>('[data-center-value]')!;
+    const radiusValue = root.querySelector<HTMLElement>('[data-radius-value]')!;
+    const circleValue = root.querySelector<HTMLElement>('[data-circle-value]')!;
+    const tableLabel = root.querySelector<SVGTextElement>('[data-table-label]')!;
+    const endCircle = root.querySelector<SVGCircleElement>('[data-end-circle]')!;
+    const startCircle = root.querySelector<SVGCircleElement>('[data-start-circle]')!;
+    const centerLine = root.querySelector<SVGLineElement>('[data-center-line]')!;
+    const centerExtension = root.querySelector<SVGLineElement>('[data-center-extension]')!;
+    const endRadiusLine = root.querySelector<SVGLineElement>('[data-end-radius-line]')!;
+    const startRadiusLine = root.querySelector<SVGLineElement>('[data-start-radius-line]')!;
+    const sampleRing = root.querySelector<SVGCircleElement>('[data-sample-ring]')!;
+    const sampleLine = root.querySelector<SVGLineElement>('[data-sample-line]')!;
+    const sampleCenter = root.querySelector<SVGCircleElement>('[data-sample-center]')!;
+    const handles = Array.from(root.querySelectorAll<SVGGElement>('[data-handle]'));
+    const phaseButtons = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-phase-button]'));
+    const stepNote = root.querySelector<HTMLElement>('[data-step-note]')!;
+    const inputVector = root.querySelector<SVGLineElement>('[data-input-vector]')!;
+    const inputLabel = root.querySelector<SVGTextElement>('[data-input-label]')!;
+    const startProgress = root.querySelector<SVGTextElement>('[data-start-progress]')!;
+    const endProgress = root.querySelector<SVGTextElement>('[data-end-progress]')!;
+    const probeRing = root.querySelector<SVGCircleElement>('[data-probe-ring]')!;
+    const probeCenter = root.querySelector<SVGCircleElement>('[data-probe-center]')!;
+    const probeDistance = root.querySelector<SVGLineElement>('[data-probe-distance]')!;
+    const probeRadius = root.querySelector<SVGLineElement>('[data-probe-radius]')!;
+    const probeGap = root.querySelector<SVGLineElement>('[data-probe-gap]')!;
+    const probeCenterLabel = root.querySelector<SVGTextElement>('[data-probe-center-label]')!;
+    const probeRadiusLabel = root.querySelector<SVGTextElement>('[data-probe-radius-label]')!;
+    const pValue = root.querySelector<HTMLElement>('[data-p-value]')!;
+    const qValue = root.querySelector<HTMLElement>('[data-q-value]')!;
+    const dValue = root.querySelector<HTMLElement>('[data-d-value]')!;
+    const drValue = root.querySelector<HTMLElement>('[data-dr-value]')!;
+    const trialT = root.querySelector<HTMLElement>('[data-trial-t]')!;
+    const trialDistance = root.querySelector<HTMLElement>('[data-trial-distance]')!;
+    const trialRadius = root.querySelector<HTMLElement>('[data-trial-radius]')!;
+    const trialState = root.querySelector<HTMLElement>('[data-trial-state]')!;
+    let phase = 1;
+    let progress = 1;
+    let probeFrame = 0;
+
+
+    canvasElement.id = `thorvg-radial-gradient-${rootIndex}`;
+    tableGradient.id = `thorvg-radial-table-${rootIndex}`;
+    tableAxis.setAttribute('stroke', `url(#${tableGradient.id})`);
+    padArrow.id = `thorvg-radial-pad-${rootIndex}`;
+    padLink.setAttribute('marker-end', `url(#${padArrow.id})`);
+
+    const points: Record<PointName, Point> = {
+      center: { ...initialGeometry.center },
+      focal: { ...initialGeometry.focal },
+      sample: { ...initialGeometry.sample },
+    };
+    let r = initialGeometry.r;
+    let fr = initialGeometry.fr;
+    let activeHandle: HandleName | undefined;
+    let frame = 0;
+    let renderFrame = () => drawFallback();
+    let disposeRenderer = () => {};
+
+    root.__radialLabCleanup = () => {
+      controller.abort();
+      cancelAnimationFrame(probeFrame);
+      cancelAnimationFrame(frame);
+      disposeRenderer();
+    };
+
+    const colors = () => colorInputs.map((input) => input.value);
+    const offsets = () => offsetInputs.map((input) => Number(input.value) / 100);
+    const distance = (from: Point, to: Point) => Math.hypot(to.x - from.x, to.y - from.y);
+    const clamp = (value: number, minimum: number, maximum: number) => Math.max(minimum, Math.min(maximum, value));
+
+    function clampFocal(point: Point) {
+      const dx = point.x - points.center.x;
+      const dy = point.y - points.center.y;
+      const length = Math.hypot(dx, dy);
+      const limit = Math.max(0, r - fr - GEOMETRY_GAP);
+      if (length <= limit || length === 0) return point;
+      return {
+        x: points.center.x + dx * limit / length,
+        y: points.center.y + dy * limit / length,
+      };
+    }
+
+    function radialT(point: Point) {
+      const dx = points.center.x - points.focal.x;
+      const dy = points.center.y - points.focal.y;
+      const dr = r - fr;
+      const rx = point.x - points.focal.x;
+      const ry = point.y - points.focal.y;
+      const a = dr * dr - dx * dx - dy * dy;
+      const numerator = rx * rx + ry * ry - fr * fr;
+      const denominator = dr * fr + rx * dx + ry * dy;
+
+      if (a < 0.0005) {
+        const t = Math.abs(denominator) < 0.0001 ? 0 : 0.5 * numerator / denominator;
+        return { t, valid: Number.isFinite(t) };
+      }
+
+      const b = denominator / a;
+      const determinant = b * b + numerator / a;
+      const t = Math.sqrt(Math.max(0, determinant)) - b;
+      return { t, valid: determinant >= 0 && Number.isFinite(t) };
+    }
+
+    function circleAt(t: number) {
+      return {
+        x: points.focal.x + (points.center.x - points.focal.x) * t,
+        y: points.focal.y + (points.center.y - points.focal.y) * t,
+        radius: fr + (r - fr) * t,
+      };
+    }
+
+    function drawFallback() {
+      const context = canvasElement.getContext('2d');
+      if (!context) return;
+      drawGradientPreview(context, WIDTH, HEIGHT,
+        colors().map((color, i) => ({ color, offset: offsets()[i] })),
+        (x, y) => { const result = radialT({ x, y }); return result.valid ? result.t : NaN; }, spreadMode());
+    }
+
+    function scheduleRender() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(renderFrame);
+    }
+
+    function setLine(line: SVGLineElement, from: Point, to: Point) {
+      line.setAttribute('x1', String(from.x));
+      line.setAttribute('y1', String(from.y));
+      line.setAttribute('x2', String(to.x));
+      line.setAttribute('y2', String(to.y));
+    }
+
+    function placeLabels(entries: { element: SVGTextElement; anchor: Point; text: string; visible: boolean }[]) {
+      const occupied = handles.map((handle) => {
+        const matrix = handle.transform.baseVal.consolidate()?.matrix;
+        return { x: (matrix?.e ?? 0) - 19, y: (matrix?.f ?? 0) - 19, width: 38, height: 38 };
+      });
+      for (const { element, anchor, text, visible } of entries) {
+        let leader = element.previousElementSibling as SVGLineElement | null;
+        if (!leader?.hasAttribute('data-label-leader')) {
+          leader = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          leader.setAttribute('data-label-leader', '');
+          leader.setAttribute('class', 'radial-lab__label-leader');
+          element.before(leader);
+        }
+        element.toggleAttribute('hidden', !visible);
+        leader.toggleAttribute('hidden', true);
+        if (!visible) continue;
+        element.textContent = text;
+        const width = element.getComputedTextLength() + 8;
+        const candidates = [[0, -24], [0, 32], [-width / 2 - 24, 5], [width / 2 + 24, 5], [0, -52], [0, 60], [-width / 2 - 24, -32], [width / 2 + 24, 38], [0, -84], [0, 90], [-width / 2 - 24, -70], [width / 2 + 24, -70], [-width / 2 - 24, 76], [width / 2 + 24, 76], [0, -116], [0, 122]];
+        let best = { x: 0, y: 0, score: Infinity };
+        for (const [dx, dy] of candidates) {
+          const x = clamp(anchor.x + dx, width / 2 + 8, WIDTH - width / 2 - 8);
+          const y = clamp(anchor.y + dy, 24, HEIGHT - 14);
+          const box = { x: x - width / 2, y: y - 16, width, height: 24 };
+          const overlap = occupied.reduce((sum, other) => sum + Math.max(0, Math.min(box.x + box.width, other.x + other.width) - Math.max(box.x, other.x)) * Math.max(0, Math.min(box.y + box.height, other.y + other.height) - Math.max(box.y, other.y)), 0);
+          const score = overlap * 1000 + Math.hypot(x - anchor.x, y - anchor.y);
+          if (score < best.score) best = { x, y, score };
+        }
+        element.setAttribute('x', String(best.x));
+        element.setAttribute('y', String(best.y));
+        occupied.push({ x: best.x - width / 2, y: best.y - 16, width, height: 24 });
+        if (Math.hypot(best.x - anchor.x, best.y - anchor.y) > 45) {
+          setLine(leader, anchor, { x: clamp(anchor.x, best.x - width / 2, best.x + width / 2), y: clamp(anchor.y, best.y - 16, best.y + 8) });
+          leader.toggleAttribute('hidden', false);
+        }
+      }
+    }
+
+    function updateOverlay(rerender = true) {
+      const result = radialT(points.sample);
+      const clampedT = spreadT(result.t, spreadMode());
+      spreadCaption.textContent = spreadFormula(spreadMode());
+      if (phase === 3) stepNote.textContent = `P에서 구한 t로 Color Table을 읽습니다. 범위 처리는 ${spreadMode()}입니다.`;
+      const sampleCircle = circleAt(result.valid ? result.t : 0);
+      const stopColors = colors();
+      const stopOffsets = offsets();
+
+      // The rightmost point of each interpolated circle is affine in t.
+      // Its Color Table coordinate is the same t as the radial sample, not
+      // an orthogonal projection onto the line between the two circle centers.
+      const tableStart = { x: points.focal.x + fr, y: points.focal.y };
+      const tableEnd = { x: points.center.x + r, y: points.center.y };
+      const tableDx = tableEnd.x - tableStart.x;
+      const tableDy = tableEnd.y - tableStart.y;
+      tableLines.forEach((line) => setLine(line, tableStart, tableEnd));
+      tableGradient.setAttribute('x1', String(tableStart.x));
+      tableGradient.setAttribute('y1', String(tableStart.y));
+      tableGradient.setAttribute('x2', String(tableEnd.x));
+      tableGradient.setAttribute('y2', String(tableEnd.y));
+      tableStops.forEach((stop, index) => {
+        stop.setAttribute('offset', String(stopOffsets[index]));
+        stop.setAttribute('stop-color', stopColors[index]);
+        const circle = circleAt(stopOffsets[index]);
+        stopMarkers[index].setAttribute('transform', `translate(${circle.x + circle.radius} ${circle.y})`);
+        stopMarkers[index].style.setProperty('--stop-color', stopColors[index]);
+      });
+      const tablePoint = {
+        x: tableStart.x + tableDx * clampedT,
+        y: tableStart.y + tableDy * clampedT,
+      };
+      tableSample.setAttribute('cx', String(tablePoint.x));
+      tableSample.setAttribute('cy', String(tablePoint.y));
+      tableSample.toggleAttribute('hidden', !result.valid);
+      const rawPoint = { x: sampleCircle.x + sampleCircle.radius, y: sampleCircle.y };
+      const padded = result.valid && Math.abs(result.t - clampedT) > 1e-9;
+      const outside = rawPoint.x < 14 || rawPoint.x > WIDTH - 14 || rawPoint.y < 14 || rawPoint.y > HEIGHT - 14;
+      // Keep the true Q(t) in the geometry; an edge chevron indicates clipping,
+      // while the separate halo describes the color lookup after spread mapping.
+      const edgeVector = { x: rawPoint.x - WIDTH / 2, y: rawPoint.y - HEIGHT / 2 };
+      const edgeScale = Math.min(1, (WIDTH / 2 - 14) / Math.max(Math.abs(edgeVector.x), 1e-6), (HEIGHT / 2 - 14) / Math.max(Math.abs(edgeVector.y), 1e-6));
+      const indicator = outside ? { x: WIDTH / 2 + edgeVector.x * edgeScale, y: HEIGHT / 2 + edgeVector.y * edgeScale } : rawPoint;
+      rawSample.setAttribute('cx', String(rawPoint.x));
+      rawSample.setAttribute('cy', String(rawPoint.y));
+      rawSample.toggleAttribute('hidden', !padded || outside);
+      offscreen.setAttribute('transform', `translate(${indicator.x} ${indicator.y}) rotate(${Math.atan2(edgeVector.y, edgeVector.x) * 180 / Math.PI})`);
+      offscreen.toggleAttribute('hidden', !result.valid || !outside);
+      setLine(tableExtension, result.t < 0 ? tableStart : tableEnd, rawPoint);
+      tableExtension.toggleAttribute('hidden', !result.valid || (result.t >= 0 && result.t <= 1));
+      const theta = Math.atan2(points.sample.y - sampleCircle.y, points.sample.x - sampleCircle.x);
+      const radius = Math.max(0, sampleCircle.radius);
+      tableLookup.setAttribute('d', radius > 1e-6 ? `M ${points.sample.x} ${points.sample.y} A ${radius} ${radius} 0 0 ${theta < 0 ? 1 : 0} ${rawPoint.x} ${rawPoint.y}` : '');
+      tableLookup.toggleAttribute('hidden', !result.valid);
+      // Stop the correction arrow at the halo, outside the draggable R/FR handle.
+      const padDx = tablePoint.x - indicator.x, padDy = tablePoint.y - indicator.y;
+      const padLength = Math.hypot(padDx, padDy);
+      const padEnd = { x: tablePoint.x - padDx / Math.max(padLength, 1e-6) * Math.min(20, padLength), y: tablePoint.y - padDy / Math.max(padLength, 1e-6) * Math.min(20, padLength) };
+      setLine(padLink, indicator, padEnd);
+      padLink.toggleAttribute('hidden', !padded || padLength < 22);
+      padHalo.setAttribute('cx', String(tablePoint.x));
+      padHalo.setAttribute('cy', String(tablePoint.y));
+      padHalo.toggleAttribute('hidden', !padded);
+
+      endCircle.setAttribute('cx', String(points.center.x));
+      endCircle.setAttribute('cy', String(points.center.y));
+      endCircle.setAttribute('r', String(r));
+      startCircle.setAttribute('cx', String(points.focal.x));
+      startCircle.setAttribute('cy', String(points.focal.y));
+      startCircle.setAttribute('r', String(fr));
+      setLine(centerLine, points.focal, points.center);
+      setLine(endRadiusLine, points.center, { x: points.center.x + r, y: points.center.y });
+      setLine(startRadiusLine, points.focal, { x: points.focal.x + fr, y: points.focal.y });
+
+      stopRings.forEach((ring, index) => {
+        const stopCircle = circleAt(stopOffsets[index]);
+        ring.setAttribute('cx', String(stopCircle.x));
+        ring.setAttribute('cy', String(stopCircle.y));
+        ring.setAttribute('r', String(Math.max(0, stopCircle.radius)));
+        ring.style.setProperty('--stop-color', stopColors[index]);
+        offsetOutputs[index].value = stopOffsets[index].toFixed(2);
+      });
+
+      sampleRing.setAttribute('cx', String(sampleCircle.x));
+      sampleRing.setAttribute('cy', String(sampleCircle.y));
+      sampleRing.setAttribute('r', String(Math.max(0, sampleCircle.radius)));
+      sampleRing.toggleAttribute('hidden', !result.valid);
+      sampleCenter.setAttribute('cx', String(sampleCircle.x));
+      sampleCenter.setAttribute('cy', String(sampleCircle.y));
+      sampleCenter.toggleAttribute('hidden', !result.valid);
+      setLine(sampleLine, sampleCircle, points.sample);
+      sampleLine.toggleAttribute('hidden', !result.valid);
+
+      handles.forEach((handle) => {
+        const name = handle.dataset.handle as HandleName;
+        const point = name === 'endRadius'
+          ? { x: points.center.x + r, y: points.center.y }
+          : name === 'startRadius'
+            ? { x: points.focal.x + fr, y: points.focal.y }
+            : points[name];
+        handle.setAttribute('transform', `translate(${point.x} ${point.y})`);
+        handle.setAttribute('aria-valuetext', name.includes('Radius')
+          ? String(Math.round(name === 'endRadius' ? r : fr))
+          : `x ${Math.round(point.x)}, y ${Math.round(point.y)}`);
+      });
+
+      setLine(inputVector, points.focal, points.sample);
+      const pair = (point: Point) => `(${point.x.toFixed(1)}, ${point.y.toFixed(1)})`;
+      pValue.textContent = pair(points.sample);
+      qValue.textContent = pair({ x: points.sample.x - points.focal.x, y: points.sample.y - points.focal.y });
+      dValue.textContent = pair({ x: points.center.x - points.focal.x, y: points.center.y - points.focal.y });
+      drValue.textContent = (r - fr).toFixed(2);
+      // The sweep illustrates the circle family; radialT still solves directly from P.
+      const candidateT = result.valid ? progress * result.t : 0;
+      const candidate = circleAt(candidateT);
+      const trackedT = phase === 2 ? candidateT : result.t;
+      setLine(centerExtension, trackedT < 0 ? points.focal : points.center, phase === 2 ? candidate : sampleCircle);
+      centerExtension.toggleAttribute('hidden', phase === 1 || !result.valid || (trackedT >= 0 && trackedT <= 1));
+      const measured = distance(candidate, points.sample);
+      const unit = measured > 1e-6 ? { x: (points.sample.x - candidate.x) / measured, y: (points.sample.y - candidate.y) / measured } : { x: 1, y: 0 };
+      const boundary = { x: candidate.x + unit.x * candidate.radius, y: candidate.y + unit.y * candidate.radius };
+      probeRing.setAttribute('cx', String(candidate.x));
+      probeRing.setAttribute('cy', String(candidate.y));
+      probeRing.setAttribute('r', String(Math.max(0, candidate.radius)));
+      probeCenter.setAttribute('cx', String(candidate.x));
+      probeCenter.setAttribute('cy', String(candidate.y));
+      setLine(probeDistance, candidate, points.sample);
+      setLine(probeRadius, candidate, boundary);
+      setLine(probeGap, boundary, points.sample);
+      const matched = result.valid && Math.abs(measured - candidate.radius) < 1e-5;
+      root.dataset.matched = String(matched);
+      trialT.textContent = candidateT.toFixed(3);
+      trialDistance.textContent = measured.toFixed(2);
+      trialRadius.textContent = candidate.radius.toFixed(2);
+      trialState.textContent = !result.valid ? '실근 없음' : matched ? `P 통과 → t = ${result.t.toFixed(3)}` : measured > candidate.radius ? 'P가 원 밖' : 'P가 원 안';
+
+      placeLabels([
+        { element: inputLabel, anchor: { x: (points.focal.x + points.sample.x) / 2, y: (points.focal.y + points.sample.y) / 2 }, text: 'q = P − F', visible: phase === 1 },
+        { element: directionLabel, anchor: { x: (points.focal.x + points.center.x) / 2, y: (points.focal.y + points.center.y) / 2 }, text: 'd = C − F', visible: phase === 1 },
+        { element: startProgress, anchor: { x: points.focal.x - fr, y: points.focal.y }, text: '시작 원 · 0', visible: phase !== 3 },
+        { element: endProgress, anchor: { x: points.center.x - r, y: points.center.y }, text: '끝 원 · 1', visible: phase !== 3 },
+        { element: probeCenterLabel, anchor: candidate, text: candidateT < 0 || candidateT > 1 ? 'F–C 연장선 위의 중심' : 'F–C 선분 위의 중심', visible: phase === 2 },
+        { element: probeRadiusLabel, anchor: { x: (candidate.x + boundary.x) / 2, y: (candidate.y + boundary.y) / 2 }, text: `반지름 ${candidate.radius.toFixed(1)}`, visible: phase === 2 },
+        { element: tableLabel, anchor: { x: (tableStart.x + tableEnd.x) / 2, y: (tableStart.y + tableEnd.y) / 2 }, text: 'Color Table', visible: phase === 3 },
+        { element: rawLabel, anchor: indicator, text: `t = ${result.t.toFixed(3)}`, visible: phase === 3 && result.valid },
+        { element: padLabel, anchor: tablePoint, text: `${spreadMode()} → ${clampedT.toFixed(3)}`, visible: phase === 3 && padded },
+        { element: centerLabel, anchor: sampleCircle, text: 'P를 지나는 원의 중심', visible: phase === 3 && result.valid },
+        { element: radiusLabel, anchor: { x: (sampleCircle.x + points.sample.x) / 2, y: (sampleCircle.y + points.sample.y) / 2 }, text: 'P까지 거리 = 반지름', visible: phase === 3 && result.valid },
+      ]);
+      clampedOutput.textContent = result.valid ? clampedT.toFixed(3) : '—';
+      centerValue.textContent = result.valid ? `(${sampleCircle.x.toFixed(1)}, ${sampleCircle.y.toFixed(1)})` : '—';
+      radiusValue.textContent = result.valid ? sampleCircle.radius.toFixed(2) : '—';
+      circleValue.textContent = result.valid ? `${(distance(points.sample, sampleCircle) ** 2).toFixed(1)} = ${(sampleCircle.radius ** 2).toFixed(1)}` : '실근 없음';
+
+      let previewColor = stopColors[stopColors.length - 1];
+      if (clampedT <= stopOffsets[0]) {
+        previewColor = stopColors[0];
+      } else {
+        const rightIndex = stopOffsets.findIndex((offset) => offset >= clampedT);
+        if (rightIndex > 0) {
+          const span = stopOffsets[rightIndex] - stopOffsets[rightIndex - 1];
+          const ratio = span === 0 ? 0 : (clampedT - stopOffsets[rightIndex - 1]) / span;
+          previewColor = mixHex(stopColors[rightIndex - 1], stopColors[rightIndex], ratio);
+        }
+      }
+
+      startOutput.textContent = `(${Math.round(points.focal.x)}, ${Math.round(points.focal.y)}) / ${Math.round(fr)}`;
+      endOutput.textContent = `(${Math.round(points.center.x)}, ${Math.round(points.center.y)}) / ${Math.round(r)}`;
+      tOutput.textContent = result.valid ? result.t.toFixed(3) : 'invalid';
+      indexOutput.textContent = result.valid ? String(Math.round(clampedT * 1023)) : '—';
+      sampleColor.style.background = previewColor;
+
+      if (rerender) scheduleRender();
+    }
+
+    function moveHandle(name: HandleName, x: number, y: number) {
+      // A changed input must not continue an earlier explanatory sweep.
+      cancelAnimationFrame(probeFrame);
+      progress = 1;
+      if (name === 'endRadius') {
+        const minimum = distance(points.center, points.focal) + fr + GEOMETRY_GAP;
+        r = clamp(distance(points.center, { x, y }), minimum, 320);
+      } else if (name === 'startRadius') {
+        const maximum = Math.max(0, r - distance(points.center, points.focal) - GEOMETRY_GAP);
+        fr = clamp(distance(points.focal, { x, y }), 0, maximum);
+      } else if (name === 'focal') {
+        points.focal = clampFocal({ x: clamp(x, 18, WIDTH - 18), y: clamp(y, 18, HEIGHT - 18) });
+      } else if (name === 'center') {
+        points.center.x = clamp(x, 18, WIDTH - 18);
+        points.center.y = clamp(y, 18, HEIGHT - 18);
+        points.focal = clampFocal(points.focal);
+      } else {
+        points.sample.x = clamp(x, 18, WIDTH - 18);
+        points.sample.y = clamp(y, 18, HEIGHT - 18);
+      }
+      updateOverlay(name !== 'sample');
+    }
+
+    function pointerPosition(event: PointerEvent) {
+      const bounds = overlay.getBoundingClientRect();
+      return {
+        x: (event.clientX - bounds.left) * WIDTH / bounds.width,
+        y: (event.clientY - bounds.top) * HEIGHT / bounds.height,
+      };
+    }
+
+    overlay.addEventListener('pointerdown', (event) => {
+      const handle = (event.target as Element).closest<SVGGElement>('[data-handle]');
+      if (!handle) return;
+      activeHandle = handle.dataset.handle as HandleName;
+      overlay.setPointerCapture(event.pointerId);
+      const point = pointerPosition(event);
+      moveHandle(activeHandle, point.x, point.y);
+    }, listenerOptions);
+
+    overlay.addEventListener('pointermove', (event) => {
+      if (!activeHandle) return;
+      const point = pointerPosition(event);
+      moveHandle(activeHandle, point.x, point.y);
+    }, listenerOptions);
+
+    const stopDragging = (event: PointerEvent) => {
+      if (overlay.hasPointerCapture(event.pointerId)) overlay.releasePointerCapture(event.pointerId);
+      activeHandle = undefined;
+    };
+    overlay.addEventListener('pointerup', stopDragging, listenerOptions);
+    overlay.addEventListener('pointercancel', stopDragging, listenerOptions);
+
+    handles.forEach((handle) => {
+      handle.addEventListener('keydown', (event) => {
+        const name = handle.dataset.handle as HandleName;
+        const step = event.shiftKey ? 12 : 3;
+        const delta = {
+          ArrowLeft: [-step, 0],
+          ArrowRight: [step, 0],
+          ArrowUp: [0, -step],
+          ArrowDown: [0, step],
+        }[event.key];
+        if (!delta) return;
+        event.preventDefault();
+        const point = name === 'endRadius'
+          ? { x: points.center.x + r, y: points.center.y }
+          : name === 'startRadius'
+            ? { x: points.focal.x + fr, y: points.focal.y }
+            : points[name];
+        moveHandle(name, point.x + delta[0], point.y + delta[1]);
+      }, listenerOptions);
+    });
+
+    function showPhase(next: number) {
+      cancelAnimationFrame(probeFrame);
+      phase = next;
+      root.dataset.phase = String(next);
+      phaseButtons.forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.phaseButton) === next)));
+      stepNote.textContent = next === 1 ? 'P는 색을 구할 픽셀입니다. 먼저 P − F를 구합니다.'
+        : next === 2 ? '원의 중심은 F–C 직선을 따라 이동하고 반지름은 fr에서 r로 함께 변합니다. P까지 거리와 반지름이 같은 진행률이 t입니다.'
+        : `P에서 구한 t로 Color Table을 읽습니다. 범위 처리는 ${spreadMode()}입니다.`;
+      progress = next === 2 && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1;
+      updateOverlay(false);
+      if (progress === 1) return;
+      const start = performance.now();
+      const tick = (now: number) => {
+        if (controller.signal.aborted) return;
+        progress = clamp((now - start) / 2200, 0, 1);
+        updateOverlay(false);
+        if (progress < 1) probeFrame = requestAnimationFrame(tick);
+      };
+      probeFrame = requestAnimationFrame(tick);
+    }
+    phaseButtons.forEach(button => button.addEventListener('click', () => showPhase(Number(button.dataset.phaseButton)), listenerOptions));
+
+    spreadSelect.addEventListener('change', () => updateOverlay(), listenerOptions);
+
+    colorInputs.forEach((input) => input.addEventListener('input', () => updateOverlay(), listenerOptions));
+    offsetInputs.forEach((input, index) => input.addEventListener('input', () => {
+      const previous = offsetInputs[index - 1];
+      const next = offsetInputs[index + 1];
+      input.value = String(clamp(Number(input.value), Number(previous?.value ?? 0), Number(next?.value ?? 100)));
+      updateOverlay();
+    }, listenerOptions));
+    resetButton.addEventListener('click', () => {
+      cancelAnimationFrame(probeFrame);
+      progress = 1;
+      points.center = { ...initialGeometry.center };
+      points.focal = { ...initialGeometry.focal };
+      points.sample = { ...initialGeometry.sample };
+      r = initialGeometry.r;
+      fr = initialGeometry.fr;
+      spreadSelect.value = 'Pad';
+      const defaults = ['#ff5a36', '#ffd166', '#176bff'];
+      colorInputs.forEach((input, index) => input.value = defaults[index]);
+      offsetInputs.forEach((input, index) => input.value = String(index * 50));
+      updateOverlay();
+    }, listenerOptions);
+
+    drawFallback();
+    updateOverlay(false);
+
+    loadThorVG().then((TVG) => {
+      if (controller.signal.aborted) return;
+      const tvgCanvas = new TVG.Canvas(`#${canvasElement.id}`, {
+        width: WIDTH,
+        height: HEIGHT,
+        enableDevicePixelRatio: false,
+      });
+      let currentShape: InstanceType<typeof TVG.Shape> | undefined;
+
+      disposeRenderer = () => {
+        cancelAnimationFrame(frame);
+        if (currentShape) {
+          tvgCanvas.remove(currentShape);
+          currentShape.dispose();
+          currentShape = undefined;
+        }
+        tvgCanvas.destroy();
+      };
+
+      renderFrame = () => {
+        if (currentShape) {
+          tvgCanvas.remove(currentShape);
+          currentShape.dispose();
+        }
+
+        const gradient = new TVG.RadialGradient(
+          points.center.x,
+          points.center.y,
+          r,
+          points.focal.x,
+          points.focal.y,
+          fr,
+        ).setStops(
+          [Number(offsetInputs[0].value) / 100, parseHex(colorInputs[0].value)],
+          [Number(offsetInputs[1].value) / 100, parseHex(colorInputs[1].value)],
+          [Number(offsetInputs[2].value) / 100, parseHex(colorInputs[2].value)],
+        );
+
+        gradient.spread(TVG.GradientSpread[spreadMode()]);
+        currentShape = new TVG.Shape().appendRect(0, 0, WIDTH, HEIGHT).fill(gradient);
+        tvgCanvas.add(currentShape).render();
+      };
+
+      root.classList.add('is-ready');
+      status.textContent = 'CPU Engine';
+      scheduleRender();
+    }).catch((error) => {
+      console.error('ThorVG WebCanvas initialization failed', error);
+      root.classList.add('has-error');
+      status.textContent = 'Canvas fallback';
+      status.title = 'ThorVG WebCanvas를 불러오지 못해 브라우저 Canvas 미리보기를 사용합니다.';
+    });
+  });
+</script>
+
+<style>
+  .radial-lab {
+    margin: var(--space-lg) 0 var(--space-xl);
+    overflow: hidden;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-lg);
+    background: var(--surface-1);
+    color: var(--ink);
+  }
+
+
+
+
+
+  .radial-lab[data-phase="1"] [data-phase-view="2"],
+  .radial-lab[data-phase="1"] [data-phase-view="3"],
+  .radial-lab[data-phase="2"] [data-phase-view="1"],
+  .radial-lab[data-phase="2"] [data-phase-view="3"],
+  .radial-lab[data-phase="3"] [data-phase-view="1"],
+  .radial-lab[data-phase="3"] [data-phase-view="2"] { display: none; }
+  .radial-lab__steps { display: flex; flex-wrap: wrap; gap: 8px; padding: var(--space-sm) var(--space-md); }
+  .radial-lab__steps button { flex: 1 1 auto; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink-muted); font: inherit; font-size: 13px; cursor: pointer; }
+  .radial-lab__steps button[aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: var(--surface-2); }
+  .radial-lab__steps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .radial-lab__step-note { margin: 0 !important; padding: 0 var(--space-md) var(--space-sm); font-size: 13px; }
+  .radial-lab__trial > p { margin: 0 !important; padding: var(--space-sm) var(--space-md) 0; font-family: var(--font-mono); font-size: 13px; }
+  .radial-lab__input-vector { stroke: #8fe3ff; stroke-width: 3; pointer-events: none; }
+  .radial-lab__probe-ring { fill: none; stroke: #ffd166; stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__probe-radius { stroke: #ffd166; stroke-width: 4; pointer-events: none; }
+  .radial-lab__probe-gap { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 4; pointer-events: none; }
+  .radial-lab[data-matched="true"] .radial-lab__probe-ring { stroke: #8fe3ff; }
+  .radial-lab__handle--sample circle { stroke-width: 3; }
+
+  .radial-lab__stage {
+    position: relative;
+    aspect-ratio: 17 / 9;
+    overflow: hidden;
+    background: #1b1c1f;
+    isolation: isolate;
+  }
+
+  .radial-lab__stage canvas,
+  .radial-lab__stage svg {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .radial-lab__stage svg {
+    z-index: 2;
+    color: rgba(255, 255, 255, 0.2);
+    touch-action: none;
+    user-select: none;
+  }
+
+  .radial-lab__grid { opacity: 0.35; pointer-events: none; }
+  .radial-lab[data-phase="2"] .radial-lab__center-line { stroke: #8fe3ff; stroke-width: 3; stroke-dasharray: none; }
+  .radial-lab__center-extension { stroke: #8fe3ff; stroke-width: 2; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__center-line,
+  .radial-lab__radius-line { stroke: rgba(255, 255, 255, 0.62); stroke-width: 1.25; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__boundary { fill: none; stroke: rgba(255, 255, 255, 0.92); stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__boundary--start { stroke-dasharray: 4 4; }
+  .radial-lab__stop-ring { fill: none; stroke: var(--stop-color); stroke-width: 3; opacity: 0.9; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)); }
+  .radial-lab__sample-ring { fill: none; stroke: rgba(255, 255, 255, 0.75); stroke-width: 1; stroke-dasharray: 3 5; pointer-events: none; }
+  .radial-lab__sample-line { stroke: #8fe3ff; stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__sample-center { fill: #8fe3ff; pointer-events: none; }
+
+  .radial-lab__table-shadow { stroke: rgba(0, 0, 0, 0.62); stroke-width: 18; stroke-linecap: round; pointer-events: none; }
+  .radial-lab__table-axis { stroke-width: 12; stroke-linecap: round; pointer-events: none; }
+  .radial-lab__table-guide { stroke: rgba(255, 255, 255, 0.88); stroke-width: 1; pointer-events: none; }
+  .radial-lab__table-lookup { fill: none; stroke: #8fe3ff; stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__table-extension { stroke: #8fe3ff; stroke-width: 1.5; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__pad-link { stroke: #ffd166; stroke-width: 2; pointer-events: none; }
+  .radial-lab__raw-sample { fill: #1b1c1f; stroke: #8fe3ff; stroke-width: 2; pointer-events: none; }
+  .radial-lab__offscreen { fill: none; stroke: #8fe3ff; stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__pad-halo { fill: none; stroke: #ffd166; stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__stage [hidden] { display: none; }
+  .radial-lab__table-sample { fill: #fff; stroke: rgba(0, 0, 0, 0.7); stroke-width: 2; pointer-events: none; }
+  .radial-lab__stop-marker { pointer-events: none; }
+  .radial-lab__stop-marker circle { fill: var(--stop-color); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55)); }
+  .radial-lab__diagram-label {
+    fill: rgba(255, 255, 255, 0.92);
+    stroke: rgba(15, 16, 18, 0.88);
+    stroke-width: 3px;
+    paint-order: stroke;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 650;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+
+  .radial-lab__label-leader { stroke: rgba(255, 255, 255, 0.6); stroke-width: 1; pointer-events: none; }
+  .radial-lab__math-label { fill: #8fe3ff; }
+  .radial-lab__pad-label { fill: #ffd166; }
+
+  .radial-lab__handle { cursor: grab; outline: none; }
+  .radial-lab__handle:active { cursor: grabbing; }
+  .radial-lab__handle circle { fill: rgba(15, 16, 18, 0.82); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45)); }
+  .radial-lab__handle text { fill: #fff; font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+  .radial-lab__handle--sample path { fill: none; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__handle--sample text { font-size: 13px; text-anchor: start; }
+  .radial-lab__handle:focus circle { stroke-width: 4; }
+
+  .radial-lab__hint {
+    position: absolute;
+    z-index: 3;
+    right: 10px;
+    bottom: 8px;
+    margin: 0;
+    padding: 4px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
+    background: rgba(15, 16, 18, 0.62);
+    color: rgba(255, 255, 255, 0.8);
+    font-family: var(--font-mono);
+    font-size: 12px;
+
+  }
+
+  .radial-lab__metrics {
+    min-height: 54px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 9px var(--space-md);
+    border-bottom: 1px solid var(--hairline);
+    background: var(--canvas);
+    font-family: var(--font-mono);
+  }
+
+  .radial-lab__metrics span { flex: 1 1 max-content; min-width: 0; display: grid; gap: 1px; }
+  .radial-lab__metrics small { color: var(--ink-subtle); font-size: 12px; letter-spacing: 0; }
+  .radial-lab__metrics b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: normal; }
+  .radial-lab__metrics i { width: 22px; height: 22px; margin-left: auto; flex: 0 0 auto; border: 1px solid var(--hairline-strong); border-radius: var(--radius-full); box-shadow: inset 0 0 0 2px var(--canvas); }
+
+  .radial-lab__formulas { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 12px var(--space-md); border-bottom: 1px solid var(--hairline); font-family: var(--font-mono); }
+  .radial-lab__formulas > span { flex: 1 1 max-content; min-width: 0; display: grid; gap: 3px; }
+  .radial-lab__formulas small { font-size: 12px; color: var(--ink-subtle); }
+  .radial-lab__formulas b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .radial-lab__controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .radial-lab__stops {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-sm);
+    padding: 0;
+    border: 0;
+  }
+
+  .radial-lab__stops { grid-column: 1 / -1; }
+  .radial-lab__spread { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
+  .radial-lab__spread select { min-width: 0; max-width: 100%; padding: 6px 8px; border: 1px solid var(--control-border); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink); font: inherit; }
+
+  .radial-lab__stop { min-width: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: end; gap: 6px; }
+  .radial-lab__stop > span { min-width: 0; display: grid; gap: 3px; }
+  .radial-lab__stop output { color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .radial-lab__stop input[type='range'] { width: 100%; min-width: 0; margin: 0; accent-color: var(--primary); }
+
+  .radial-lab__controls input[type='color'] {
+    width: 34px;
+    height: 30px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .radial-lab__controls input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+  .radial-lab__controls input[type='color']::-webkit-color-swatch { border: 0; }
+
+  .radial-lab__reset {
+    height: 32px;
+    border: 1px solid var(--control-border);
+    border-radius: var(--radius-sm);
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .radial-lab__reset { padding: 0 12px; cursor: pointer; }
+  .radial-lab__reset:hover { border-color: var(--primary); color: var(--primary); }
+
+  .radial-lab__note {
+    margin: 0 !important;
+    padding: var(--space-sm) var(--space-md);
+    border-top: 1px solid var(--hairline);
+    color: var(--ink-subtle);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .radial-lab__note b { color: var(--ink); }
+
+  @media (max-width: 640px) {
+    .radial-lab__controls { grid-template-columns: minmax(0, 1fr) auto; }
+    .radial-lab__stops { grid-column: 1 / -1; }
+    .radial-lab__metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .radial-lab__metrics i { position: absolute; visibility: hidden; }
+    .radial-lab__hint { display: none; }
+  }
+</style>

@@ -1,0 +1,179 @@
+---
+title: "[Core2026] CPU Engine - Font"
+github: "Nor-s"
+date: 2026-09-05
+summary: "Text가 Font Loader의 glyph를 내부 Shape와 RenderPath로 구성하고 CPU Engine의 공통 Shape 경로에 위임하는 과정을 살펴봅니다."
+tags: ["ThorVG", "Core", "CPU"]
+draft: false
+---
+
+import Disclosure from "../../../components/Disclosure.astro";
+import TMathPlayer from "../../../components/TMathPlayer.astro";
+import fontShapeSource from "./LUA/font-shape-rle.lua?url";
+import fontShapePoster from "./IMAGE/07-SW-Font/font-shape-rle.webp";
+
+# Core2026 > Engine > CPU Engine - 13
+
+<TMathPlayer scene="font-overview" source={import.meta.env.BASE_URL + 'tmath/font/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/font/overview.webp'} title="Font Overview — Text에서 Surface까지" description="Font Loader의 glyph가 하나의 내부 Shape에 모이고, 같은 Shape와 RenderData를 사용해 CPU Prepare·Draw에서 RLE와 Surface 픽셀로 이어지는 흐름입니다." width={1280} height={2080} />
+
+## 1. Font와 내부 Shape
+
+
+<TMathPlayer scene="paint-font-shape-rle" source={fontShapeSource} poster={fontShapePoster.src} title="1. Font와 내부 Shape" description="B의 픽셀 격자에서 시작 픽셀 중앙의 가로선이 len만큼 늘어나고, coverage 농도와 SwRle::spans 기록이 함께 누적되는 애니메이션" width={1600} height={900} />
+
+글자의 윤곽을 Shape의 경로로 구성한 뒤, 일반 도형과 같은 renderer 경로로 그립니다.
+- Font Loader: 글자 윤곽과 배치 정보 해석
+- Shape: MoveTo, LineTo, CubicTo, Close로 구성한 경로
+- CPU Renderer: 경로의 coverage 계산과 RLE span 생성
+
+
+### 1.1. 여러 글자 → 하나의 Shape 경로
+
+<TMathPlayer scene="font-glyphs-to-shape" source={import.meta.env.BASE_URL + 'tmath/font/glyphs.lua'} poster={import.meta.env.BASE_URL + 'tmath/font/glyphs.webp'} title="여러 글자 → 하나의 Shape 경로" description="Public Sans의 A·B·C 윤곽을 배치 위치로 복사해 하나의 Shape에 차례로 추가합니다. 앞 글자의 경로를 유지하면서 RenderPath의 명령·좌표 배열과 cursor가 함께 갱신됩니다." width={1280} height={860} />
+
+각 glyph의 경로에 현재 글자 위치와 positioning offset을 더해 출력 경로에 붙입니다. 글자마다 별도의 Shape를 만드는 대신, Text 내부 Shape에 여러 글자의 contour를 모으는 방식입니다.
+
+
+<Disclosure title="코드 보기: glyph 경로를 내부 Shape에 추가">
+
+줄바꿈을 사용하지 않는 `wrapNone()` 경로 기준입니다.
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> Paint::Impl::update() [Canvas 내부 Scene]
+-> SceneImpl::update()
+-> Paint::Impl::update() [Text]
+-> TextImpl::update()
+-> TextImpl::load()
+-> SfntLoader::get()
+-> SfntLoader::wrapNone()
+-> _build()
+```
+
+[tvgSfntLoader.cpp — _build](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgSfntLoader.cpp#L191-L198)
+
+```cpp
+static void _build(const RenderPath& in, const Point& cursor, const Point& offset, RenderPath& out)
+{
+    out.cmds.push(in.cmds);
+    out.pts.grow(in.pts.count);
+    ARRAY_FOREACH(p, in.pts) {
+        out.pts.push(*p + cursor + offset);
+    }
+}
+```
+
+- `in`: 개별 glyph의 경로
+- `cursor`, `offset`: 문자열 내 배치 위치와 글자 간 위치 보정
+- `out`: Text 내부 Shape에 전달된 출력 경로
+- [`wrapNone()`](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgSfntLoader.cpp#L276-L301): UTF-8 해석, glyph 요청, 경로 추가, advance에 따른 cursor 이동
+
+</Disclosure>
+
+
+### 1.2. Text → Shape 위임
+
+
+<TMathPlayer scene="font-text-shape-delegation" source={import.meta.env.BASE_URL + 'tmath/font/delegation.lua'} poster={import.meta.env.BASE_URL + 'tmath/font/delegation.webp'} title="Text → Shape 위임" description="Update와 Draw가 같은 내부 Shape를 사용합니다. Shape의 Prepare가 만든 RenderData를 보관하고, Draw에서 같은 task의 RLE를 사용해 Canvas에 기록하는 흐름을 보여줍니다." width={1280} height={1040} />
+
+Text는 구성된 Shape에 update와 render를 위임합니다. CPU renderer에서는 일반 도형과 같은 Fill·Stroke 처리로 coverage와 RLE span을 생성합니다.
+
+Update가 Shape의 `impl.rd`를 준비하고, Draw가 Shape와 `rd`를 사용합니다. 
+
+<Disclosure title="코드 보기: Update를 내부 Shape에 위임">
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> Paint::Impl::update() [Canvas 내부 Scene]
+-> SceneImpl::update()
+-> Paint::Impl::update() [Text]
+-> TextImpl::update()
+```
+
+[TextImpl::update](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/renderer/tvgText.h#L198-L201)의 핵심 호출입니다. 글자 경로 구성과 Text 속성 반영이 끝난 뒤 실행됩니다.
+
+```cpp
+PAINT(shape)->update(renderer, transform, clips, opacity, flag, false);
+```
+
+</Disclosure>
+
+<Disclosure title="코드 보기: Render를 내부 Shape에 위임">
+
+```text
+Canvas::draw()
+-> Canvas::Impl::draw()
+-> Paint::Impl::render() [Canvas 내부 Scene]
+-> SceneImpl::render()
+-> Paint::Impl::render() [Text]
+-> TextImpl::render()
+```
+
+[TextImpl::render](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/renderer/tvgText.h#L110-L115)의 핵심 호출입니다.
+
+```cpp
+return PAINT(shape)->render(renderer);
+```
+
+</Disclosure>
+
+이 두 호출이 Text 전용 처리와 공통 Shape 처리의 경계입니다. Glyph 해석·배치와 `RenderPath` 구성까지는 Font가 맡고, outline·coverage·RLE·stroke와 Surface 기록은 <a href={import.meta.env.BASE_URL + 'blog/mentoring/07-3-cpu-engine-shape'}>Shape의 Update·Prepare</a>에서 이어집니다.
+
+
+## Appendix. TTF의 곡선 → Shape의 CubicTo
+
+TTF의 quadratic 곡선은 제어점이 하나인 2차 베지어입니다. ThorVG는 이를 제어점 두 개의 3차 베지어로 변환해 Shape의 `CubicTo`로 저장합니다.
+
+<TMathPlayer scene="font-ttf-cubic-conversion" source={import.meta.env.BASE_URL + 'tmath/font/curves.lua'} poster={import.meta.env.BASE_URL + 'tmath/font/curves.webp'} title="TTF의 곡선 → Shape의 CubicTo" description="실제 TTF 윤곽에서 두 Cubic 제어점을 구성하고, 변환 전후의 곡선이 겹치는 과정을 보여줍니다. 연속된 off-curve 점은 중점을 기준으로 두 구간으로 이어집니다." width={1280} height={1080} />
+
+
+
+<Disclosure title="코드 보기: TTF point에서 LineTo·CubicTo 생성">
+
+TTF 폰트에서 아직 캐시되지 않은 glyph를 요청하는 경로입니다.
+
+```text
+Canvas::update()
+-> Canvas::Impl::update()
+-> Paint::Impl::update() [Canvas 내부 Scene]
+-> SceneImpl::update()
+-> Paint::Impl::update() [Text]
+-> TextImpl::update()
+-> TextImpl::load()
+-> SfntLoader::get()
+-> SfntLoader::wrapNone()
+-> SfntLoader::request()
+-> TtfReader::convert()
+```
+
+[tvgTtfReader.cpp — TtfReader::convert](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgTtfReader.cpp#L242-L263)의 일부 발췌입니다. 긴 수식의 줄바꿈만 조정했습니다.
+
+```cpp
+if (flags[begin + x] & ON_CURVE) {
+    if (offCurve) {
+        path.cubicTo(
+            path.pts.last() + (2.0f / 3.0f) * (pts[begin + x - 1] - path.pts.last()),
+            pts[begin + x] + (2.0f / 3.0f) * (pts[begin + x - 1] - pts[begin + x]),
+            pts[begin + x]);
+        offCurve = false;
+    } else {
+        path.lineTo(pts[begin + x]);
+    }
+} else {
+    if (offCurve) {
+        auto end = (pts[begin + x] + pts[begin + x - 1]) * 0.5f;
+        path.cubicTo(
+            path.pts.last() + (2.0f / 3.0f) * (pts[begin + x - 1] - path.pts.last()),
+            end + (2.0f / 3.0f) * (pts[begin + x - 1] - end),
+            end);
+    } else {
+        offCurve = true;
+    }
+}
+```
+
+</Disclosure>
+
+OTF의 CFF 윤곽은 [OtfReader::convert](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgOtfReader.cpp#L483-L489)에서 `charStrings()`로 해석합니다. 포맷별 해석 과정은 다르지만 출력은 동일한 `RenderPath`입니다.

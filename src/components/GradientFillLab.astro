@@ -1,0 +1,191 @@
+---
+interface Props { mode: 'sampling' | 'rle' | 'aa' }
+const {mode} = Astro.props;
+const descriptions={sampling:'픽셀 위치에 따른 Linear, Radial, Conic의 t와 Color Table 조회',rle:'구멍과 오목한 경계가 있는 Shape의 빈 구간을 건너뛰며 RLE span과 픽셀을 순회하는 Gradient fill',aa:'동일한 Conic의 단일 샘플, 고정 LUT 폭, 현재 SW 경계 AA 비교'};
+---
+<gradient-fill-lab data-mode={mode}>
+  <canvas width="960" height="440" aria-label={descriptions[mode]} role="img"></canvas>
+  <div class="controls">
+    {mode === 'sampling' && <>
+      <label>Gradient <select data-type><option value="linear">Linear</option><option value="radial">Radial</option><option value="conic">Conic</option></select></label>
+      <label>P.x <input data-x type="range" min="40" max="420" value="300" /></label>
+      <label>P.y <input data-y type="range" min="40" max="320" value="115" /></label>
+    </>}
+    {mode === 'rle' && <>
+      <button type="button" data-play>재생</button>
+      <button type="button" data-step>한 픽셀</button>
+      <button type="button" data-span>다음 span</button>
+      <button type="button" data-reset>처음</button>
+      <label>채운 픽셀 <input data-progress type="range" min="0" max="1" value="0" /></label>
+    </>}
+    {mode === 'aa' && <>
+      <label>시작 각도 <input data-angle type="range" min="0" max="90" step="1" value="27" /></label>
+      <label>회전 <input data-rotation type="range" min="-45" max="45" value="0" /></label>
+      <label>Scale X <input data-scale type="range" min="0.5" max="2" step="0.05" value="1" /></label>
+      <label>scanline y <input data-row type="range" min="0" max="35" value="24" /></label>
+    </>}
+  </div>
+  <output aria-live="polite"></output>
+  {mode !== 'aa' && <p class="note">{mode==='sampling' ? '교육용 수식 모델 · Radial은 F = C, fr = 0인 동심원 · Transform은 항등행렬' : 'RLE 로 구성된 Shape 에 Gradient 를 적용하는 예제입니다.'}</p>}
+</gradient-fill-lab>
+<script>
+  import {color,conicColor,prepare,sample,aaRange,shapeRle,mix} from '../lib/gradient-fill-model.mjs';
+  class GradientFillLab extends HTMLElement {
+    connectedCallback() {
+      if(this.dataset.ready)return;
+      this.dataset.ready='true';
+      const canvas=this.querySelector('canvas')!;
+      const source=document.createElement('canvas');source.width=960;source.height=440;
+      const ctx=source.getContext('2d')!;
+      const display=canvas.getContext('2d')!;
+      const narrow=matchMedia('(max-width:600px)');
+      const output=this.querySelector('output')!;
+      const input=(name:string)=>this.querySelector<HTMLInputElement>(`[data-${name}]`)!;
+      const value=(name:string)=>Number(input(name).value);
+      const mode=this.dataset.mode;
+      const css=(name:string)=>getComputedStyle(this).getPropertyValue(name).trim();
+      let ink='',base='';
+      const rgb=(c:number[])=>`rgb(${c.map(Math.round).join(',')})`;
+      const box=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
+      const text=(s:string,x:number,y:number,size=25)=>{ctx.fillStyle=ink;ctx.font=`${size}px sans-serif`;ctx.fillText(s,x,y);};
+      const line=(x:number,y:number,x2:number,y2:number,c=ink,w=2)=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();};
+      const dot=(x:number,y:number,c=ink)=>{ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=base;ctx.lineWidth=2;ctx.stroke();};
+      const lut=(x:number,y:number,w:number,h:number)=>{for(let i=0;i<128;i++)box(x+i*w/128,y,w/128+.5,h,rgb(color(i/127)));};
+      const model=shapeRle();
+      let progress=0,playing=false,last=0,raf=0;
+      if(mode==='rle')input('progress').max=String(model.pixels.length);
+      const present=()=>{
+        // Reflow the same rendered operands; never recompute a second data model.
+        canvas.width=narrow.matches?480:960;
+        canvas.height=narrow.matches?(mode==='aa'?1220:800):440;
+        display.fillStyle=base;display.fillRect(0,0,canvas.width,canvas.height);
+        if(!narrow.matches){display.drawImage(source,0,0);return;}
+        if(mode==='aa'){
+          for(let panel=0;panel<3;panel++)display.drawImage(source,30+panel*310,0,270,300,78,panel*370,324,360);
+          display.drawImage(source,30,305,880,100,10,1120,460,90);
+        }else if(mode==='rle'){
+          display.drawImage(source,20,0,530,410,0,0,480,480*410/530);
+          display.drawImage(source,550,20,405,350,10,390,450,450*350/405);
+        }else{
+          display.drawImage(source,10,0,460,390,0,0,480,480*390/460);
+          display.drawImage(source,480,55,470,350,0,420,480,480*350/470);
+        }
+      };
+      const draw=()=>{
+        ink=css('--ink');base=css('--canvas');
+        ctx.clearRect(0,0,960,440);box(0,0,960,440,base);
+        if(mode==='sampling') {
+          const type=(this.querySelector('[data-type]') as HTMLSelectElement).value;
+          const px=value('x'),py=value('y');const p=prepare(27);
+          const tAt=(x:number,y:number)=>type==='linear'?((x-85)*290+(y-275)*-165)/(290**2+165**2):type==='radial'?Math.hypot(x-230,y-180)/150:sample(p,x-230,y-180).t;
+          for(let y=30;y<340;y+=5)for(let x=30;x<450;x+=5)box(x,y,5,5,rgb(color(tAt(x+2.5,y+2.5))));
+          const t=tAt(px,py),clamped=Math.max(0,Math.min(1,t)),index=Math.floor(clamped*1023+.5);
+          if(type==='linear'){
+            line(85,275,375,110);const qx=85+t*290,qy=275-t*165;line(px,py,qx,qy,base,3);
+            dot(85,275);dot(375,110);text('P1',55,302,23);text('P2',382,101,23);
+          } else {dot(230,180);line(230,180,px,py,base,3);text('C',204,173,23);}
+          dot(px,py,base);text('P',px+12,py-12);
+          text(type==='linear'?'dot(P - P1, d) / dot(d, d)':type==='radial'?'|P - C| / r':'wrap(atan2(ry, rx) / 2pi - 27/360)',490,105,23);
+          text(`t = ${t.toFixed(3)}`,490,170,30);text(`ctable[${index}]`,490,224,27);
+          lut(490,282,410,40);dot(490+clamped*410,302,ink);
+          text('0',490,360,23);text('1023',844,360,23);
+          output.textContent=`P = (${px}, ${py}) · t = ${t.toFixed(4)} · index = ${index}${type!=='conic'?' · Pad':''}`;
+        } else if(mode==='rle') {
+          const s=17,ox=50,oy=37,p=prepare(27);
+          const q=model.pixels[Math.min(progress,model.pixels.length-1)],span=model.spans[q.span];
+          const done=progress===model.pixels.length,rowSpans=model.spans.filter(run=>run.y===q.y);
+          for(let y=0;y<model.rows;y++)for(let x=0;x<model.cols;x++)box(ox+x*s,oy+y*s,s-1,s-1,css('--surface-1'));
+          for(const q of model.pixels)box(ox+q.x*s,oy+q.y*s,s-1,s-1,rgb(mix([255,255,255],[150,155,165],q.coverage/255)));
+          for(const q of model.pixels.slice(0,progress))box(ox+q.x*s,oy+q.y*s,s-1,s-1,rgb(mix([255,255,255],conicColor(p,q.x+.5-model.cx,q.y+.5-model.cy),q.coverage/255)));
+          for(let x=0;x<model.cols;x+=4)text(String(x),ox+x*s,25,17);
+          text('x',ox+model.cols*s-6,25,17);
+          if(!done){
+            // One scanline can hold multiple spans, separated by empty pixels.
+            line(ox-8,oy+(q.y+.5)*s,ox+model.cols*s,oy+(q.y+.5)*s,css('--ink-muted'),1);
+            text(String(q.y),22,oy+(q.y+.8)*s,17);
+            for(const run of rowSpans){
+              ctx.strokeStyle=css('--ink-muted');ctx.lineWidth=1;
+              ctx.strokeRect(ox+run.x*s,oy+run.y*s,run.len*s,s);
+            }
+            for(let i=1;i<rowSpans.length;i++){
+              const prev=rowSpans[i-1],next=rowSpans[i],end=prev.x+prev.len;
+              if(end===next.x)continue;
+              const from=ox+end*s+4,to=ox+next.x*s-5,y=oy+(q.y+.5)*s;
+              ctx.setLineDash([4,4]);line(from,y,to,y,css('--primary'),2);ctx.setLineDash([]);
+              line(to-5,y-4,to,y,css('--primary'),2);line(to-5,y+4,to,y,css('--primary'),2);
+            }
+            ctx.strokeStyle=css('--primary');ctx.lineWidth=3;
+            ctx.strokeRect(ox+span.x*s,oy+span.y*s,span.len*s,s);
+            ctx.strokeStyle=ink;ctx.lineWidth=2;
+            ctx.strokeRect(ox+q.x*s+3,oy+q.y*s+3,s-6,s-6);
+          }
+          text(done?'완료':`span[${q.span}]`,570,70,28);
+          text(`x = ${span.x}    y = ${span.y}`,570,128);
+          text(`len = ${span.len}    coverage = ${span.coverage}`,570,178,23);
+          text(done?'모든 span 처리 완료':`i = ${q.i}    dst offset = ${q.y*model.cols+q.x}`,570,251,23);
+          text(`${progress} / ${model.pixels.length} pixels`,570,325,26);
+          text(done?`${model.spans.length} spans`:`y = ${q.y} · ${rowSpans.length} spans`,ox,400,22);
+          output.textContent=done?`${model.spans.length}개 span 처리 완료`:`다음 쓰기: span[${q.span}], i=${q.i} · buf[${q.y} × ${model.cols} + ${q.x}] · coverage=${q.coverage}`;
+        } else {
+          const p=prepare(value('angle'),value('rotation'),value('scale'),1),row=value('row');
+          const names=['단일 샘플','LUT 고정 폭','현재 SW AA'],variants=['raw','lut','sw'];
+          const cols=40,rows=36,cx=13.3,cy=12.2,s=6;
+          for(let panel=0;panel<3;panel++){
+            const ox=45+panel*310,oy=75;text(names[panel],ox,44,26);
+            for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)box(ox+x*s,oy+y*s,s,s,rgb(conicColor(p,x+.5-cx,y+.5-cy,variants[panel])));
+            line(ox,oy+(row+.5)*s,ox+cols*s,oy+(row+.5)*s,css('--primary'),1);
+            dot(ox+cx*s,oy+cy*s);
+          }
+          const q=sample(p,.5-cx,row+.5-cy),range=aaRange(p,q.rx,q.ry,cols);
+          for(let x=0;x<cols;x++){
+            const c=conicColor(p,x+.5-cx,row+.5-cy);box(45+x*21,347,20,28,rgb(c));
+            if(x>=range.begin&&x<range.end){ctx.strokeStyle=ink;ctx.lineWidth=2;ctx.strokeRect(45+x*21,343,20,36);}
+          }
+          text(`y = ${row}`,45,326,22);
+          text(`[begin, end) = [${range.begin}, ${range.end})`,460,326,22);
+          output.textContent=`각도 ${value('angle')}° · 회전 ${value('rotation')}° · scaleX ${value('scale').toFixed(2)} · fwidth ${p.fwidth.toFixed(3)} · ${p.invFwidth>0?`AA [${range.begin}, ${range.end}) · ${range.end-range.begin} pixels`:'축 정렬: 코드의 AA 우회 조건'}`;
+        }
+        present();
+      };
+      const stop=()=>{playing=false;cancelAnimationFrame(raf);const b=this.querySelector('[data-play]');if(b)b.textContent='재생';};
+      const tick=(time:number)=>{
+        if(!playing)return;
+        if(time-last>45){progress=Math.min(progress+1,model.pixels.length);input('progress').value=String(progress);draw();last=time;}
+        if(progress===model.pixels.length){stop();return;}
+        raf=requestAnimationFrame(tick);
+      };
+      this.addEventListener('input',()=>{stop();if(mode==='rle')progress=value('progress');draw();});
+      this.querySelector('[data-play]')?.addEventListener('click',()=>{
+        if(playing){stop();return;}if(progress===model.pixels.length)progress=0;
+        playing=true;this.querySelector('[data-play]')!.textContent='일시정지';last=0;raf=requestAnimationFrame(tick);
+      });
+      this.querySelector('[data-step]')?.addEventListener('click',()=>{stop();progress=Math.min(progress+1,model.pixels.length);input('progress').value=String(progress);draw();});
+      this.querySelector('[data-span]')?.addEventListener('click',()=>{
+        stop();if(progress===model.pixels.length)return;
+        const span=model.spans[model.pixels[progress].span];
+        progress=span.start+span.len;input('progress').value=String(progress);draw();
+      });
+      this.querySelector('[data-reset]')?.addEventListener('click',()=>{stop();progress=0;input('progress').value='0';draw();});
+      const observer=new MutationObserver(draw);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+      const visibility=()=>{if(document.hidden)stop();};document.addEventListener('visibilitychange',visibility);
+      narrow.addEventListener('change',draw);
+      this.cleanup=()=>{stop();observer.disconnect();narrow.removeEventListener('change',draw);document.removeEventListener('visibilitychange',visibility);};
+      draw();
+    }
+    cleanup?:()=>void;
+    disconnectedCallback(){this.cleanup?.();delete this.dataset.ready;}
+  }
+  if(!customElements.get('gradient-fill-lab'))customElements.define('gradient-fill-lab',GradientFillLab);
+</script>
+<style>
+  gradient-fill-lab{display:block;margin:1.5rem 0;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;background:var(--canvas);color:var(--ink)}
+  canvas{display:block;width:100%;height:auto;aspect-ratio:auto}
+  .controls{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;padding:1rem;border-top:1px solid var(--hairline)}
+  label{display:flex;align-items:center;gap:.6rem;font-size:.875rem;flex:1 1 180px;white-space:nowrap}
+  input{flex:1;width:0;min-width:70px;accent-color:var(--primary)}
+  button,select{font:inherit;color:var(--ink);background:var(--surface-1);border:1px solid var(--control-border);border-radius:6px;padding:.45rem .65rem}
+  button{cursor:pointer} button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+  output{display:block;padding:0 1rem 1rem;font-size:.875rem;font-variant-numeric:tabular-nums}
+  .note{margin:0!important;padding:.8rem 1rem;background:var(--surface-1);color:var(--ink-muted);font-size:.8rem!important;line-height:1.6}
+  @media(max-width:600px){label{flex-basis:100%}.controls{gap:.75rem}}
+</style>

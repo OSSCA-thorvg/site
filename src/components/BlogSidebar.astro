@@ -1,86 +1,162 @@
 ---
-interface SeriesEntry {
-  id: string;
-  title: string;
-  number: number;
-}
-
-interface PostSeries {
-  name: string;
-  entries: SeriesEntry[];
-}
+import SeriesTree from './SeriesTree.astro';
+import type { PostSeries } from '../lib/post-series.js';
 
 interface Props {
   series: PostSeries[];
   postCount: number;
   currentId?: string;
-  desktopMin?: number;
 }
 
-const { series, postCount, currentId, desktopMin = 981 } = Astro.props;
+const { series, currentId } = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
 <aside class="blog-sidebar" aria-label="블로그 탐색">
-  <details class="blog-sidebar__panel" data-blog-sidebar-panel data-desktop-min={desktopMin} open>
-    <summary class="blog-sidebar__header">
-      <span class="blog-sidebar__label">Library</span>
-      <span class="blog-sidebar__total">{postCount} posts</span>
-      <span class="blog-sidebar__toggle" aria-hidden="true">⌄</span>
-    </summary>
+  <div class="blog-sidebar__panel" data-blog-sidebar-panel>
     <nav class="blog-sidebar__nav" aria-label="블로그와 시리즈">
       <a
         class:list={['blog-sidebar__all', { 'is-selected': !currentId }]}
         href={base + 'blog/'}
         aria-current={!currentId ? 'page' : undefined}
       >
-        <span>전체</span>
-        <span class="blog-sidebar__count">{postCount}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 2.5h4v4h-4zM9.5 2.5h4v4h-4zM2.5 9.5h4v4h-4zM9.5 9.5h4v4h-4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" /></svg>
+        <span>전체 글</span>
       </a>
-      <p class="blog-sidebar__section-label">시리즈</p>
       <div class="blog-sidebar__series-list">
-        {series.map((item, index) => {
-          const currentSeries = currentId
-            ? item.entries.some((entry) => entry.id === currentId)
-            : index === 0;
-          return (
-            <details class:list={['blog-series', { 'is-current': currentSeries && Boolean(currentId) }]} open={currentSeries}>
-              <summary>
-                <span class="blog-series__chevron" aria-hidden="true">›</span>
-                <span class="blog-series__name">{item.name}</span>
-                <span class="blog-sidebar__count">{item.entries.length}</span>
-              </summary>
-              <ol class="blog-series__posts">
-                {item.entries.map((entry) => (
-                  <li>
-                    <a
-                      href={base + 'blog/' + entry.id}
-                      aria-current={entry.id === currentId ? 'page' : undefined}
-                    >
-                      <span class="blog-series__number" aria-hidden="true">{entry.number}.</span>
-                      <span>{entry.title}</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </details>
-          );
-        })}
+        {series.map((item, index) => (
+          <SeriesTree series={item} currentId={currentId} defaultOpen={!currentId && index === 0} />
+        ))}
       </div>
     </nav>
-  </details>
+  </div>
 </aside>
 
 <script>
-  const sidebarPanels = document.querySelectorAll<HTMLDetailsElement>('[data-blog-sidebar-panel]');
+  import {
+    decodeFragment,
+    findHeadingAlias,
+    findNavigationTarget,
+  } from '../lib/fragment-navigation.js';
+
+  const sidebarPanels = document.querySelectorAll<HTMLElement>('[data-blog-sidebar-panel]');
 
   for (const panel of sidebarPanels) {
-    const desktopMin = Number(panel.dataset.desktopMin) || 981;
-    const desktopSidebar = window.matchMedia(`(min-width: ${desktopMin}px)`);
-    const syncSidebarPanel = () => {
-      panel.open = desktopSidebar.matches;
+    const nav = panel.querySelector<HTMLElement>('.blog-sidebar__nav');
+    const groups = [...panel.querySelectorAll<HTMLDetailsElement>('[data-series-path]')];
+    const storageKey = 'ossca-series-navigation';
+    const scrollKey = 'ossca-series-scroll';
+    const readScroll = () => {
+      try {
+        const value = sessionStorage.getItem(scrollKey);
+        const offset = value === null ? NaN : Number(value);
+        return Number.isFinite(offset) && offset >= 0 ? offset : null;
+      } catch { return null; }
+    };
+    let savedScroll = readScroll();
+    let positioned = false;
+    let saved: Record<string, boolean> = {};
+    try {
+      const value = JSON.parse(sessionStorage.getItem(storageKey) || '{}');
+      if (value && typeof value === 'object' && !Array.isArray(value)) saved = value;
+    } catch { /* Navigation also works when storage is unavailable. */ }
+
+    for (const group of groups) {
+      const path = group.dataset.seriesPath!;
+      if (group.classList.contains('is-current')) group.open = true;
+      else if (typeof saved[path] === 'boolean') group.open = saved[path];
+      group.addEventListener('toggle', () => {
+        try {
+          sessionStorage.setItem(storageKey, JSON.stringify(Object.fromEntries(
+            groups.map((item) => [item.dataset.seriesPath, item.open]),
+          )));
+        } catch { /* Keep the native disclosure behavior without storage. */ }
+      });
+    }
+
+    const saveScroll = () => {
+      if (!positioned || !nav?.clientHeight) return;
+      savedScroll = nav.scrollTop;
+      try { sessionStorage.setItem(scrollKey, String(savedScroll)); } catch { /* Storage is optional. */ }
     };
 
-    syncSidebarPanel();
-    desktopSidebar.addEventListener('change', syncSidebarPanel);
+    // Restore the reader's position first; reveal the current article only on a first visit.
+    const restoreScroll = () => requestAnimationFrame(() => {
+      if (!nav?.clientHeight) return;
+      if (savedScroll !== null) nav.scrollTop = savedScroll;
+      else {
+        const current = nav.querySelector<HTMLElement>('a[aria-current="page"]');
+        if (current) {
+          const item = current.getBoundingClientRect();
+          const viewport = nav.getBoundingClientRect();
+          if (item.top < viewport.top || item.bottom > viewport.bottom) {
+            nav.scrollTop += item.top - viewport.top - (nav.clientHeight - item.height) / 2;
+          }
+        }
+      }
+      positioned = true;
+      saveScroll();
+    });
+    nav?.addEventListener('scroll', saveScroll, { passive: true });
+    nav?.addEventListener('click', saveScroll, { capture: true });
+    window.addEventListener('pagehide', saveScroll);
+    window.addEventListener('pageshow', (event) => {
+      if (!event.persisted) return;
+      savedScroll = readScroll();
+      restoreScroll();
+    });
+    if (nav) new ResizeObserver(restoreScroll).observe(nav);
+
+    const resolveDocumentFragment = () => {
+      const fragment = decodeFragment(window.location.hash);
+      if (!fragment) return;
+
+      const headingIds = [...document.querySelectorAll<HTMLElement>('.prose [id]')]
+        .map((heading) => heading.id)
+        .filter(Boolean);
+      const headingAlias = findHeadingAlias(fragment, headingIds);
+
+      if (headingAlias) {
+        if (headingAlias !== fragment) {
+          const destination = new URL(window.location.href);
+          destination.hash = headingAlias;
+          window.location.replace(destination);
+        }
+        return;
+      }
+
+      const currentGroups = groups.filter((group) => group.classList.contains('is-current')).reverse();
+      for (const group of currentGroups) {
+        const links = [...group.querySelectorAll<HTMLAnchorElement>('a[data-series-topic]')]
+          .filter((link) => link.getAttribute('aria-current') !== 'page')
+          .map((link) => ({
+            label: link.dataset.seriesTopic || '',
+            href: link.href,
+          }));
+        const target = findNavigationTarget(fragment, links);
+        if (!target) continue;
+
+        const destination = new URL(target, window.location.href);
+        const currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
+        const destinationPath = destination.pathname.replace(/\/+$/, '') || '/';
+        if (destinationPath !== currentPath) {
+          // A cached redirect can send the destination back to this missing fragment.
+          // Allow one automatic attempt per source URL in this tab, never a loop.
+          const attemptKey = `ossca-fragment-navigation:${window.location.href}`;
+          try {
+            if (sessionStorage.getItem(attemptKey) === destination.href) return;
+            sessionStorage.setItem(attemptKey, destination.href);
+          } catch {
+            // Without persistent state we cannot detect a cross-page redirect cycle.
+            return;
+          }
+          window.location.replace(destination);
+        }
+        return;
+      }
+    };
+
+    restoreScroll();
+    resolveDocumentFragment();
+    window.addEventListener('hashchange', resolveDocumentFragment);
   }
 </script>
