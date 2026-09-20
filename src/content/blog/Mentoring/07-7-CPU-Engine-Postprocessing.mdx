@@ -87,7 +87,7 @@ canvas->update()
 
 자식 Paint의 준비 작업을 요청한 뒤, 호출 스레드에서 Effect 파라미터를 준비합니다. Blur의 `rd`는 kernel·확장량을 담는 데이터이며, Offscreen 픽셀 버퍼는 이후 Draw에서 확보합니다.
 
-[SceneImpl::update()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L86)
+[SceneImpl::update()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L86)
 
 ```cpp
 bool update(RenderMethod* renderer, const Matrix& transform, Array<RenderData>& clips, uint8_t opacity, RenderUpdateFlag flag, TVG_UNUSED bool clipper)
@@ -137,7 +137,7 @@ bool update(RenderMethod* renderer, const Matrix& transform, Array<RenderData>& 
 }
 ```
 
-[SwRenderer::prepare(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L678)
+[SwRenderer::prepare(effect)](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L677)
 
 ```cpp
 void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
@@ -154,7 +154,7 @@ void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
 }
 ```
 
-[SwGaussianBlur](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L30)
+[SwGaussianBlur](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L30)
 
 ```cpp
 struct SwGaussianBlur
@@ -166,32 +166,23 @@ struct SwGaussianBlur
 };
 ```
 
-[effectGaussianBlurUpdate()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156)
+[effectGaussianBlurUpdate()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156)
 
 ```cpp
 void effectGaussianBlurUpdate(RenderEffectGaussianBlur* params, const Matrix& transform)
 {
-    // 1. 준비 데이터를 최초 할당하거나, 기존 rd를 재사용합니다.
     if (!params->rd) params->rd = tvg::malloc<SwGaussianBlur>(sizeof(SwGaussianBlur));
     auto rd = static_cast<SwGaussianBlur*>(params->rd);
 
     //compute box kernel sizes
-    auto scale = sqrt(transform.e11 * transform.e11 + transform.e12 * transform.e12);
-    // 2. transform의 scale을 반영한 sigma의 제곱(분산)을 전달합니다.
-    rd->extends = _gaussianInit(rd, std::pow(params->sigma * scale, 2), params->quality);
+    auto scaleSquared = transform.e11 * transform.e11 + transform.e12 * transform.e12;
+    rd->extends = _gaussianInit(rd, params->sigma * params->sigma * scaleSquared, params->quality);
 
-    //invalid
-    if (rd->extends == 0) {
-        params->valid = false;
-        return;
-    }
-
-    // 3. Draw의 effect 순회에서 실행할 수 있도록 표시합니다.
-    params->valid = true;
+    params->valid = (rd->extends > 0);
 }
 ```
 
-[_gaussianInit()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L112)
+[_gaussianInit()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L112)
 
 ```cpp
 static int _gaussianInit(SwGaussianBlur* data, float sigma, int quality)
@@ -221,7 +212,7 @@ static int _gaussianInit(SwGaussianBlur* data, float sigma, int quality)
 }
 ```
 
-[effectFillUpdate()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L488)
+[effectFillUpdate()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L475)
 
 ```cpp
 void effectFillUpdate(RenderEffectFill* params)
@@ -259,7 +250,7 @@ scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
 scene->add(SceneEffect::Fill, 49, 150, 123, 255);
 ```
 
-[Scene::add(SceneEffect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.cpp#L60)
+[Scene::add(SceneEffect)](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.cpp#L60)
 
 ```cpp
 Result Scene::add(SceneEffect effect, ...) noexcept
@@ -272,7 +263,7 @@ Result Scene::add(SceneEffect effect, ...) noexcept
 }
 ```
 
-[SceneImpl::add(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L400)
+[SceneImpl::add(effect)](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L397)
 
 ```cpp
 Result add(SceneEffect effect, va_list& args)
@@ -331,7 +322,7 @@ canvas->draw()
 
 자식 Raster가 끝나면 유효한 Effect를 배열 순서대로 실행합니다. 이 예제는 Effect가 두 개이므로 `direct = false`이며, Fill이 Blur가 처리한 Offscreen을 이어받습니다.
 
-[SceneImpl::render()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L130)
+[SceneImpl::render()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L130)
 
 ```cpp
 bool render(RenderMethod* renderer, CompositionFlag flag)
@@ -374,7 +365,7 @@ bool render(RenderMethod* renderer, CompositionFlag flag)
 }
 ```
 
-[SwRenderer::render(effect)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+[SwRenderer::render(effect)](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L766)
 
 ```cpp
 bool SwRenderer::render(RenderCompositor* cmp, const RenderEffect* effect, bool direct)
@@ -434,7 +425,7 @@ canvas->draw()
 
 `request()`가 버퍼를 확보하고, `target()`이 부모 컨텍스트를 저장한 뒤 렌더 타겟을 전환합니다. 이 예제의 첫 Draw에서는 Offscreen 하나를 할당하며, Blur의 Scratch는 Effect 실행 중에 별도로 요청합니다.
 
-[SwRenderer::request()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L586)
+[SwRenderer::request()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L585)
 
 ```cpp
 SwSurface* SwRenderer::request(int channelSize, bool square)
@@ -488,7 +479,7 @@ SwSurface* SwRenderer::request(int channelSize, bool square)
 }
 ```
 
-[SwRenderer::target(region)](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L633)
+[SwRenderer::target(region)](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L632)
 
 ```cpp
 RenderCompositor* SwRenderer::target(const RenderRegion& region, ColorSpace cs, CompositionFlag flags)
@@ -533,7 +524,7 @@ canvas->draw()
 
 `target()`에서 선택한 Offscreen에 합성 방식과 그룹 opacity를 설정합니다. 이 예제는 `MaskMethod::None`이므로 렌더 타겟이 Offscreen으로 유지됩니다.
 
-[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)
+[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L561)
 
 ```cpp
 bool SwRenderer::beginComposite(RenderCompositor* cmp, MaskMethod method, uint8_t opacity)
@@ -573,7 +564,7 @@ canvas->draw()
 
 부모 Surface를 복구한 뒤, Offscreen 결과에 그룹 opacity를 반영하여 합성합니다. `valid = true`는 해당 버퍼를 이후 요청에서 재사용할 수 있음을 표시합니다.
 
-[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L654)
 
 ```cpp
 bool SwRenderer::endComposite(RenderCompositor* cmp)
@@ -618,7 +609,7 @@ scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
 scene->add(SceneEffect::Fill, 49, 150, 123, 255);
 ```
 
-`target()`으로 Offscreen을 선택하고, [`beginComposite()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)에서 합성 방식과 그룹 opacity를 설정합니다. [`endComposite()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)는 Canvas를 복구한 뒤 [`rasterDirectImage()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1634)로 결과를 합성합니다.
+`target()`으로 Offscreen을 선택하고, [`beginComposite()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L561)에서 합성 방식과 그룹 opacity를 설정합니다. [`endComposite()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L654)는 Canvas를 복구한 뒤 [`rasterDirectImage()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1506)로 결과를 합성합니다.
 
 **Effect 체인은 앞선 Effect의 결과를 다음 Effect에 전달합니다.** Blur가 처리한 Offscreen을 Fill이 그대로 이어받아 색을 바꾸며, 이 예제의 임시 버퍼는 Offscreen 1개와 Blur scratch 1개입니다.
 
@@ -652,7 +643,7 @@ canvas->draw()
 
 target은 기존 Surface를 보관하고 offscreen으로 전환합니다. 이 예제의 beginComposite는 MaskMethod::None으로 합성 방식과 opacity를 설정합니다.
 
-[SwRenderer::target()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L633)
+[SwRenderer::target()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L632)
 
 ```cpp
 RenderCompositor* SwRenderer::target(const RenderRegion& region, ColorSpace cs, CompositionFlag flags)
@@ -677,7 +668,7 @@ RenderCompositor* SwRenderer::target(const RenderRegion& region, ColorSpace cs, 
 }
 ```
 
-[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L562)
+[SwRenderer::beginComposite()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L561)
 
 ```cpp
 bool SwRenderer::beginComposite(RenderCompositor* cmp, MaskMethod method, uint8_t opacity)
@@ -714,7 +705,7 @@ canvas->draw()
 
 request는 크기·채널이 맞는 사용 가능한 버퍼를 우선 재사용합니다. endComposite의 valid=true는 이후 재사용할 수 있음을 표시합니다.
 
-[SwRenderer::request() — 캐시 검색과 할당](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L600)
+[SwRenderer::request() — 캐시 검색과 할당](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L599)
 
 ```cpp
 ARRAY_FOREACH(p, compositors) {
@@ -771,7 +762,7 @@ ShapeImpl::update()
 
 `prepare()`는 기존 `SwShapeTask`를 재사용하거나 생성하고, `prepareCommon()`이 반환한 같은 포인터를 `RenderData`로 돌려줍니다. `ShapeImpl::update()`는 이를 `impl.rd`에 보관합니다.
 
-[SwRenderer::prepare()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L872)
+[SwRenderer::prepare()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L872)
 
 ```cpp
 RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data, const Matrix& transform, const Array<RenderData>& clips, uint8_t opacity, RenderUpdateFlag flags, bool clipper)
@@ -789,7 +780,7 @@ RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data, const
 }
 ```
 
-갱신이 필요하면 `prepareCommon()`에서 `TaskScheduler::request(task)`로 준비 작업을 요청합니다. `SwShapeTask::run()`은 이 요청으로 실행됩니다. Worker가 있으면 비동기로 처리하고, 없으면 요청한 자리에서 실행합니다. ([prepareCommon()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828), [TaskSchedulerImpl::request()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.cpp#L148))
+갱신이 필요하면 `prepareCommon()`에서 `TaskScheduler::request(task)`로 준비 작업을 요청합니다. `SwShapeTask::run()`은 이 요청으로 실행됩니다. Worker가 있으면 비동기로 처리하고, 없으면 요청한 자리에서 실행합니다. ([prepareCommon()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828), [TaskSchedulerImpl::request()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.cpp#L148))
 
 **Draw — 같은 RenderData를 읽어 현재 Surface에 기록**
 
@@ -802,7 +793,7 @@ SceneImpl::render()
 
 `data`를 `SwShapeTask*`로 되돌린 뒤 `done()`으로 준비 완료를 확인합니다. 그다음 보관된 `shape`·`rshape`·`opacity`를 사용해 Fill·Stroke Raster 함수를 직접 호출합니다. 여기에는 `TaskScheduler::request()`나 `run()` 호출이 없습니다. 이 예제의 `surface`는 앞서 `beginComposite()`가 선택한 offscreen입니다.
 
-[SwRenderer::renderShape()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434)
+[SwRenderer::renderShape()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434)
 
 ```cpp
 bool SwRenderer::renderShape(RenderData data)
@@ -874,7 +865,7 @@ SwRenderer::renderShape(impl.rd)
 
 아래는 스레드 지원 빌드의 전체 함수입니다. 대기할 작업이 없으면 바로 반환하며, 준비가 진행 중이면 완료 신호를 기다립니다. 스레드 미지원 빌드에서는 `done()`이 빈 함수입니다.
 
-[Task::done()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.h#L56)
+[Task::done()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.h#L56)
 
 ```cpp
 void done()
@@ -921,7 +912,7 @@ canvas->draw()
 
 유효한 Effect를 등록 순서대로 실행합니다. 이 예제는 Effect가 두 개이므로 direct가 false입니다.
 
-[SceneImpl::render() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L130)
+[SceneImpl::render() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L130)
 
 ```cpp
 bool render(RenderMethod* renderer, CompositionFlag flag)
@@ -1002,7 +993,7 @@ canvas->draw(true);
 canvas->sync();
 ```
 
-[SceneImpl::render() — direct 조건](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L154)
+[SceneImpl::render() — direct 조건](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L154)
 
 ```cpp
 // [핵심 1] Effect가 하나이고 PostProcessing 플래그가 있을 때 direct 가능성을 전달합니다.
@@ -1013,7 +1004,7 @@ ARRAY_FOREACH(p, *effects) {
 }
 ```
 
-[SwRenderer::render(effect) — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+[SwRenderer::render(effect) — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L766)
 
 ```cpp
 bool SwRenderer::render(RenderCompositor* cmp, const RenderEffect* effect, bool direct)
@@ -1060,7 +1051,7 @@ bool SwRenderer::render(RenderCompositor* cmp, const RenderEffect* effect, bool 
 
 **Fill — 부모 Surface 기록과 후속 합성 생략**
 
-[effectFill() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L494)
+[effectFill() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L481)
 
 ```cpp
 bool effectFill(SwCompositor* cmp, const RenderEffectFill* params, bool direct)
@@ -1108,13 +1099,13 @@ bool effectFill(SwCompositor* cmp, const RenderEffectFill* params, bool direct)
 }
 ```
 
-`Tint`와 `Tritone`도 direct 분기에서 `recoverSfc`에 결과를 합성한 뒤 `cmp->valid = true`를 설정합니다. ([effectTint()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L544), [effectTritone()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L610))
+`Tint`와 `Tritone`도 direct 분기에서 `recoverSfc`에 결과를 합성한 뒤 `cmp->valid = true`를 설정합니다. ([effectTint()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L531), [effectTritone()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L597))
 
 **DropShadow — 그림자를 먼저 합성하고 본체는 유지**
 
 DropShadow는 부모 Surface에 그림자를 먼저 합성한 뒤 원본 이미지를 `cmp->image`에 남깁니다. `cmp->valid`를 true로 바꾸지 않으므로 `endComposite()`에서 본체를 추가로 합성합니다.
 
-[effectDropShadow() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L402)
+[effectDropShadow() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L389)
 
 ```cpp
 bool effectDropShadow(SwCompositor* cmp, SwSurface* surface[2], const RenderEffectDropShadow* params, bool direct)
@@ -1204,7 +1195,7 @@ bool effectDropShadow(SwCompositor* cmp, SwSurface* surface[2], const RenderEffe
 
 **endComposite — 컨텍스트는 복구하고, 완료한 합성은 생략**
 
-[SwRenderer::endComposite() — 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+[SwRenderer::endComposite() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L654)
 
 ```cpp
 bool SwRenderer::endComposite(RenderCompositor* cmp)
@@ -1257,7 +1248,7 @@ canvas->draw()
 
 렌더 타겟을 Canvas Surface로 되돌린 뒤, offscreen의 결과에 그룹 opacity를 반영해 합성합니다.
 
-[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L655)
+[SwRenderer::endComposite()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L654)
 
 ```cpp
 bool SwRenderer::endComposite(RenderCompositor* cmp)
@@ -1341,7 +1332,7 @@ canvas->draw()
 
 Each pass reads one buffer and writes the other. Transposition reuses horizontal access for vertical filtering.
 
-[SwRenderer::render() — GaussianBlur dispatch](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L780)
+[SwRenderer::render() — GaussianBlur dispatch](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L779)
 
 ```cpp
 case SceneEffect::GaussianBlur: {
@@ -1359,7 +1350,7 @@ SceneImpl::render()
 
 위 GaussianBlur 분기의 `request(..., true)`가 Scratch로 쓸 `SwSurface`를 반환합니다. **매번 새로 할당하는 것은 아니며**, 크기와 채널 크기가 맞는 사용 가능한 캐시를 먼저 찾고, 없을 때 `tvg::malloc()`으로 픽셀 버퍼를 만듭니다. `square = true`는 행·열 전치를 위해 현재 Surface의 긴 변을 기준으로 정사각형 버퍼를 확보한다는 뜻입니다.
 
-[SwRenderer::request() — 전체 함수](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L585)
+[SwRenderer::request() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L585)
 
 ```cpp
 SwSurface* SwRenderer::request(int channelSize, bool square)
@@ -1416,7 +1407,7 @@ SwRenderer::render(cmp, effect, direct)
 -> effectGaussianBlur(p, 반환된 Scratch Surface, params)
 ```
 
-[effectGaussianBlur()](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L175)
+[effectGaussianBlur()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L169)
 
 ```cpp
 bool effectGaussianBlur(SwCompositor* cmp, SwSurface* surface, const RenderEffectGaussianBlur* params)
@@ -1478,7 +1469,7 @@ SceneImpl::render()
 
 `src`의 채널별 누적합을 이동시키며 `2 × dimension + 1`개 샘플의 평균을 `dst`에 기록합니다. 수직 방향도 전치한 버퍼에 같은 함수를 적용합니다. 아래 호출 경로는 기본 `border = 0`을 사용하며, 경계 밖 인덱스는 `_gaussianRemap()`에서 가장자리로 제한합니다.
 
-[_gaussianFilter() — 전체 함수](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L63), [_gaussianRemap()](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L54)
+[_gaussianFilter() — 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L63), [_gaussianRemap()](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L54)
 
 ```cpp
 template<int border = 0>
@@ -1557,7 +1548,7 @@ canvas->draw()
 -> write ALPHA_BLEND() to Offscreen
 ```
 
-[`effectTint()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L544), [`luma()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L103)
+[`effectTint()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L531), [`luma()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L100)
 
 ```cpp
 // effectTint(): non-direct pixel loop
@@ -1600,7 +1591,7 @@ canvas->draw()
 -> write to the same Offscreen pixel
 ```
 
-[`_trintone()` · `effectTritone()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L592), [`SceneEffect API`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/inc/thorvg.h#L274), [`effect dispatch`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L767)
+[`_trintone()` · `effectTritone()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L579), [`SceneEffect API`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L277), [`effect dispatch`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L766)
 
 ```cpp
 // _trintone(): luma branch
@@ -1648,7 +1639,7 @@ canvas->draw()
 
 The non-direct loop uses effect opacity; group opacity is applied later by `endComposite()`.
 
-[effectFill() — non-direct loop](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L496)
+[effectFill() — non-direct loop](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L483)
 
 ```cpp
 auto opacity = direct ? MULTIPLY(params->color[3], cmp->opacity) : params->color[3];
@@ -1710,7 +1701,7 @@ canvas->draw()
 -> rasterDirectImage(body)
 ```
 
-[`effectDropShadow()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L402), [`single-effect direct dispatch`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L154)
+[`effectDropShadow()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L389), [`single-effect direct dispatch`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L154)
 
 ```cpp
 // After filtering and inverse transpose: direct path

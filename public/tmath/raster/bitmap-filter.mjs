@@ -2,7 +2,7 @@ import {tmath} from '../runtime/client.js';
 import {buildScenarios} from './model.mjs';
 import {color} from './scenes.mjs';
 
-// ThorVG cdc1c959: tvgSwImage.cpp:62-80; tvgSwRaster.cpp:301-305.
+// ThorVG 4d5810cf: tvgSwImage.cpp:imagePrepare; tvgSwRaster.cpp:_scaleMethod.
 // Reuse the native-checked sampling fixtures from Picture. Independent cases,
 // not successive filters. Equal screen size per pixel preserves relative scale.
 // Five beats reveal Direct, Nearest, Bilinear, Downscale, then Texture Mapping.

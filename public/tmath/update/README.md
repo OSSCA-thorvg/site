@@ -1,6 +1,6 @@
 # Update / Prepare scenes
 
-Source baseline: ThorVG `b4471844c3c2f849ce82e0825798e2696a4a2cad`.
+Source baseline: ThorVG `4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad`.
 The neighboring engine checkout and the reference worktree are read-only.
 
 These scenes explain preparation, from API changes and Scene traversal to reusable
@@ -26,8 +26,6 @@ WebP posters. Do not hand-edit generated `.lua` files.
 
 ```sh
 node scripts/render-update-scenes.mjs
-npm run check
-npm test
 ```
 
 Pass scene IDs to render a subset, e.g. `node scripts/render-update-scenes.mjs overview`.
@@ -91,7 +89,7 @@ c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
 /tmp/update-bitmap-native translated
 ```
 
-`bitmap-native.mjs` stores the first JSON result as its default export. Passing the
+`bitmap-native.mjs` stores the first JSON result as its default export and the translated fixture as `variant`. `image-native.mjs` similarly records both Image preparation fixtures. Passing the
 translated result to `buildBitmapData({trace})` shifts all source-derived geometry,
 integer offsets, bounds, Clip points and spans without editing presentation values.
 
@@ -101,8 +99,8 @@ revision. Set `thorvgSource` to that checkout and `thorvgBuild` to its build dir
 translation units without changing them:
 
 ```sh
-thorvgSource=../../thorvg
-thorvgBuild=/tmp/thorvg-postprocessing-native
+thorvgSource=./thorvg
+thorvgBuild=/tmp/thorvg-cpu-4d5810cf-build
 
 c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
   -I"$thorvgBuild" -I"$thorvgSource/inc" -I"$thorvgSource/src/common" \
@@ -110,7 +108,7 @@ c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
   scripts/update-image-native-trace.cpp "$thorvgBuild/src/libthorvg-1.a" \
   -lpthread -o /tmp/update-image-trace
 
-UPDATE_IMAGE_NATIVE=/tmp/update-image-trace node --test tests/update-prepare.test.mjs
+node scripts/generate-update-prepare-trace.mjs
 ```
 
 The image probe checks the baseline and an integer translation, compares internal
@@ -133,3 +131,19 @@ that reduced-pool band retries produce the same result as the default pool. The
 `[1,1,7,5]` domain and `[2,4)` focus band are selected for observation; the public
 Shape API computes `[1,1,6,6]` for this path, with the same sixteen output spans.
 The 192-byte pool demonstrates overflow; it is not the default allocation.
+
+## RenderPath migration (4d5810cf)
+
+- `SwOutline` now keeps `const RenderPath* path`, fixed `out`, and `fillRule`.
+  Plain Shapes borrow `RenderShape::path`; trim/dash/stroke and Image rectangles
+  construct paths in `SwMpool::paths`. RLE traverses commands and reads exported
+  points. The RLE harness supplies this real command/point representation.
+- `fillPrepare()` replaces the former Shape-level gradient helper. Prepared Fill,
+  RLE, task completion and separate destination lifetimes remain unchanged.
+- Source anchors and the native Shape/Image/Bitmap/RLE fixtures use the same pin.
+- Run `node scripts/render-update-scenes.mjs --variant render-data bitmap-data image cells sweep pool`
+  for full-frame alternate audits without replacing baseline exports. The single
+  input translation changes geometry, bounds, offsets and recorded spans together.
+- 6 targeted tests validate primitive/public Picture agreement, source aliases and
+  distinct Bitmap branches, premultiplication, signed Cell sweep and reduced-pool
+  capacity, and all 1,024 opaque Pad gradient RGB entries. The Fill variant changes both ColorStop swatches and the complete table. Native generators additionally assert untouched Canvas bytes after Update.

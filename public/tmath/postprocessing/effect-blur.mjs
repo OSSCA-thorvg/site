@@ -1,7 +1,7 @@
 import {tmath} from '../runtime/client.js';
 import {trace, rgba, pack} from './native-evidence.mjs';
 
-// b4471844: tvgSwPostEffect.cpp::_gaussianFilter / effectGaussianBlur;
+// 4d5810cf: tvgSwPostEffect.cpp::_gaussianFilter / effectGaussianBlur;
 // tvgSwRaster.cpp::rasterXYFlip. Keep physical storage and logical axes separate.
 export function blurPasses(input = trace) {
   const stride = input.width, [x0, y0, x1, y1] = input.bbox;

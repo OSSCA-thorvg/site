@@ -1,11 +1,11 @@
 /*
- * Algorithm ports from ThorVG cdc1c9596a5edebc159d5623d726febda7595896.
+ * Algorithm ports from ThorVG 4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad.
  * Copyright (c) 2020–2026 ThorVG project. MIT license: ../runtime/LICENSE-ThorVG.txt.
  * See README.md for source anchors, byte arithmetic and supported scope.
  */
 import native from './native-trace.mjs';
 
-export const SOURCE_COMMIT = 'cdc1c9596a5edebc159d5623d726febda7595896';
+export const SOURCE_COMMIT = '4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad';
 const f = Math.fround, add = (a,b) => f(a+b), sub = (a,b) => f(a-b);
 const mul = (a,b) => f(a*b), div = (a,b) => f(a/b);
 const zero = a => Math.abs(a) <= f(1e-6);
@@ -244,7 +244,7 @@ export function traceComposition(background=makeBitmap()) {
   for(let y=0;y<6;y++)for(let x=0;x<6;x++)write(trace,x,y,x,y,sampleNearest(source,x,y),sourceOver(at(source,x,y),at(background,x,y),160),160);
   return trace;
 }
-export function buildScenarios() {
-  const source=makeBitmap();
-  return {direct:traceDirect(source),nearest:traceScaled(source,{filter:'Nearest'}),bilinear:traceScaled(source),downscale:traceScaled(source,{scale:.25,id:'downscale'}),texmap:traceTexmap(source),solidRect:traceSolid({rle:false}),solidRle:traceSolid(),gradientRect:traceGradient({rle:false}),gradientRle:traceGradient(),strokeSolid:traceStroke(),strokeGradient:traceStroke({gradient:true}),composition:traceComposition()};
+export function buildScenarios(fixture = native) {
+  const source={width:6,height:6,pixels:fixture.source};
+  return {direct:traceDirect(source),nearest:traceScaled(source,{filter:'Nearest'}),bilinear:traceScaled(source),downscale:traceScaled(source,{scale:.25,id:'downscale'}),texmap:traceTexmap(source),solidRect:traceSolid({rle:false,fixture:fixture.solidRect}),solidRle:traceSolid({fixture:fixture.solidRle}),gradientRect:traceGradient({rle:false,fixture:fixture.gradientRect}),gradientRle:traceGradient({fixture:fixture.gradientRle}),strokeSolid:traceStroke({fixture:fixture.strokeSolid}),strokeGradient:traceStroke({gradient:true,fixture:fixture.strokeGradient}),composition:traceComposition(source)};
 }

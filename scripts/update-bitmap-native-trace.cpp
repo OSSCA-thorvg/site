@@ -1,4 +1,4 @@
-// ThorVG b4471844c3c2f849ce82e0825798e2696a4a2cad, read-only CPU source.
+// ThorVG 4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad, read-only CPU source.
 // See public/tmath/update/README.md for the static-library build command.
 #include <cassert>
 #include <cstdio>

@@ -1,10 +1,11 @@
 import {tmath} from '../runtime/client.js';
-import {shapeEvidence,glyph,bitmap,stops,table,rgb} from './render-data-model.mjs';
+import {shapeEvidence,glyph,bitmap,stops,opaquePadTable,rgb} from './render-data-model.mjs';
 
 // Six beats: input types; native Shape RLE; Text's internal Shape delegation;
 // bitmap source/sampling state; Fill's attached LUT; retained results vs scratch.
 // Rows are independent examples of each path, not four Paints in one Canvas.
-export function buildRenderData(){
+export function buildRenderData({colors=stops}={}){
+ const table=opaquePadTable(colors);
  const shapeExtra=190,width=1280,height=1580+shapeExtra,ink='#222222',muted='#737373',orange='#e66121',blue='#1f66c4';
  const scene=tmath.scene({width,height,fps:30,loop:false,camera:{mode:'fixed',view:'2d',height:height/100},
   theme:{preset:'pro_white',background:'#f7f7f7',text:Object.fromEntries(['h1','h2','h3','text','code'].map(r=>[r,{font:'Pretendard',color:ink}]))}});
@@ -50,11 +51,11 @@ export function buildRenderData(){
  text(scene,'Text',175,517,25);fontPath(scene,175,631,blue);
  text(scene,'Picture · Bitmap',175,826,24);image(scene,175,948,112);
  text(scene,'Fill · Gradient',175,1136,24);
- stops.forEach((c,i)=>{rect(scene,115+i*120,1260,44,44,rgb(c),rgb(c));text(scene,i,115+i*120,1324,19,muted);});
+ colors.forEach((c,i)=>{rect(scene,115+i*120,1260,44,44,rgb(c),rgb(c));text(scene,i,115+i*120,1324,19,muted);});
  text(scene,'ColorStop',175,1380,20,muted);
  const shapePrep=group(),shapeOut=group(),shapeRoutes=group(),shapeMembers=group();
  text(shapePrep,'shape.outline',575,210,23,muted);pathShape(shapePrep,575,309,9,'#00000000');
- text(shapePrep,'SwOutline · pool',575,400,19,muted);
+ text(shapePrep,'path ref · pooled out[]',575,400,19,muted);
  text(shapeMembers,'shape.bbox · fastTrack',575,435,20);
  text(shapeMembers,'stroke · strokeRle · fill',575,468,20);
  arrow(shapeRoutes,282,460,309);arrow(shapeRoutes,691,804,309);
@@ -105,7 +106,7 @@ export function buildRenderData(){
  text(imageOut,'outline → pool',1010,1026,20,muted,imageBox);
  const fillPrep=group(),fillOut=group(),fillRoutes=group();
  const fillPrepBox=rect(fillPrep,575,1260,344,142);
- text(fillPrep,'shapeGenFillColors()',575,1231,22,ink,fillPrepBox);
+ text(fillPrep,'fillPrepare()',575,1231,22,ink,fillPrepBox);
  text(fillPrep,'gradient parameters',575,1283,20,muted,fillPrepBox);
  arrow(fillRoutes,282,398,1260);arrow(fillRoutes,752,804,1260);
  const fillBox=rect(fillOut,1010,1269,392,272);
@@ -129,7 +130,7 @@ export function buildRenderData(){
  show(fillPrep);show(fillRoutes);show(fillOut,.25);
  for(const g of tableBands)show(g,.065);
  beat('Gradient preparation attaches a SwFill and a 1024-entry table to the Shape.');
- play([{target:shapePrep,opacity:.25}],.4);show(note,.35);
+ play([{target:shapePrep,opacity:.6}],.4);show(note,.35);
  beat('Draw consumes retained results; temporary geometry is not a separate RenderData.');wait(.8);
  return {scene,textIds,textPolicies,beats,duration:time,glyphEvidence};
 }

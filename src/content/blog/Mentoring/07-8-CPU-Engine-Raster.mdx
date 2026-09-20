@@ -22,7 +22,7 @@ import bitmapFilterPoster from './LUA/raster/bitmap-filter.webp';
 
 ## 1. Overview — 어떤 Raster가 실행되는가?
 
-<TMathPlayer scene="raster-dispatch" source={dispatchScene} poster={dispatchPoster.src} title="입력 조건에 따른 Raster 분기" description="Shape Fill·Stroke는 영역과 Color 또는 Color Table을 결합해 Surface에 기록합니다. Image 샘플링, RLE clipping, 출력 방식 선택과 Surface 연산까지 한 지도에서 살펴봅니다." width={1280} height={3280} loop />
+<TMathPlayer scene="raster-dispatch" source={dispatchScene} poster={dispatchPoster.src} title="입력 조건에 따른 Raster 분기" description="Shape Fill·Stroke는 영역과 Color 또는 Color Table을 결합해 Surface에 기록합니다. Image 샘플링, RLE clipping, 출력 방식 선택과 Surface 연산까지 한 지도에서 살펴봅니다." width={1280} height={3300} loop />
 
 ### 1.1 Task — 준비 완료 확인과 Raster 실행
 
@@ -57,7 +57,7 @@ canvas->draw(true)
 -> task->complete()
 ```
 
-아래는 Shape의 진입·종료 구조입니다. `task->valid` 내부는 바로 다음 코드 조각에서 보여줍니다. ([renderShape](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434))
+아래는 Shape의 진입·종료 구조입니다. `task->valid` 내부는 바로 다음 코드 조각에서 보여줍니다. ([renderShape](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434))
 
 ```cpp
 bool SwRenderer::renderShape(RenderData data)
@@ -145,7 +145,7 @@ Canvas::draw(clear)
 -> SwRenderer::renderImage(impl.rd)
 ```
 
-[`SwRenderer::renderImage()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381-L431) 전체입니다. `SwImageTask`의 준비를 기다린 뒤 RLE 유무와 `direct`·`scaled`에 따라 Raster 함수를 선택합니다. 전체 또는 dirty 영역에 기록한 뒤 `complete()`를 호출합니다.
+[`SwRenderer::renderImage()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381-L431) 전체입니다. `SwImageTask`의 준비를 기다린 뒤 RLE 유무와 `direct`·`scaled`에 따라 Raster 함수를 선택합니다. 전체 또는 dirty 영역에 기록한 뒤 `complete()`를 호출합니다.
 
 ```cpp
 bool SwRenderer::renderImage(RenderData data)
@@ -239,7 +239,7 @@ bool complete()
 }
 ```
 
-[`Canvas::Impl::draw()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgCanvas.h#L104), [`SceneImpl::render()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgScene.h#L130), [`preRender()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L320), [`renderImage()`·`renderShape()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381), [`SwTask::complete()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRenderer.cpp#L80), [`Task::done()`·worker 완료 알림](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgTaskScheduler.h#L56)
+[`Canvas::Impl::draw()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h#L104), [`SceneImpl::render()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L130), [`preRender()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L320), [`renderImage()`·`renderShape()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381), [`SwTask::complete()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L80), [`Task::done()`·worker 완료 알림](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.h#L56)
 
 </Disclosure>
 
@@ -286,7 +286,7 @@ Bitmap은 변환으로 Direct·Scale·Texture Mapping을 먼저 구분합니다.
 
 `imagePrepare()`가 기록한 `direct`·`scaled`를 draw에서 사용합니다. 아래 조건의 `equal()`·`zero()`는 부동소수점 허용 오차를 포함합니다.
 
-[`imagePrepare()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwImage.cpp#L62), [`_scaleMethod()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L301), [`PictureImpl::filter`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/tvgPicture.h#L43)
+[`imagePrepare()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwImage.cpp#L53), [`_scaleMethod()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L272), [`PictureImpl::filter`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPicture.h#L43)
 
 ```cpp
 // imagePrepare()
@@ -330,9 +330,11 @@ static ImageScaleFilter _scaleMethod(const SwImage& image)
 
 <Disclosure title="코드 참조: Stroke와 Surface 연산">
 
-- **Stroke:** [`rasterStroke()` / `rasterGradientStroke()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1586)
-- **버퍼·타깃:** [`rasterPixel32()` / `rasterCompositor()` / `rasterClear()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1390)
-- **Alpha 표현:** [`rasterUnpremultiply()` / `rasterPremultiply()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1488)
-- **색상·배치:** [`rasterConvertCS()` / `rasterXYFlip()`](https://github.com/thorvg/thorvg/blob/cdc1c9596a5edebc159d5623d726febda7595896/src/renderer/cpu_engine/tvgSwRaster.cpp#L1624)
+- **Stroke:** [`rasterStroke()` / `rasterGradientStroke()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1558)
+- **버퍼·타깃:** [`rasterPixel32()` / `rasterCompositor()` / `rasterClear()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1362)
+- **Alpha 표현:** [`rasterUnpremultiply()` / `rasterPremultiply()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1460)
+- **색상·배치:** [`rasterConvertCS()` / `rasterXYFlip()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1596)
 
 </Disclosure>
+
+<a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/blending/'}>Blending 상세</a>에서 Surface의 blender 선택, RLE coverage 보간과 Normal·Multiply·Screen의 실제 픽셀 결과를 이어서 살펴봅니다.

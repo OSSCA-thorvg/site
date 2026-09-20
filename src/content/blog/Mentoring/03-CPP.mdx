@@ -380,8 +380,10 @@ class E : S {};   // private inheritance
 
 struct TVG_API Paint
 {
+    virtual ~Paint();  // public virtual destructor
+
 protected:
-    virtual ~Paint();
+    Paint();
 };
 ```
 
@@ -417,17 +419,21 @@ struct T
 
 ```cpp
 // inc/thorvg.h
-#define _TVG_DECLARE_PRIVATE(A) \
+#define _TVG_PROTECTED_CTOR(A) \
 protected: \
     A(const A&) = delete; \
     const A& operator=(const A&) = delete; \
     A()
 
-#define _TVG_DECLARE_PRIVATE_BASE(A) \
-    _TVG_DECLARE_PRIVATE(A); \
+#define _TVG_PROTECTED_CTOR_PIMPL(A) \
+    _TVG_PROTECTED_CTOR(A); \
 public: \
     struct Impl; \
     Impl* pImpl
+
+#define _TVG_PUBLIC_DTOR_PIMPL(A) \
+    _TVG_PROTECTED_CTOR_PIMPL(A); \
+    virtual ~A()
 ```
 
 ![ThorVG 코드 컨벤션](./CPP/images/asset-17.webp)
@@ -536,8 +542,10 @@ struct TVG_API Paint
 {
     virtual Type type() const noexcept = 0;
 
+    virtual ~Paint();  // public virtual destructor
+
 protected:
-    virtual ~Paint();
+    Paint();
 };
 
 struct TVG_API Shape : Paint { /* ... */ };
@@ -548,7 +556,7 @@ struct TVG_API Text : Paint { /* ... */ };
 
 - **공개 타입:** `Paint` · `Shape` · `Scene` · `Picture` · `Text`
 
-`Paint`는 추상 기반 타입이며 `type()`은 순수 가상 함수입니다. 소멸자는 `protected` 가상 함수로 선언하여 사용자가 `Paint*`에 직접 `delete`를 호출하지 못하도록 제한합니다.
+`Paint` is an abstract base with a pure virtual `type()`. At ThorVG `4d5810cf`, its virtual destructor is public and its constructor remains protected. `_TVG_PUBLIC_DTOR_PIMPL(Paint)` declares that boundary. Reference ownership still determines when a Paint can be destroyed.
 
 ### 6.2 가상 함수 사용 범위
 
@@ -564,8 +572,10 @@ struct TVG_API Paint
 
     virtual Type type() const noexcept = 0;
 
+    virtual ~Paint();  // public virtual destructor
+
 protected:
-    virtual ~Paint();
+    Paint();
 };
 ```
 
@@ -870,8 +880,10 @@ struct TVG_API SwCanvas final : Canvas
 
 struct TVG_API Paint
 {
+    virtual ~Paint();  // public virtual destructor
+
 protected:
-    virtual ~Paint();
+    Paint();
 };
 ```
 
@@ -884,12 +896,10 @@ ThorVG의 주요 객체는 `gen()` 정적 팩터리 함수로 생성하며, 현�
   - 사용 사례: `std::unique_ptr`을 활용한 자동 해제
 - **Paint**
   - 생성자 접근 권한: `protected`
-  - 소멸자 접근 권한: `protected`
+  - 소멸자 접근 권한: `public virtual`
   - 추가 이후의 참조와 수명 관리: `Canvas` 또는 `Scene`
   - 컨테이너 소멸 이후의 참조 유지: `ref()`
   - 참조 해제: `unref()`
-
-실제 선언에서 `Canvas`와 `SwCanvas`는 생성자가 `protected`, 소멸자가 `public`이며, `Paint`는 생성자와 소멸자가 모두 `protected`입니다. 따라서 객체는 `gen()`으로 생성하고 타입별 소유권 규칙에 맞게 해제해야 합니다. `Canvas`는 `delete` 또는 `std::unique_ptr`를 사용하고, `Paint`는 `Paint::rel()` 또는 `Canvas`·`Scene`의 소유권 관리 API를 사용합니다.
 
 `Paint`의 일반적인 수명은 `Shape::gen()`으로 생성 → `Shape*` 반환 → `scene->add(shape)`로 추가 → 컨테이너의 참조 보유 → `remove()` 또는 컨테이너 소멸로 참조 감소 → 참조 카운트가 0이면 삭제되는 흐름입니다.
 

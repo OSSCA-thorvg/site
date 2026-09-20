@@ -1,6 +1,6 @@
 import trace from './rle-trace.mjs';
 
-// b4471844 tvgSwRle.cpp::_sweep / _horizLine, nonzero fill and anti-aliasing.
+// 4d5810cf tvgSwRle.cpp::_sweep / _horizLine, nonzero fill and anti-aliasing.
 // Cell x,y are world coordinates in the trace; cover/area retain signed 24.8 units.
 export function coverageOf(area, rule = 'nonzero') {
   let coverage = Math.abs(Math.floor(area / 512));

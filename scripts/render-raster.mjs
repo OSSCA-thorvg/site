@@ -1,6 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import {buildScenarios} from '../public/tmath/raster/model.mjs';
+import {variant as nativeVariant} from '../public/tmath/raster/native-trace.mjs';
+const variant=process.argv.includes('--variant');
 import {createTMath, compileScene} from '../public/tmath/runtime/client.js';
 import {buildSampling, buildCoverage, buildComposition} from '../public/tmath/raster/scenes.mjs';
 import {buildDispatch} from '../public/tmath/raster/dispatch.mjs';
@@ -22,13 +25,13 @@ const reports = [];
 try {
   for (const id of ids) {
     if (process.argv[2] && process.argv[2] !== id) continue;
-    const episode = id === 'bitmap-filter' ? buildBitmapFilter() : id === 'shape-fill' ? buildShapeFill() : id === 'surface' ? buildSurface() : id === 'dispatch' ? buildDispatch() : id === 'solid-rle' ? buildCoverage() : id === 'composition' ? buildComposition() : buildSampling(id);
+    const episode = id === 'bitmap-filter' ? buildBitmapFilter() : id === 'shape-fill' ? buildShapeFill() : id === 'surface' ? buildSurface() : id === 'dispatch' ? buildDispatch(variant ? buildScenarios(nativeVariant) : undefined) : id === 'solid-rle' ? buildCoverage() : id === 'composition' ? buildComposition() : buildSampling(id);
     // The builder emits a local per handle; pixel traces exceed Lua's 200-local limit.
     // Keep the same objects and commands, with generated handles in one local table.
     const source = 'local refs = {}\n' + compileScene(episode.scene)
       .replace(/^local (object\d+) = /gm, '$1 = ')
       .replace(/\bobject(\d+)\b/g, 'refs[$1]');
-    await fs.writeFile(path.join(out, id + '.lua'), source);
+    if (!variant) await fs.writeFile(path.join(out, id + '.lua'), source);
     runtime.loadLua(source, id + '.lua');
     const [width, height] = runtime.size();
     const frames = Math.ceil(runtime.duration * 30);
@@ -61,9 +64,9 @@ try {
     for (const id of episode.textIds) if (!seen.has(id)) errors.add('Never visible: ' + id);
     const times = [...new Set([0, ...episode.beats.map(b => Math.min(b.time, runtime.duration)), runtime.duration])];
     for (const [i, time] of times.entries()) {
-      await sharp(runtime.render(time, true), {raw: {width, height, channels: 4}}).png().toFile(path.join(temp, id + '-' + i + '.png'));
+      await sharp(runtime.render(time, true), {raw: {width, height, channels: 4}}).png().toFile(path.join(temp, id + (variant ? '-variant' : '') + '-' + i + '.png'));
     }
-    await sharp(runtime.render(runtime.duration, true), {raw: {width, height, channels: 4}}).webp({quality: 92}).toFile(path.join(out, id + '.webp'));
+    if (!variant) await sharp(runtime.render(runtime.duration, true), {raw: {width, height, channels: 4}}).webp({quality: 92}).toFile(path.join(out, id + '.webp'));
     let loopSeam;
     if (episode.loop) {
       loopSeam = Buffer.from(runtime.render(0, true)).equals(Buffer.from(runtime.render(runtime.duration, true)));
@@ -74,5 +77,5 @@ try {
     console.log(JSON.stringify(report));
     if (errors.size) throw new Error('Layout review failed: ' + id);
   }
-  await fs.writeFile(path.join(temp, 'review.json'), JSON.stringify(reports, null, 2));
+  await fs.writeFile(path.join(temp, variant ? 'variant-review.json' : 'review.json'), JSON.stringify(reports, null, 2));
 } finally { runtime.destroy(); }

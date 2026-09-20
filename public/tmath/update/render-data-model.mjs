@@ -6,7 +6,7 @@ export {shapeEvidence};
 export const glyph=glyphs.ABC.glyphs[0].path;
 export const bitmap={w:2,h:2,stride:2,pixels:['#e66121','#1f66c4','#dedede','#ffffff']};
 export const stops=[[230,97,33],[31,102,196]];
-// b447184 tvgSwFill.cpp::_updateColorTable, opaque two-stop [0,1], Pad.
+// 4d5810cf tvgSwFill.cpp::_updateColorTable, opaque two-stop [0,1], Pad.
 // INTERPOLATE weights are bytes; the last entry is explicitly the last stop.
 export function opaquePadTable(colors=stops){
  const size=1024,[first,last]=colors,table=[first.slice()],inc=1/size;

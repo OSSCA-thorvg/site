@@ -2,13 +2,15 @@ import {execFileSync} from 'node:child_process';
 import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const binary=process.argv[2];
+const commit='4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad';
+assert.equal(execFileSync('git',['-C','thorvg','rev-parse','HEAD'],{encoding:'utf8'}).trim(),commit);
 if(!binary)throw new Error('Pass the compiled update-rle-native probe.');
 const run=args=>JSON.parse(execFileSync(binary,args,{encoding:'utf8'}));
 const baseline=run([]),variant=run(['shift-x-quarter']);
 for(const data of [baseline,variant]){
   assert.ok(data.verifiedNative&&data.verifiedChords&&data.verifiedReducedPool);
   assert.deepEqual(data.attempts.map(v=>v.ok),[false,true,true]);
-  data.sourceCommit='b4471844c3c2f849ce82e0825798e2696a4a2cad';
+  data.sourceCommit=commit;
 }
 assert.notDeepEqual(baseline.cells,variant.cells);
 assert.notDeepEqual(baseline.spans,variant.spans);

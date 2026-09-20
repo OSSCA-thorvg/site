@@ -1,4 +1,4 @@
-// Read-only engine evidence. Link against the unmodified b4471844 CPU library.
+// Read-only engine evidence. Link against the unmodified 4d5810cf CPU library.
 #include <cassert>
 #include <cstdio>
 #include <vector>

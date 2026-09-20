@@ -2,8 +2,8 @@ import {tmath} from '../runtime/client.js';
 import {traceSolid, traceGradient} from './model.mjs';
 import {color} from './scenes.mjs';
 
-// Same native RLE fixture, two color sources (ThorVG cdc1c959).
-// tvgSwRaster.cpp:1566-1584,1602-1612; model.mjs replays captured spans/LUT.
+// Same native RLE fixture, two color sources (ThorVG 4d5810cf).
+// tvgSwRaster.cpp:rasterShape/rasterGradientShape; model.mjs replays native spans/LUT.
 // Three beats: retain area/coverage; show color inputs; record rows into Surface.
 // Row reveal is an illustrative comparison, not concurrent execution or timing.
 export function buildShapeFill(traces=[traceSolid(),traceGradient()]) {

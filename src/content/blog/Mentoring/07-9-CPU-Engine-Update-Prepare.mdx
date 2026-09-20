@@ -39,7 +39,7 @@ canvas->update()
 -> TaskScheduler::request()
 ```
 
-[`Canvas::Impl::update()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgCanvas.h#L77), [`SceneImpl::update()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L86)
+[`Canvas::Impl::update()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h#L77), [`SceneImpl::update()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L86)
 
 ```cpp
 // Canvas::Impl::update()
@@ -63,7 +63,7 @@ Overview의 Transform·Opacity·UpdateFlags·Clip Stack은 각 Paint의 `update(
 | UpdateFlags | 부모의 `flag`와 현재 `renderFlag`를 OR로 병합 |
 | Clip Stack | 일반 Clip의 RenderData를 `clips.push()`로 추가하고, 타입별 Update 후 `pop()`으로 복원. Fast path는 viewport를 사용 |
 
-[`Paint::Impl::update()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgPaint.cpp#L198)
+[`Paint::Impl::update()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.cpp#L198)
 
 ```cpp
 RenderData Paint::Impl::update(RenderMethod* renderer, const Matrix& pm,
@@ -153,7 +153,7 @@ RenderData Paint::Impl::update(RenderMethod* renderer, const Matrix& pm,
 
 `PAINT_METHOD`는 실제 타입의 `SceneImpl::update()`·`ShapeImpl::update()`·`PictureImpl::update()` 등으로 연결합니다. Scene은 이 Context로 자식을 순회하며, 중간 합성이 필요한 경우 그룹 opacity를 보관하고 자식에게는 `255`를 전달합니다.
 
-[`SwRenderer::prepare()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L873), [`prepareCommon()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828)
+[`SwRenderer::prepare()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L872), [`prepareCommon()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
 
 ```cpp
 // SwRenderer::prepare(shape): 기존 Task를 재사용하고, done()으로 이전 작업의 완료를 동기화합니다.
@@ -186,7 +186,7 @@ canvas->draw(true)
 -> Raster
 ```
 
-[`renderShape()`의 완료 대기](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434), [`renderImage()`의 완료 대기](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381), [`Task::done()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgTaskScheduler.h#L56)
+[`renderShape()`의 완료 대기](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L434), [`renderImage()`의 완료 대기](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381), [`Task::done()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.h#L56)
 
 </Disclosure>
 
@@ -218,7 +218,7 @@ SwShapeTask::run(tid)
 
 `TaskScheduler::request()`는 worker가 있으면 작업을 큐에 넣고, 없으면 `run(0)`을 직접 호출합니다.
 
-[`ShapeImpl::update()` 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgShape.h#L102)
+[`ShapeImpl::update()` 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgShape.h#L102)
 
 ```cpp
 bool update(RenderMethod* renderer, const Matrix& transform,
@@ -240,7 +240,7 @@ bool update(RenderMethod* renderer, const Matrix& transform,
 
 **1. Task 생성·재사용 — `SwRenderer::prepare()`**
 
-[`RenderData SwRenderer::prepare`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L873)
+[`RenderData SwRenderer::prepare`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L872)
 
 ```cpp
 RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data,
@@ -265,7 +265,7 @@ RenderData SwRenderer::prepare(const RenderShape& rshape, RenderData data,
 
 **2. Context 저장·작업 요청 — `prepareCommon()`**
 
-[`SwTask* SwRenderer::prepareCommon`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828)
+[`SwTask* SwRenderer::prepareCommon`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
 
 ```cpp
 SwTask* SwRenderer::prepareCommon(SwTask* task, const Matrix& transform,
@@ -308,7 +308,7 @@ SwTask* SwRenderer::prepareCommon(SwTask* task, const Matrix& transform,
 
 **3. 실제 준비 실행 — `SwShapeTask::run()`**
 
-[`void run`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L131)
+[`void run`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L131)
 
 ```cpp
 void run(unsigned tid) override
@@ -330,7 +330,7 @@ void run(unsigned tid) override
     }
     // 2. Gradient가 있으면 색상 조회 데이터를 준비합니다.
     if (updateFill) {
-        if (!shapeGenFillColors(shape.fill, rshape->fill, transform, renderer->surface, opacity, (flags[0] & RenderUpdateFlag::Gradient))) goto dismiss;
+        if (!fillPrepare(shape.fill, rshape->fill, transform, renderer->surface, opacity, (flags[0] & RenderUpdateFlag::Gradient))) goto dismiss;
     }
     // 3. Stroke의 Outline·RLE와 필요한 색상 데이터를 준비합니다.
     if (strokeWidth > 0.0f) {
@@ -338,7 +338,7 @@ void run(unsigned tid) override
         if (updateStroke && !shapeGenStrokeRle(shape, rshape, transform, clipBox, curBox, renderer->mpool, tid, renderer->antiAlias)) goto dismiss;
         auto ctable = flags[0] & RenderUpdateFlag::GradientStroke;
         if (ctable || flags[0] & RenderUpdateFlag::Transform) {
-            if (!shapeGenFillColors(shape.stroke->fill, rshape->strokeFill(), transform, renderer->surface, opacity, ctable)) goto dismiss;
+            if (!fillPrepare(shape.stroke->fill, rshape->strokeFill(), transform, renderer->surface, opacity, ctable)) goto dismiss;
         }
     } else {
         shapeDelStroke(shape);
@@ -371,16 +371,16 @@ dismiss:
 
 `shapeGenRle()`의 `renderBox`에는 Task의 `curBox`가 참조로 전달됩니다. Clip 합성이 없고 축에 나란한 Rect이면 `fastTrack`으로 RLE 생성을 생략합니다.
 
-[`bool shapeGenRle`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwShape.cpp#L419)
+[`bool shapeGenRle`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwShape.cpp#L294)
 
 ```cpp
 bool shapeGenRle(SwShape& shape, const RenderShape* rshape, const Matrix& transform,
                  const RenderRegion& clipBox, RenderRegion& renderBox,
                  SwMpool* mpool, unsigned tid, bool composite, bool antiAlias)
 {
-    // 1. tid에 해당하는 Pool의 Outline에 Shape 경로를 구성합니다.
+    // 1. Select the borrowed Shape path, or a pooled generated trim path.
     auto outline = _genOutline(rshape, mpool, tid, rshape->trimpath());
-    if (!outline || outline->in.empty()) {
+    if (!outline) {
         renderBox.reset();
         return false;
     }
@@ -405,7 +405,7 @@ bool shapeGenRle(SwShape& shape, const RenderShape* rshape, const Matrix& transf
 }
 ```
 
-[`bool shapeGenStrokeRle`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwShape.cpp#L490)
+[`bool shapeGenStrokeRle`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwShape.cpp#L368)
 
 ```cpp
 bool shapeGenStrokeRle(SwShape& shape, const RenderShape* rshape,
@@ -424,10 +424,11 @@ bool shapeGenStrokeRle(SwShape& shape, const RenderShape* rshape,
     if (!outline) return false;
 
     // Stroke 경계를 구성한 뒤, 같은 RLE 생성 함수로 전달합니다.
-    if (!strokeParseOutline(shape.stroke, *outline, mpool, tid)) return false;
+    if (!strokeParseOutline(shape.stroke, *outline)) return false;
 
     BBox bbox;
     outline = strokeExportOutline(shape.stroke, mpool, tid);
+    if (outline->path->empty()) return false;
     utilExport(outline, transform, bbox);
     if (!utilBBox(bbox, clipBox, renderBox, false)) return false;
 
@@ -441,7 +442,7 @@ bool shapeGenStrokeRle(SwShape& shape, const RenderShape* rshape,
 
 `mpool->cell(tid)`는 Cell 누적에 쓰는 임시 공간입니다. 성공한 Band를 `_sweep()`할 때 별도 `SwRle::spans`에 결과를 쌓고, 공간이 부족한 Band는 반으로 나누어 다시 시도합니다.
 
-[`SwRle* rleRender`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L746)
+[`SwRle* rleRender`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L744)
 
 ```cpp
 SwRle* rleRender(SwRle* rle, const SwOutline* outline, const RenderRegion& bbox,
@@ -475,7 +476,7 @@ SwRle* rleRender(SwRle* rle, const SwOutline* outline, const RenderRegion& bbox,
     rw.cellMax = {bbox.max.x, bbox.max.y};
     rw.cellXCnt = rw.cellMax.x - rw.cellMin.x;
     rw.cellYCnt = rw.cellMax.y - rw.cellMin.y;
-    rw.outline = const_cast<SwOutline*>(outline);
+    rw.outline = outline;
     rw.bandSize = rw.bufferSize / (sizeof(SwCell) * 2);
     rw.bandShoot = 0;
     rw.antiAlias = antiAlias;
@@ -576,7 +577,7 @@ SwRle* rleRender(SwRle* rle, const SwOutline* outline, const RenderRegion& bbox,
 
 `_genRle()`는 Outline을 선분·곡선으로 분해하며 Cell의 `cover`·`area`를 누적합니다. `_sweep()`는 이를 행별로 읽고, `_horizLine()`은 coverage를 계산해 인접 Span을 합치거나 새 Span을 기록합니다.
 
-[`static bool _genRle`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L734)
+[`static bool _genRle`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L732)
 
 ```cpp
 static bool _genRle(RleWorker& rw)
@@ -587,7 +588,7 @@ static bool _genRle(RleWorker& rw)
 }
 ```
 
-[`static void _sweep`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L370)
+[`static void _sweep`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L370)
 
 ```cpp
 static void _sweep(RleWorker& rw)
@@ -614,7 +615,7 @@ static void _sweep(RleWorker& rw)
 }
 ```
 
-[`static void _horizLine`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L314)
+[`static void _horizLine`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L314)
 
 ```cpp
 static void _horizLine(RleWorker& rw, int32_t x, int32_t y, int32_t area, int32_t aCount)
@@ -673,7 +674,7 @@ static void _horizLine(RleWorker& rw, int32_t x, int32_t y, int32_t area, int32_
 }
 ```
 
-Cell을 만드는 내부 경로: [`_decomposeOutline()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L692) → [`_lineTo()`·`_cubicTo()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L494) → [`_recordCell()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRle.cpp#L420).
+Cell을 만드는 내부 경로: [`_decomposeOutline()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L692) → [`_lineTo()`·`_cubicTo()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L494) → [`_recordCell()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRle.cpp#L420).
 
 준비된 `shape.rle`·`shape.strokeRle`는 Task에 남고, 이후 `renderShape()`가 `done()`으로 완료를 확인한 뒤 사용합니다.
 
@@ -700,7 +701,7 @@ Vector
 -> vector->pImpl->update(renderer, transform, clips, opacity, flag, false)
 ```
 
-[`PictureImpl::update()` 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgPicture.h#L63)
+[`PictureImpl::update()` 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPicture.h#L63)
 
 ```cpp
 bool update(RenderMethod* renderer, const Matrix& transform,
@@ -768,7 +769,7 @@ SwImageTask::run(tid)
 
 **1. Source 연결·준비 실행 — `SwImageTask`**
 
-[`SwRenderer::prepare(RenderSurface*, …)`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L860)
+[`SwRenderer::prepare(RenderSurface*, …)`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L859)
 
 ```cpp
 RenderData SwRenderer::prepare(RenderSurface* surface, RenderData data,
@@ -790,7 +791,7 @@ RenderData SwRenderer::prepare(RenderSurface* surface, RenderData data,
 }
 ```
 
-[`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202)
+[`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202)
 
 ```cpp
 void run(unsigned tid) override
@@ -843,7 +844,7 @@ end:
 
 지원하는 ARGB ↔ ABGR 변환에서 R·B 채널을 교환하고 `source->cs`를 갱신합니다. 변환 대상이 같은 ColorSpace이면 바로 반환합니다.
 
-[`rasterConvertCS()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1746)
+[`rasterConvertCS()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1596)
 
 ```cpp
 bool rasterConvertCS(RenderSurface* surface, ColorSpace to)
@@ -867,7 +868,7 @@ bool rasterConvertCS(RenderSurface* surface, ColorSpace to)
 }
 ```
 
-[`cRasterABGRtoARGB()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRasterC.h#L160)
+[`cRasterABGRtoARGB()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRasterC.h#L194)
 
 ```cpp
 static bool inline cRasterABGRtoARGB(RenderSurface* surface)
@@ -903,7 +904,7 @@ static bool inline cRasterABGRtoARGB(RenderSurface* surface)
 }
 ```
 
-[`cRasterARGBtoABGR()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRasterC.h#L193)
+[`cRasterARGBtoABGR()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRasterC.h#L227)
 
 ```cpp
 static bool inline cRasterARGBtoABGR(RenderSurface* surface)
@@ -917,7 +918,7 @@ static bool inline cRasterARGBtoABGR(RenderSurface* surface)
 
 `source->premultiplied`가 이미 켜져 있으면 재처리하지 않습니다. 처리 대상은 32-bit 픽셀이며, 각 RGB 채널에 픽셀의 알파 `A(c)`를 곱합니다. Paint의 opacity는 `task->opacity`에 별도로 유지됩니다.
 
-[`rasterPremultiply()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1598)
+[`rasterPremultiply()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1477)
 
 ```cpp
 void rasterPremultiply(RenderSurface* surface)
@@ -943,7 +944,7 @@ void rasterPremultiply(RenderSurface* surface)
 }
 ```
 
-[`PREMULTIPLY()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwCommon.h#L431)
+[`PREMULTIPLY()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L438)
 
 ```cpp
 static inline uint32_t PREMULTIPLY(uint32_t c, uint8_t a)
@@ -965,7 +966,7 @@ static inline uint32_t PREMULTIPLY(uint32_t c, uint8_t a)
 
 **4. 변환 판정·Outline·렌더 영역 — `imagePrepare()`**
 
-[`imagePrepare()` 전체 함수](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwImage.cpp#L64)
+[`imagePrepare()` 전체 함수](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwImage.cpp#L55)
 
 ```cpp
 bool imagePrepare(SwImage& image, const Matrix& transform,
@@ -1000,7 +1001,7 @@ bool imagePrepare(SwImage& image, const Matrix& transform,
 
 `renderBox`에는 Task의 `curBox`가 참조로 전달됩니다. Clip이 있으면 `SwImageTask::run()`의 다음 단계에서 `imageGenRle()`을 호출하고 clipper의 영역을 적용합니다.
 
-[`_genOutline()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwImage.cpp#L31), [`utilExport()`·`utilBBox()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwUtil.cpp#L30), [`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202)
+[`_genOutline()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwImage.cpp#L31), [`utilExport()`·`utilBBox()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwUtil.cpp#L30), [`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202)
 
 </Disclosure>
 
@@ -1041,7 +1042,7 @@ a->translate(2, 1)
 -> SwShapeTask::run()
 ```
 
-[`Paint::Impl::translate()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgPaint.h#L273), [`Paint::Impl::update()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgPaint.cpp#L198)
+[`Paint::Impl::translate()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.h#L280), [`Paint::Impl::update()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.cpp#L198)
 
 ```cpp
 // Paint::Impl::update(): 시작 시 skip 검사, 이후 부모 문맥 병합
@@ -1057,7 +1058,7 @@ PAINT_METHOD(ret, update(renderer, pm * tr.m, clips, opacity,
 renderFlag = RenderUpdateFlag::None;
 ```
 
-[`SwShapeTask::run()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L131)
+[`SwShapeTask::run()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L131)
 
 ```cpp
 auto updateShape = flags[0] & (RenderUpdateFlag::Path |
@@ -1068,7 +1069,7 @@ auto updateFill = flags[0] & (RenderUpdateFlag::Color |
                              RenderUpdateFlag::Transform);
 ```
 
-[`SceneImpl::needComposition()` 이후 opacity 처리](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L90)
+[`SceneImpl::needComposition()` 이후 opacity 처리](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L90)
 
 ```cpp
 if (needComposition(opacity)) {
@@ -1111,7 +1112,7 @@ struct SwImageTask : SwTask {
 };
 ```
 
-[`RenderData`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgRender.h#L37), [`SwTask`·`SwShapeTask`·`SwImageTask`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L38)
+[`RenderData`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgRender.h#L37), [`SwTask`·`SwShapeTask`·`SwImageTask`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L38)
 
 **호출 흐름 — 스레드 지원 빌드의 worker 실행**
 
@@ -1150,7 +1151,7 @@ void done()
 }
 ```
 
-[`prepareCommon()`과 두 `prepare()` overload](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L828), [`TaskSchedulerImpl::request()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgTaskScheduler.cpp#L148), [`Task::done()`·완료 알림](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgTaskScheduler.h#L56), [`SwRenderer::sync()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L269)
+[`prepareCommon()`과 두 `prepare()` overload](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827), [`TaskSchedulerImpl::request()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.cpp#L148), [`Task::done()`·완료 알림](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgTaskScheduler.h#L56), [`SwRenderer::sync()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L269)
 
 </Disclosure>
 
@@ -1173,7 +1174,7 @@ void done()
 
 메서드를 제외한 멤버 선언입니다. `outline`은 Pool에서 제공하는 임시 Outline을 가리킵니다.
 
-[`SwTask · SwShapeTask · SwImageTask`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L38)
+[`SwTask · SwShapeTask · SwImageTask`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L38)
 
 ```cpp
 struct SwTask : Task
@@ -1207,7 +1208,7 @@ struct SwImageTask : SwTask
 };
 ```
 
-[`SwShape`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwCommon.h#L241) · [`SwRle · SwSpan`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwCommon.h#L111)
+[`SwShape`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L247) · [`SwRle · SwSpan`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L116)
 
 ```cpp
 struct SwShape
@@ -1234,7 +1235,7 @@ struct SwSpan
 };
 ```
 
-[`SwImage`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwCommon.h#L252)
+[`SwImage`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L258)
 
 ```cpp
 struct SwImage
@@ -1259,7 +1260,7 @@ struct SwImage
 };
 ```
 
-[`SwFill`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwCommon.h#L169)
+[`SwFill`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L174)
 
 ```cpp
 struct SwFill
@@ -1303,7 +1304,7 @@ struct SwFill
 - **Transformed:** 회전·기울임이 있으면 `direct = false`, `scaled = false`입니다. Clip이 없는 세 예제 모두 `image.rle = nullptr`입니다.
 - **Clip:** 삼각형 Clip은 `task.clips`에 등록됩니다. `imageGenRle()`와 `clipper->clip()`을 거친 coverage span은 `image.rle`에 보관됩니다.
 
-[`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202), [`imagePrepare()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwImage.cpp#L64), [`renderImage()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381)
+[`SwImageTask::run()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L202), [`imagePrepare()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwImage.cpp#L55), [`renderImage()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L381)
 
 준비가 끝난 RenderData를 Surface에 기록하는 다음 경계는 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-8-cpu-engine-raster`}>Draw/Raster</a>입니다.
 
@@ -1337,7 +1338,7 @@ canvas->update()
 -> effectGaussianBlurUpdate() / effectDropShadowUpdate() 등
 ```
 
-[`SceneImpl::update()`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/tvgScene.h#L86)
+[`SceneImpl::update()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L86)
 
 ```cpp
 bool update(RenderMethod* renderer, const Matrix& transform,
@@ -1390,7 +1391,7 @@ bool update(RenderMethod* renderer, const Matrix& transform,
 }
 ```
 
-[`SwRenderer::prepare(RenderEffect*, …)`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L678)
+[`SwRenderer::prepare(RenderEffect*, …)`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L677)
 
 ```cpp
 void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
@@ -1417,7 +1418,7 @@ void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
 }
 ```
 
-효과별 준비 함수: [`GaussianBlur`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156), [`DropShadow`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L376), [`Fill`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L488), [`Tint`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L538), [`Tritone`](https://github.com/thorvg/thorvg/blob/b4471844c3c2f849ce82e0825798e2696a4a2cad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L604).
+효과별 준비 함수: [`GaussianBlur`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156), [`DropShadow`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L370), [`Fill`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L475), [`Tint`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L525), [`Tritone`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L591).
 
 </Disclosure>
 

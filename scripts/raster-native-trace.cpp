@@ -7,7 +7,7 @@
 #include "tvgSwRaster.cpp"
 
 using Pixels = std::vector<uint32_t>;
-static constexpr const char* COMMIT = "cdc1c9596a5edebc159d5623d726febda7595896";
+static constexpr const char* COMMIT = "4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad";
 static void pixels(const Pixels& values)
 {
     std::printf("[");

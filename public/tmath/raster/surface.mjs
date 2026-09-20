@@ -1,7 +1,7 @@
 import {tmath} from '../runtime/client.js';
 
-// Local ThorVG cdc1c959: tvgSwRaster.cpp:1390-1519,1624-1688;
-// tvgSwRenderer.cpp:203-206,353-362; tvgSwPostEffect.cpp:198-207.
+// Local ThorVG 4d5810cf: tvgSwRaster.cpp buffer/color/alpha operations;
+// tvgSwRenderer.cpp:prepareCommon/postRender; tvgSwPostEffect.cpp:effectGaussianBlur.
 // Independent illustrative examples, not a mandatory call sequence or timing trace.
 // Beats: clear pixels; prepare channel order/alpha; write a span; transpose;
 // restore straight alpha when the output color space requires it.

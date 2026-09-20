@@ -1,4 +1,4 @@
-// Read-only evidence: compile against ThorVG b4471844, never alter the engine.
+// Read-only evidence: compile against ThorVG 4d5810cf, never alter the engine.
 // The probe calls original static RLE functions and validates its band replay
 // against public rleRender with both normal and illustrative reduced pools.
 #include <cassert>
@@ -50,14 +50,16 @@ static bool equal(const SwRle& a, const SwRle& b) {
     return true;
 }
 struct Probe {
+    RenderPath path;
     SwOutline outline;
     SwRle rle;
     std::vector<SwCell> storage;
     RleWorker rw{};
     Probe(int dx, int bottom, int top, unsigned bytes=24576) : storage(bytes/sizeof(SwCell)) {
         const SwPoint points[]={{80+dx,80},{80+dx,272},{192+dx,336},{368+dx,272},{336+dx,112}};
-        for (unsigned i=0;i<5;++i) {outline.out.push(points[i]);outline.types.push(i==2 || i==3 ? SW_CURVE_TYPE_CUBIC : SW_CURVE_TYPE_POINT);}
-        outline.cntrs.push(4); outline.closed.push(true);outline.fillRule=FillRule::NonZero;
+        for (unsigned i=0;i<5;++i) {outline.out.push(points[i]);path.pts.push(points[i].toPoint());}
+        for(auto cmd : {PathCommand::MoveTo,PathCommand::LineTo,PathCommand::CubicTo,PathCommand::Close})path.cmds.push(cmd);
+        outline.path=&path;outline.fillRule=FillRule::NonZero;
         auto heads=sizeof(SwCell*)*(top-bottom);
         auto aligned=(heads+sizeof(SwCell)-1)/sizeof(SwCell)*sizeof(SwCell);
         rw.rle=&rle;rw.outline=&outline;rw.cellMin={1,bottom};rw.cellMax={7,top};rw.cellXCnt=6;rw.cellYCnt=top-bottom;

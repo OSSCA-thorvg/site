@@ -56,7 +56,7 @@ export function buildSweep(input=trace) {
     show(token,.06);play([{target:token,shift:[(dx-sx)/100,(sy-dy)/100]}],.65);
     const outputValue=text(scene,String(span.coverage),dx,dy,17,span.coverage>150?C.white:C.ink);
     show(outputValue,.13);
-    if(index===0)beat('First edge: 256 × 512 − 32768 = 98304; coverage is 192.',.9);
+    if(index===0)beat(`First edge: ${cover} × 512 − ${source.area} = ${area}; coverage is ${span.coverage}.`,.9);
     else if(index===1)beat('The gap carries cover without extra cells; three pixels become one full-coverage span.',.85);
     else if(index===data.events.length-1)beat('The second row uses the same sweep; the two edge contributions return cover to zero.',1);
     else v.wait(.45);

@@ -33,7 +33,7 @@ refs[29] = scene:group {["id"]="render-data-28",["opacity"]=0}
 refs[30] = scene:group {["id"]="render-data-29",["opacity"]=0}
 refs[31] = refs[27]:text {["align"]={0.5,0.5},["fill"]="#737373",["font"]="Pretendard",["id"]="render-data-30",["layer"]=40,["point"]={-0.65,6.75},["size"]=23,["text"]="shape.outline"}
 refs[32] = refs[27]:polygon {["fill"]="#00000000",["id"]="render-data-31",["layer"]=20,["points"]={{-0.965,6.39},{-1.325,5.13},{0.025,5.13}},["stroke"]="#e66121",["width"]=2}
-refs[33] = refs[27]:text {["align"]={0.5,0.5},["fill"]="#737373",["font"]="Pretendard",["id"]="render-data-32",["layer"]=40,["point"]={-0.65,4.85},["size"]=19,["text"]="SwOutline · pool"}
+refs[33] = refs[27]:text {["align"]={0.5,0.5},["fill"]="#737373",["font"]="Pretendard",["id"]="render-data-32",["layer"]=40,["point"]={-0.65,4.85},["size"]=19,["text"]="path ref · pooled out[]"}
 refs[34] = refs[30]:text {["align"]={0.5,0.5},["fill"]="#222222",["font"]="Pretendard",["id"]="render-data-33",["layer"]=40,["point"]={-0.65,4.5},["size"]=20,["text"]="shape.bbox · fastTrack"}
 refs[35] = refs[30]:text {["align"]={0.5,0.5},["fill"]="#222222",["font"]="Pretendard",["id"]="render-data-34",["layer"]=40,["point"]={-0.65,4.17},["size"]=20,["text"]="stroke · strokeRle · fill"}
 refs[36] = refs[29]:route {["dash"]={5,4},["id"]="render-data-35",["layer"]=5,["points"]={{-3.58,5.76},{-1.8,5.76}},["stroke"]="#222222",["tip"]=8,["width"]=1.4}
@@ -323,7 +323,7 @@ refs[319] = scene:group {["id"]="render-data-318",["opacity"]=0}
 refs[320] = scene:group {["id"]="render-data-319",["opacity"]=0}
 refs[321] = scene:group {["id"]="render-data-320",["opacity"]=0}
 refs[322] = refs[319]:rectangle {["center"]={-0.65,-5.65},["fill"]="#ffffff",["id"]="render-data-321",["layer"]=15,["size"]={3.44,1.42},["stroke"]="#222222",["width"]=1.2}
-refs[323] = refs[319]:text {["align"]={0.5,0.5},["fill"]="#222222",["font"]="Pretendard",["id"]="render-data-322",["layer"]=40,["point"]={-0.65,-5.36},["size"]=22,["text"]="shapeGenFillColors()"}
+refs[323] = refs[319]:text {["align"]={0.5,0.5},["fill"]="#222222",["font"]="Pretendard",["id"]="render-data-322",["layer"]=40,["point"]={-0.65,-5.36},["size"]=22,["text"]="fillPrepare()"}
 refs[324] = refs[319]:text {["align"]={0.5,0.5},["fill"]="#737373",["font"]="Pretendard",["id"]="render-data-323",["layer"]=40,["point"]={-0.65,-5.88},["size"]=20,["text"]="gradient parameters"}
 refs[325] = refs[321]:route {["dash"]={5,4},["id"]="render-data-324",["layer"]=5,["points"]={{-3.58,-5.65},{-2.42,-5.65}},["stroke"]="#222222",["tip"]=8,["width"]=1.4}
 refs[326] = refs[321]:route {["dash"]={5,4},["id"]="render-data-325",["layer"]=5,["points"]={{1.12,-5.65},{1.64,-5.65}},["stroke"]="#222222",["tip"]=8,["width"]=1.4}
@@ -1422,7 +1422,7 @@ scene:play({{target=refs[337],opacity=1}},0.065,"ease_in_out",0)
 scene:play({{target=refs[338],opacity=1}},0.065,"ease_in_out",0)
 scene:play({{target=refs[339],opacity=1}},0.065,"ease_in_out",0)
 scene:wait(1)
-scene:play({{target=refs[27],opacity=0.25}},0.4,"ease_in_out",0)
+scene:play({{target=refs[27],opacity=0.6}},0.4,"ease_in_out",0)
 scene:play({{target=refs[1364],opacity=1}},0.35,"ease_in_out",0)
 scene:wait(1)
 scene:wait(0.8)

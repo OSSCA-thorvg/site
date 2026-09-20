@@ -31,3 +31,12 @@ frame. Review files live in `temp/`; `--variant` never replaces the published as
 The normalization inset uses a separate ARGB8888S pixel: BGRA bytes become RGBA,
 then PREMULTIPLY maps (200,100,64,128) to (100,50,32,128). The main opaque
 Bitmap retains its original native fixture. The variant uses (21,173,242,73).
+
+## Revision validation
+
+Both native image-clip fixtures were rebuilt against ThorVG
+`4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad`. Every recorded clip/image span,
+write and destination pixel matches the existing trace. Image boundary scratch
+now uses a pooled RenderPath with four points and five commands; its closed
+rectangle and resulting coverage are unchanged. Downscale sample arithmetic is
+unchanged; Draw/Raster documents C/NEON/AVX dispatch in this revision.

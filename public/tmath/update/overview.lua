@@ -245,7 +245,7 @@ refs[241] = refs[122]:rectangle {["center"]={1.1,-4.6},["fill"]="#00000000",["id
 refs[242] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-241",["layer"]=40,["point"]={1.1,-5.45},["size"]=17,["text"]="spans"}
 refs[243] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="update-overview-text-242",["layer"]=40,["point"]={0.1,-6.15},["size"]=19,["text"]="x · y · len · coverage"}
 refs[244] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-243",["layer"]=40,["point"]={0.1,-6.8},["size"]=18,["text"]="+ strokeRle"}
-refs[245] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-244",["layer"]=40,["point"]={0.1,-7.25},["size"]=18,["text"]="+ gradient colors"}
+refs[245] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-244",["layer"]=40,["point"]={0.1,-7.25},["size"]=18,["text"]="+ fillPrepare() / SwFill"}
 refs[246] = scene:group {["id"]="update-overview-image-artifacts-245",["opacity"]=0}
 refs[247] = refs[246]:group {["id"]="update-overview-raw-image-246"}
 refs[248] = refs[247]:image {["center"]={3.38,-4.24},["filter"]="nearest",["id"]="update-overview-raw-quad-247",["layer"]=20,["pixels"]={"#e66121","#1f66c4","#1f66c4","#e66121"},["size"]={2,2},["width"]=0.28}

@@ -1,7 +1,7 @@
 import {tmath} from '../runtime/client.js';
 import trace from '../postprocessing/native-trace.mjs';
 
-// b4471844: tvgCanvas.h::update, Paint::Impl::update, SceneImpl::update,
+// 4d5810cf: tvgCanvas.h::update, Paint::Impl::update, SceneImpl::update,
 // PictureImpl::update, SwRenderer::prepareCommon, SwShapeTask/SwImageTask::run.
 // This map expands call relationships; worker reveal order is not a schedule.
 // Beats: API/target; inherited context; Paint dispatch; task submission;
@@ -162,7 +162,7 @@ export function buildOverview() {
   text(shapeOutput,'spans',750,1795,17,muted);
   text(shapeOutput,'x · y · len · coverage',650,1865,19);
   text(shapeOutput,'+ strokeRle',650,1930,18,muted);
-  text(shapeOutput,'+ gradient colors',650,1975,18,muted);
+  text(shapeOutput,'+ fillPrepare() / SwFill',650,1975,18,muted);
 
   const imageOutput=group('image-artifacts');
   const origin=[964,1660],scale=2,size=28;

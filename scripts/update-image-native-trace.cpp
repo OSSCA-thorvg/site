@@ -1,4 +1,4 @@
-// ThorVG b4471844c3c2f849ce82e0825798e2696a4a2cad, unchanged CPU engine.
+// ThorVG 4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad, unchanged CPU engine.
 // Link the existing CPU static build; no renderer translation unit is modified.
 // c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC -I$build -I$thorvg/inc \
 //   -I$thorvg/src/common -I$thorvg/src/renderer -I$thorvg/src/renderer/cpu_engine \

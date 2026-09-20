@@ -18,7 +18,7 @@ export function buildDispatch(scenarios = buildScenarios()) {
       id, kind: 'image', matrix: scenarios[id].matrix, filter: scenarios[id].filter, data: scenarios[id],
     })),
   ];
-  const width = 1280, height = 3280;
+  const width = 1280, height = 3300;
   const scene = tmath.scene({width, height, fps: 30, loop: true,
     camera: {mode: 'fixed', view: '2d', height: height / 100},
     theme: {preset: 'pro_white', background: '#f1f1f1'}});
@@ -89,7 +89,12 @@ export function buildDispatch(scenarios = buildScenarios()) {
   for(let y=782;y>342;y-=12)line(scene,[[295,y],[295,Math.max(342,y-7)]],'#191919',2,'solid-fallback');
   line(scene,[[295,342],[295,318]],'#191919',2.5,'solid-fallback-arrow',12);
   text(scene,'fillFetchSolid() = true',425,536,13,'#191919','fallback');
-  text(scene,'single color',425,560,13,'#686868','fallback-condition');
+  text(scene,'one stop / degenerate',425,560,13,'#686868','fallback-condition');
+  // rasterGradientStroke() uses the same solid shortcut before its RLE lookup.
+  for(let y=1432;y>1252;y-=12)line(scene,[[295,y],[295,Math.max(1252,y-7)]],'#191919',2,'stroke-solid-fallback');
+  line(scene,[[295,1252],[295,1228]],'#191919',2.5,'stroke-solid-fallback-arrow',12);
+  text(scene,'fillFetchSolid() = true',425,1316,13,'#191919','stroke-fallback');
+  text(scene,'one stop / degenerate',425,1340,13,'#686868','stroke-fallback-condition');
   text(scene,'Linear / Radial',286,856,12,'#686868','gradient-types');
   for (const [name,node] of Object.entries(nodes)) {
     const root = name === 'shape' || name === 'image' || name === 'stroke';

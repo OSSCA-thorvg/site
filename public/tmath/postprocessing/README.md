@@ -1,6 +1,6 @@
 # CPU Renderer — Postprocessing
 
-Source: ThorVG b4471844c3c2f849ce82e0825798e2696a4a2cad (2026-08-31).
+Source: ThorVG 4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad (revalidated 2026-09-20).
 Anchors: src/renderer/tvgCanvas.h, tvgScene.h, tvgRender.h,
 src/renderer/cpu_engine/tvgSwRenderer.cpp, tvgSwPostEffect.cpp, tvgSwRaster.cpp.
 
@@ -119,7 +119,7 @@ Settled times are exported by each definition; beats have readable holds.
 ## Native reproduction
 
 The Raster diagram's call path was rechecked against local ThorVG
-cdc1c9596a5edebc159d5623d726febda7595896: `SceneImpl::render` visits children,
+4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad: `SceneImpl::render` visits children,
 `ShapeImpl::render` passes `impl.rd`, and `SwRenderer::renderShape` calls
 `task->done()` before reading valid prepared data. For the example's solid
 fills, `rasterShape` calls `_rasterRle` on the current Offscreen surface.
@@ -258,10 +258,10 @@ asserts Surface/compositor transitions and unchanged Canvas through effect
 processing, and compares all final pixels with the public Canvas draw.
 `scripts/generate-mask-trace.mjs` also checks a mask moved +1.25 with alpha 96
 and an alpha-0 mask, and verifies the native integer composition per pixel.
-Build it with the pinned b4471844c source and a matching CPU-only static build:
+Build it with the pinned 4d5810cf source and a matching CPU-only static build:
 
 ```sh
-maskSource=/path/to/thorvg-b4471844c
+maskSource=/path/to/thorvg-4d5810cf
 maskBuild=/path/to/cpu-static-build
 c++ -std=c++14 -O2 -fno-access-control -DTVG_STATIC \
   -I"$maskBuild" -I"$maskSource/inc" -I"$maskSource/src/renderer" \
@@ -273,3 +273,20 @@ node scripts/review-postprocessing.mjs mask-pipeline
 ```
 
 Archive `public/tmath/postprocessing/temp` outside public before building.
+
+
+## Revision revalidation
+
+Main chain, mask/effect nesting (including shifted and transparent mask variants),
+Tint/Tritone/Fill chains (two inputs each), and DropShadow (two inputs) were rebuilt
+against the unmodified 4d5810cf CPU library. Stored spans, effect intermediates,
+restoration invariants, and final Canvas pixels remain identical; native metadata
+now records the current pin and scalar zero-worker configuration. Existing scene
+assets are retained because their represented values and mechanisms did not change.
+The GaussianBlur preparation excerpt now uses `sigma * sigma * scaleSquared` and
+`valid = (extends > 0)`, matching the pinned implementation.
+
+New Gradient destination rules are linked from the article: ordinary Grayscale8
+Gradient output is supported through Rect8/Rle8, while Gradient matting into an
+8-bit destination returns false. A Shape Gradient Fill and the Surface recoloring
+`SceneEffect::Fill` remain distinct operations.

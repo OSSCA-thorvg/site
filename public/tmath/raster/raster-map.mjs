@@ -17,7 +17,7 @@ export function buildRasterMap({scene,p,rect,line,text,key,contain}) {
   box('Texmap',110,2850,126);box('Temporary',320,2850,148);box('DirectRle',535,2850,158);
   arrow([[173,2850],[246,2850]]);arrow([[394,2850],[456,2850]]);
   text(scene,'image.rle',329,2812,12,'#686868');
-  text(scene,'Output selection',956,2557,18);
+  text(scene,'32-bit output selection',956,2557,18);
   box('Compositor?',765,2630,172);
   box('Matting',1142,2610,166);box('Mask',1142,2700,166);
   arrow([[851,2630],[900,2630],[900,2610],[1059,2610]],'method < Add',975,2586);
@@ -38,4 +38,5 @@ export function buildRasterMap({scene,p,rect,line,text,key,contain}) {
     ['Pixel32 / alpha',140,3190,188],['Grayscale8',410,3190,188],['XY Flip',680,3190,188],['Unpremultiply',1004,3190,228],
   ])box(label,x,y,w);
   arrow([[234,3080],[316,3080]]);
+
 }

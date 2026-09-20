@@ -1,7 +1,7 @@
 # CPU Renderer — Draw/Raster
 
 The article and executable models use ThorVG
-`cdc1c9596a5edebc159d5623d726febda7595896` from the local `site/thorvg`
+`4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad` from the local `site/thorvg`
 checkout. `model.mjs` ports the selected algorithms. `native-trace.mjs` is
 generated evidence, not a list of invented animation outcomes.
 
@@ -138,9 +138,8 @@ four downsample scales and 64 deterministic premultiplied byte pairs with
 different opacity (416 helper result comparisons across the two runs).
 
 Validation completed on macOS arm64, Apple Clang 21, the generic C CPU path.
-The nine Node tests cover branch predicates, complete native outputs, changed
-inputs, sampler/byte helpers, event replay, texture tap/triangle invariants,
-display coordinate alignment, and characteristic overview sample selection.
+The generator validates branch outputs, changed inputs, sampler and byte helpers
+against native execution before publishing evidence.
 
 ## Scene generation and review
 
@@ -195,7 +194,7 @@ the fixture; fresh native execution also matches all 121 texture RGBA pixels.
 Text is restricted to object/condition names
 and values and has an explicit standalone policy. The scene generator reviews
 every encoded frame and the exact endpoint for text bounds and pairwise clearance;
-review rasters and the report remain in the ignored source-local `temp/` directory.
+review rasters and reports are moved outside the publication tree after review.
 The large compiled traces store generated handles in a Lua table to avoid Lua's
 200-local limit without changing the builder's objects or timeline.
 
@@ -210,3 +209,57 @@ premultiplication over the checkerboard and chooses interior locations away
 from the known texture triangle/scanline overlays; it excludes no Surface cells.
 Browser review covered complete 1× playback, final-frame posters, keyboard seek,
 all scene/font/WASM resources, and a 390px-wide page without horizontal overflow.
+
+
+## Revision 4d5810cf: Fill, grayscale gradients, and downscale backends
+
+The 1280 × 3300 dispatch overview ends with Surface operations beneath the
+existing eleven demonstrations. The separate Gradient-output and downscale-backend
+maps have been removed from this overview. Its output selection map remains
+explicitly scoped to 32-bit color. The article's detailed sections explain that Gradient Rect/RLE first
+handle a compositor, then Grayscale8, then the 32-bit blender/opacity branches.
+Rect8 and Rle8 call `_opMaskAdd`: table alpha times coverage, then alpha source-over.
+Gradient matting into an 8-bit destination returns false before writing. This is
+separate from an 8-bit mask-storage Surface applied to a 32-bit destination.
+
+`fillPrepare(SwFill*&, ...)` now performs allocation/reset. A single stop returns
+solid before geometry. Degenerate Linear/Radial geometry can also be solid;
+`fillFetchSolid()` returns the last available stop. Dashed Gradient → Solid shortcuts in both Shape Fill and Stroke lanes, plus the
+Fill overview, reflect both cases. Repeat geometry-only changes can refresh just
+the anti-aliasing table margins.
+
+The downscale wrapper selects the AVX, NEON, or C function at compile time. All
+use the same clipped window, sparse taps, and integer channel mean. The NEON
+implementation was executed against C for 5760 clipped/padded-stride cases,
+with radii 1–24 and a maximum of 16 taps. All results match. AVX is source-reviewed;
+this arm64 host does not execute it. `downscale-regression.json` records the native
+summary, and `scripts/raster-downscale-regression.cpp` is the reproducible check.
+
+The new `gradient-regression.mjs` fixture runs the real preparation and Gradient
+Rect/RLE dispatch on padded, guarded 8-bit destinations. It checks opaque and
+translucent alpha, nonzero destinations, partial RLE coverage, an installed color
+blender that must receive zero calls, and Matte rejection without writes. The
+variant changes source alpha and span coverage. Six preparation cases cover the
+single-stop and degenerate branches, including singular transforms.
+
+Use the same compiler flags/library as the main native reproduction:
+
+```sh
+c++ -std=c++17 -O2 -ffp-contract=off -fno-access-control -DTVG_STATIC \
+  -I/tmp/thorvg-cpu-4d5810cf-build -Ithorvg/inc -Ithorvg/src/common \
+  -Ithorvg/src/renderer -Ithorvg/src/renderer/cpu_engine \
+  scripts/raster-gradient-regression.cpp /tmp/thorvg-cpu-4d5810cf-build/src/libthorvg-1.a \
+  -o /tmp/raster-gradient-regression
+node scripts/generate-raster-gradient-regression.mjs /tmp/raster-gradient-regression
+# Compile raster-downscale-regression.cpp with those same flags to run C vs NEON.
+# On x86_64, add -mavx2 to execute the AVX comparison.
+node scripts/render-raster.mjs dispatch
+node scripts/render-raster.mjs dispatch --variant
+```
+
+All twelve existing Raster baseline/variant surfaces and 416 helper comparisons
+remain byte-identical at the new revision. Unchanged detail animations retain
+those validated bytes. The dispatch baseline and native geometry/color variant
+pass all 238 sampled frames including the exact endpoint, with 122 text objects,
+containment, four-pixel gaps and an identical decoded loop seam (7.88 seconds).
+Bottom space protects the completed map from mobile playback controls.

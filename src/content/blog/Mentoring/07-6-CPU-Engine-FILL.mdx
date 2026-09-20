@@ -18,7 +18,7 @@ import GradientAntiAliasingLab from '../../../components/GradientAntiAliasingLab
 
 # Core2026 > Engine > CPU Engine - 15
 
-<TMathPlayer scene="fill-overview" source={import.meta.env.BASE_URL + 'tmath/fill/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/fill/overview.webp'} title="Fill Overview — API에서 Surface까지" description="Linear·Radial Gradient의 공통 입력, Prepare에서 생성하는 SwFill 색상 테이블과 기하 계수, Draw의 위치별 색 조회와 RLE coverage를 통한 Surface 기록을 연결합니다." width={1280} height={1780} />
+<TMathPlayer scene="fill-overview" source={import.meta.env.BASE_URL + 'tmath/fill/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/fill/overview.webp'} title="Fill Overview — API에서 Surface까지" description="Linear·Radial Gradient의 공통 입력, Prepare에서 생성하는 SwFill 색상 테이블과 기하 계수, Draw의 위치별 색 조회와 RLE coverage를 통한 Surface 기록을 연결합니다." width={1280} height={2000} />
 
 ## 1. Fill과 Gradient
 
@@ -79,8 +79,7 @@ Canvas::Impl::update()
 → SwRenderer::prepareCommon()
 → TaskScheduler::request()
 → SwShapeTask::run()
-→ shapeGenFillColors()
-→ fillGenColorTable()
+→ fillPrepare()
 → _updateColorTable()
 ```
 
@@ -198,8 +197,7 @@ Canvas::update()
 → SwRenderer::prepareCommon()
 → TaskScheduler::request()
 → SwShapeTask::run()
-→ shapeGenFillColors()
-→ fillGenColorTable()
+→ fillPrepare()
 → _prepareLinear()
 ```
 
@@ -409,8 +407,7 @@ Canvas::update()
 → SwRenderer::prepareCommon()
 → TaskScheduler::request()
 → SwShapeTask::run()
-→ shapeGenFillColors()
-→ fillGenColorTable()
+→ fillPrepare()
 → _prepareRadial()
 ```
 

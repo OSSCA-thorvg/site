@@ -3,7 +3,7 @@ import {tmath} from '../runtime/client.js';
 // Conceptual normalized arithmetic, not a native Gaussian pass/timing trace.
 // Source-over: C'o = C's + C'd (1-As), Ao = As + Ad (1-As).
 // Storing C'o = Co Ao removes output normalization; C's/C'd are already stored.
-// Local cdc1c959: tvgSwRasterC.h:25-39; tvgSwPostEffect.cpp:63-112.
+// Local 4d5810cf: tvgSwRasterC.h:cRasterTranslucentPixels; tvgSwPostEffect.cpp:63-112.
 // Filtering example: two neighbors with weights w and 1-w, alpha 1 and 0.
 // Their visible input is unchanged when the transparent neighbor's RGB changes.
 export function internalExample({visible=[0,1,0],hidden=[1,0,0],weight=.5}={}) {
