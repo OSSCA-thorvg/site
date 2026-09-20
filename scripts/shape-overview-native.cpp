@@ -25,14 +25,17 @@ int main(int argc, char**)
         {13.5,.5},{18.5,3.25},{17.75,7.25}, {14.25,7.75},{18.25,12.75},
         {12.5,15.5},{6.75,14.75},{2.25,11.75}, {6.25,6.25},{10.75,5.25},{11.25,9.25},{7.25,10.25}};
     for (auto& p : points) p.x += dx;
+    RenderPath path;
     SwOutline outline;
+    outline.path = &path;
     unsigned pi = 0;
     for (const auto command : commands) {
-        if (command == PathCommand::Close) {outline.cntrs.push(outline.out.count - 1); outline.closed.push(true); continue;}
+        path.cmds.push(command);
+        if (command == PathCommand::Close) continue;
         const auto count = command == PathCommand::CubicTo ? 3 : 1;
         for (int j = 0; j < count; ++j, ++pi) {
             outline.out.push({int32_t(points[pi].x * 64), int32_t(points[pi].y * 64)});
-            outline.types.push(count == 3 && j < 2 ? SW_CURVE_TYPE_CUBIC : SW_CURVE_TYPE_POINT);
+            path.pts.push(points[pi]);
         }
     }
     outline.fillRule = FillRule::EvenOdd;

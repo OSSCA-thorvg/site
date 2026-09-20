@@ -31,7 +31,6 @@ DropShadow는 **단일 효과의 direct 경로**를 사용합니다. 효과마�
 ```sh
 node scripts/render-effect-details.mjs
 node scripts/effect-colors-render-verify.mjs
-node --test tests/effect-details.test.mjs tests/effect-colors.test.mjs tests/effect-shadow-model.test.mjs
 npm run check
 npm test
 ```

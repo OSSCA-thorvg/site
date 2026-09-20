@@ -1,0 +1,200 @@
+---
+title: "[Core2026] ETC - Mask"
+github: "Nor-s"
+date: 2026-09-20
+summary: "Follow one masked avatar through the CPU pipeline, inspect its premultiplied pixel math and raster dispatch, then compare all eleven MaskMethod values."
+tags: ["ThorVG", "Core", "CPU", "Mask"]
+draft: false
+---
+
+import TMathPlayer from '../../../../components/TMathPlayer.astro';
+import Disclosure from '../../../../components/Disclosure.astro';
+
+# Core2026 > Engine > CPU Engine > ETC - 11
+
+## Overview
+
+`Paint::mask(Paint* target, MaskMethod method)` applies one Alpha mask to an avatar Scene containing a photo Picture and a badge Shape. The same objects, tasks, buffers, and pixels continue through every section.
+
+<TMathPlayer scene="cpu-mask-overview" source={import.meta.env.BASE_URL + 'tmath/cpu-regions/mask.lua'} poster={import.meta.env.BASE_URL + 'tmath/cpu-regions/mask.webp'} title="Mask · CPU pipeline" description="One avatar Scene follows Paint::mask, the Mask structure, target and child tasks, a Grayscale8 mask buffer, the Scene color buffer, and final composition. Each section loops locally; the final result stays fixed." width={1440} height={3260} loop autoplay />
+
+<Disclosure title="Example and source references">
+
+```cpp
+// Canvas target: transparent 16 × 12 ABGR8888 pixels.
+// photoPixels: decoded opaque 16 × 12 ABGR8888 pixels.
+auto avatar = Scene::gen();
+auto photo = Picture::gen();
+photo->load(photoPixels, 16, 12, ColorSpace::ABGR8888, true);
+auto badge = Shape::gen();
+badge->appendCircle(12, 8.5, 2, 2);
+badge->fill(35, 160, 100);
+avatar->add(photo);
+avatar->add(badge);
+
+auto fadeMask = Shape::gen();
+fadeMask->appendCircle(8, 5.5, 5, 5);
+fadeMask->fill(45, 160, 210, 160);
+avatar->mask(fadeMask, MaskMethod::Alpha);
+canvas->add(avatar);
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+### Data and lifetime
+
+| Owner | Field / type | This example |
+| --- | --- | --- |
+| `avatar`'s `Paint::Impl` | `Mask* maskData` | Allocated by the API; retains `fadeMask` |
+| `Mask` | `Paint* source`, `Paint* target`, `MaskMethod method` | `avatar`, `fadeMask`, `Alpha` |
+| `fadeMask`'s `Paint::Impl` | `RenderData rd` | A regular `SwShapeTask`, with `clipper = false` |
+| `avatar`'s `SceneImpl` | Composition flag and stored opacity | `Masking`; children prepare at opacity 255 |
+| `SwCompositor` | `image`, `recoverSfc`, `recoverCmp`, `method` | Mask bytes / group pixels and the destination context to restore |
+
+Update prepares the target before the avatar's children. The photo and badge have empty `clips` arrays. Their prepared geometry remains separate from the mask's RLE.
+
+Draw first renders `fadeMask` into **Grayscale8** storage. `beginComposite(Alpha)` restores the Main Surface and installs that mask. The masked Scene then renders its children into a **color Surface**. `endComposite(group)` sends the assembled group through the active mask into the Main Surface. `endComposite(mask)` restores the context without applying the mask again.
+
+The mask byte includes geometric coverage and fill alpha: `(coverage × 160 + 255) >> 8`. Group RGBA is premultiplied; this fixture matches `ALPHA_BLEND(group pixel, mask byte)` in the CPU renderer. The checkerboard visualizes transparency.
+
+Native CPU execution at `4d5810cf` verifies **two compositor buffers**, child opacities, mask bytes, group pixels, final pixels, and restored context. A second fixture shifts the mask center to x=7.25 and changes fill alpha to 96 while leaving the group pixels unchanged. This Overview follows a Scene Alpha mask; other mask methods and eligible rectangular fast paths have different branches.
+
+- [Public Paint::mask API](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L525)
+- [Mask structure and retained data](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.h#L37)
+- [Target update and mask rendering](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.cpp#L163)
+- [Scene composition](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L58)
+- [CPU Surface switching and restoration](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L561)
+
+</Disclosure>
+
+## Pixel pipeline
+
+The same avatar continues at Canvas pixel **(12, 6)**. Target coverage creates the mask byte; badge coverage has already contributed to the Scene's color buffer. The completed group is then masked through the direct-image raster path.
+
+<TMathPlayer scene="cpu-mask-pixels" source={import.meta.env.BASE_URL + 'tmath/mask-pixels/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/mask-pixels/overview.webp'} title="Mask · Inside one avatar pixel" description="Follow target coverage, badge coverage, group RGBA, matte attenuation, and source-over at the same native Canvas pixel. Independent loops construct bytes, contract all four premultiplied channels, and write pixels; final results stay fixed." width={1440} height={2630} autoplay loop />
+
+<Disclosure title="Exact pixel operations and raster branches">
+
+### Coverage belongs to two different inputs
+
+The target's coverage is `203`; its fill alpha is `160`. Rendering into Grayscale8 produces the mask byte:
+
+```text
+q = MULTIPLY(203, 160) = (203 × 160 + 255) >> 8 = 127
+```
+
+The badge's coverage at the same pixel is `100`. Its covered color is composited over the photo **inside the group Surface**, producing premultiplied RGBA `126 / 190 / 180 / 255`. The outer mask reads this assembled pixel; it does not multiply the badge coverage again.
+
+### Attenuate every premultiplied channel, then blend
+
+The four matting methods (`Alpha`, `InvAlpha`, `Luma`, `InvLuma`) are modes of `Paint::mask()`. For this Scene, `endComposite(group)` restores the destination with the Alpha compositor installed, then calls `rasterDirectImage()` and `_rasterDirectMattedImage()`.
+
+```cpp
+// Group opacity is 255 in this example.
+auto tmp = ALPHA_BLEND(*src, alpha(cmp));
+*dst = tmp + ALPHA_BLEND(*dst, IA(tmp));
+```
+
+`ALPHA_BLEND(channel, q) = (channel * (q + 1)) >> 8` is the per-channel interpretation of the packed operation. It scales R, G, B **and** A together. The destination weight uses `255 - tmp.alpha`, after masking.
+
+| Step at (12, 6) | Premultiplied RGBA |
+| --- | --- |
+| Completed avatar group S | `126 / 190 / 180 / 255` |
+| Apply mask q = 127 → tmp | `63 / 95 / 90 / 127` |
+| Original transparent destination | `0 / 0 / 0 / 0` |
+| Original result | `63 / 95 / 90 / 127` |
+| Control destination D | `220 / 229 / 238 / 255` |
+| D contribution, using `IA(tmp) = 128` | `110 / 115 / 119 / 128` |
+| Control result | `173 / 210 / 209 / 255` |
+
+The control changes only the destination and uses `draw(false)` to retain it. The avatar, mask storage and group pixels are identical. Both destinations and the shifted-mask variant are verified against native Canvas output. The checkerboard displays transparency; it is not the transparent destination's stored RGB.
+
+### Source representation selects the raster function
+
+| Source arriving at rasterization | Representative 32-bit matting path |
+| --- | --- |
+| **This flattened Scene** / direct bitmap | `_rasterDirectMattedImage()` |
+| Direct bitmap with RLE | `_rasterDirectMattedRleImage()` |
+| Solid Shape / Stroke spans | `_rasterMattedRle()` |
+| Fast solid rectangle | `_rasterMattedRect()` |
+| Linear / Radial Gradient | `_rasterGradientMattedRect()` / `_rasterGradientMattedRle()` |
+| Scaled bitmap | `_rasterScaledMattedImage()` / `_rasterScaledMattedRleImage()` |
+
+These are alternatives, not consecutive passes. With a directly masked solid Shape, `_rasterMattedRle()` attenuates the prepared color by span coverage, then by the mask sample, then performs source-over. In this avatar Scene, child coverage is consumed earlier while building the group. Image sampling and opacity have branch-specific placement.
+
+`endComposite(mask)` restores the prior Surface/compositor and releases its temporary entry for reuse; it does not apply the mask again. Inverse methods change the weight sampled within source geometry; they do not create new source geometry. Alpha methods read Grayscale8 storage, while Luma methods read premultiplied target RGB, as detailed in the comparison below.
+
+The pinned 32-bit paths are the scope of this animation. A Grayscale8 destination has separate operations where supported; Gradient matting into a Grayscale8 destination is rejected in this revision.
+
+- [Group composition and restoration](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L654)
+- [Direct-image matting](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L976)
+- [Solid RLE matting](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L485)
+- [Packed ALPHA_BLEND](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L397)
+
+</Disclosure>
+
+## MaskMethod Comparison
+
+The same avatar, rounded mask A, and gradient mask B reveal how all eleven methods differ. Each method computes its own weights in a local loop; all final results remain visible.
+
+<TMathPlayer scene="cpu-mask-methods" source={import.meta.env.BASE_URL + 'tmath/mask-methods/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/mask-methods/overview.webp'} title="MaskMethod · Read or combine weights" description="Compare None, Alpha, InvAlpha, Luma, InvLuma, Add, Subtract, Intersect, Difference, Lighten, and Darken with the same avatar and partially opaque masks. Native CPU weights are built locally while every final result stays fixed." width={1440} height={3160} autoplay loop />
+
+<Disclosure title="Two API patterns and exact CPU weights">
+
+`None` leaves the content unchanged. The four matting methods read B directly:
+
+```cpp
+content->mask(B, method);  // Alpha, InvAlpha, Luma, InvLuma
+```
+
+The six combination methods operate on mask alpha in **Grayscale8** storage.
+This example nests the combined mask under an outer Alpha mask:
+
+```cpp
+A->mask(B, method);       // Add, Subtract, Intersect, Difference, Lighten, Darken
+content->mask(A, MaskMethod::Alpha);
+```
+
+Each comparison is a separate native Canvas execution with fresh Paints.
+Content is the same photo-and-badge Scene as the pipeline above. A is a rounded
+rectangle with fill alpha 176. B is a circle with a color gradient and constant
+fill alpha 144. Its color varies while its interior alpha stays constant,
+which makes Alpha and Luma visibly different. Partial opacity also separates
+Add from Lighten, and Intersect from Darken.
+
+Let `a` and `b` be the rasterized mask alpha bytes, including geometric coverage.
+The CPU helper is `M(x, y) = (x * y + 255) >> 8`.
+
+| Method | CPU weight q |
+| --- | --- |
+| Alpha / InvAlpha | `b` / `255 - b` |
+| Luma / InvLuma | `Y(B)` / `255 - Y(B)` |
+| Add | `a + M(b, 255 - a)` |
+| Subtract | `M(a, 255 - b)` |
+| Intersect | `M(a, b)` |
+| Difference | `M(a, 255 - b) + M(b, 255 - a)` |
+| Lighten / Darken | `max(a, b)` / `min(a, b)` |
+
+`Y(B) = (54R + 182G + 19B) >> 8` reads **premultiplied** target RGB from a color
+Surface. The four matte methods use either Grayscale8 alpha storage or a color
+Surface for luminance. The six mask operations combine alpha first; target RGB
+does not become the content's color. In this transparent-destination fixture,
+the final premultiplied channels match `ALPHA_BLEND(content, q)`.
+
+The normalized formulas in the animation describe the operations; its numeric
+samples, mask fields, and result images use exact native integer output.
+Darker weight cells mean larger q. The checkerboard only displays transparency.
+These are pixel-weight fields, not RLE span diagrams.
+
+The scalar native CPU fixture verifies every mask byte and result pixel, buffer
+channel counts, and context restoration. A second fixture shifts B and changes
+both alpha values while retaining identical content.
+
+- [MaskMethod API values](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L219)
+- [Mask storage format selection](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgRender.h#L722)
+- [Mask operators and raster branches](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L149)
+
+</Disclosure>
+
+<a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/clipping/'}>Clipping</a> · <a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/viewport/'}>Viewport</a>

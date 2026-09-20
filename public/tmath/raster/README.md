@@ -121,7 +121,6 @@ c++ -std=c++17 -O2 -ffp-contract=off -fno-access-control \
   scripts/raster-native-trace.cpp /tmp/thorvg-raster-native/src/libthorvg-1.a \
   -o /tmp/thorvg-raster-native/trace
 node scripts/generate-raster-trace.mjs /tmp/thorvg-raster-native/trace
-node --test tests/raster-model.test.mjs
 ```
 
 The harness includes the unmodified `tvgSwRenderer.cpp` and `tvgSwRaster.cpp`

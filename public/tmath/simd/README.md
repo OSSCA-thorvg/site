@@ -33,7 +33,6 @@ Edit `scenes.mjs` and `model.mjs`, then regenerate Lua and final-frame posters:
 
 ```sh
 node scripts/render-simd-scenes.mjs
-node --test tests/simd-downscale.test.mjs
 node scripts/verify-simd-downscale.mjs ../../thorvg
 npm run check
 npm test

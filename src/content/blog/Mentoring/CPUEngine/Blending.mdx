@@ -1,0 +1,678 @@
+---
+title: "[Core2026] ETC - Blending"
+github: "Nor-s"
+date: 2026-09-20
+summary: "Blending Pipeline과 17개 모드 애니메이션, BlendMethod 도표, CPU 구현 코드."
+tags: ["ThorVG", "Core", "CPU", "Blending"]
+draft: false
+---
+
+import TMathPlayer from '../../../../components/TMathPlayer.astro';
+import Disclosure from '../../../../components/Disclosure.astro';
+
+# Core2026 > Engine > CPU Engine > ETC - 15
+
+The pixel examples below use 32-bit color destinations. In the current CPU engine, Gradient rendering to Grayscale8 without a compositor selects Rect8/Rle8 alpha source-over before testing the color blender. The 32-bit blend equations in this chapter do not describe that alpha-only destination. See [`Gradient dispatch`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L1214). All 68 gallery comparisons were rechecked against this revision and retain the same pixels.
+
+## 1. Pipeline Overview
+
+<TMathPlayer scene="cpu-blending-overview" source={import.meta.env.BASE_URL + 'tmath/blending/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/blending/overview.webp'} title="Blending · CPU pipeline" description="One pair of overlapping rounded rectangles follows Paint::blend, Canvas update, SwShapeTask and RLE preparation, raster dispatch, destination reads, coverage, and Surface writes. Every section loops independently; final comparisons remain fixed." width={1440} height={3880} autoplay loop />
+
+<Disclosure title="Example and CPU paths">
+
+The Overview uses two opaque rounded rectangle Shapes on a transparent 18 × 13
+ABGR8888 Surface. `d` is blue, `s` is orange, and the Canvas retains them in that
+order. The checkerboard only displays transparency.
+
+```cpp
+auto d = Shape::gen();
+d->appendRect(2, 1, 9, 7, 1.5f, 1.5f);
+d->fill(48, 136, 208);
+
+auto s = Shape::gen();
+s->appendRect(6, 4, 9, 7, 1.5f, 1.5f);
+s->fill(230, 97, 33);
+s->blend(BlendMethod::Multiply);  // Paint::blend()
+
+canvas->add(d);
+canvas->add(s);
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+**Update prepares geometry.** `ShapeImpl::update()` calls `SwRenderer::prepare()`
+and `prepareCommon()`. Each `SwShapeTask` retains its `RenderShape`, transform,
+clipBox, clips, opacity and update flags. Path, Transform or Clip changes trigger
+`shapeGenRle()`; this rounded example reaches `rleRender()` and stores a `SwRle`.
+Changing only the Blend flag can reuse that geometry. Scheduled task work may
+finish after `postUpdate()`; raster consumers call `task->done()` before reading it.
+
+**Draw selects the color operation.** Each Shape calls `SwRenderer::blend()`
+before `renderShape()`. Normal leaves `surface->blender` null; Multiply selects
+`blendMultiply`. After `d` is drawn, `s` reads the existing destination pixels,
+calculates a blend color, applies its span coverage and writes to the same buffer.
+This example allocates no intermediate compositor.
+
+| Input / condition | CPU route |
+| --- | --- |
+| Solid axis-aligned rectangle, no clip composition | `shape.fastTrack` → `_rasterRect()` → `_rasterBlendingRect()` |
+| Solid rounded rectangle / path | `shape.rle` → `_rasterRle()` → `_rasterBlendingRle()` |
+| Solid stroke | `shape.strokeRle` → `_rasterRle()` → `_rasterBlendingRle()` |
+| Gradient | `_rasterBlendingGradientRect()` or `_rasterBlendingGradientRle()` |
+| Image, direct / scaled | Direct or scaled image raster, with separate RLE variants |
+| Image, general transform | `rasterTexmapPolygon()`; an RLE clip may require temporary storage first |
+| Composited Scene | Render children into a temporary target; `endComposite()` restores the destination and calls `rasterDirectImage()` |
+
+For solid Rect/RLE raster dispatch, an active Mask/Matte path is checked before
+the custom blender. Without compositing or a custom blender, the rasterizer
+chooses ordinary Solid or Translucent drawing. Image paths have their own
+combined matting/blending cases.
+
+All displayed spans and output pixels come from the pinned native CPU engine.
+Sections 05–06 use an opaque overlap pixel, so the displayed Multiply equation
+is the RGB integer operation for that case. The full native images also include
+transparent exterior pixels and partially covered corners.
+
+Sources: [Canvas / update and draw](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h),
+[Shape / update and render](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgShape.h),
+[CPU tasks and mode selection](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp),
+[geometry preparation](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwShape.cpp),
+[raster dispatch](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp).
+
+</Disclosure>
+
+<TMathPlayer scene="cpu-blending-modes" source={import.meta.env.BASE_URL + 'tmath/blending/modes.lua'} poster={import.meta.env.BASE_URL + 'tmath/blending/modes.webp'} title="BlendMethod · 17 modes" description="17개 모드를 처음부터 함께 표시합니다. 같은 source가 겹쳤다 떨어지는 동작을 반복하며 CPU에서 추출한 겹침 색을 동시에 비교합니다." width={1280} height={1360} autoplay loop />
+
+| 입력 / 표시 | 기준 |
+| --- | --- |
+| Source / Destination | 주황 `(230,97,33)` / 파랑 `(48,136,208)`, alpha 255 |
+| 겹침 RGB | CPU native 결과, 8비트 정수 |
+| 도식 | 내부 픽셀 색 비교용 사각형, AA·반투명 경계 생략 |
+| 구현 revision | `4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad` |
+
+## 2. BlendMethod 도표
+
+| 기호 | 의미 |
+| --- | --- |
+| `s`, `d` | 0–1로 정규화한 불투명 source / destination의 RGB 채널 |
+| `G(d)` | `d ≤ 0.25`이면 `((16d−12)d+4)d`, 아니면 `sqrt(d)` |
+| 도표의 식 | 색 연산 개념식. CPU의 8비트 반올림·alpha 처리는 아래 구현 코드 기준 |
+
+| 계열 | BlendMethod | 색 연산 / 분기 | CPU 함수 |
+| --- | --- | --- | --- |
+| 기본 | **Normal** | 불투명: `s`, 그 외 alpha blending | `blender = nullptr`, 일반 Raster |
+| 어둡게 | **Multiply** | `s × d` | `blendMultiply` |
+| 어둡게 | **Darken** | `min(s,d)` | `blendDarken` |
+| 어둡게 | **ColorBurn** | `1−min(1,(1−d)/s)`; `d=1 → 1`, 그 외 `s=0 → 0` | `blendColorBurn` |
+| 밝게 | **Screen** | `s+d−sd` | `blendScreen` |
+| 밝게 | **Lighten** | `max(s,d)` | `blendLighten` |
+| 밝게 | **ColorDodge** | `min(1,d/(1−s))`; `d=0 → 0`, 그 외 `s=1 → 1` | `blendColorDodge` |
+| 밝게 | **Add** | `min(1,s+d)` | `blendAdd` |
+| 대비 | **Overlay** | `d < 0.5`: `2sd`, 그 외 `1−2(1−s)(1−d)` | `blendOverlay` |
+| 대비 | **HardLight** | `s < 0.5`: `2sd`, 그 외 `1−2(1−s)(1−d)` | `blendHardLight` |
+| 대비 | **SoftLight** | `s ≤ 0.5`: `d−(1−2s)d(1−d)`, 그 외 `d+(2s−1)(G(d)−d)` | `blendSoftLight` |
+| 차이 | **Difference** | `abs(s−d)` | `blendDifference` |
+| 차이 | **Exclusion** | `s+d−2sd` | `blendExclusion` |
+| 성분 | **Hue** | S의 색상 + D의 채도·명도 | `blendHue` |
+| 성분 | **Saturation** | S의 채도 + D의 색상·명도 | `blendSaturation` |
+| 성분 | **Color** | S의 색상·채도 + D의 명도 | `blendColor` |
+| 성분 | **Luminosity** | S의 명도 + D의 색상·채도 | `blendLuminosity` |
+
+| 별도 설정 | 값 | 처리 |
+| --- | --- | --- |
+| **Composition** | `255` | 중간 합성용. Scene은 합성 flag를 표시하고 SW custom blender는 null. 17개 색상 모드와 별도 |
+
+[BlendMethod 선언](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L244)
+
+## 3. CPU 구현
+
+| 단계 | 구현 | 처리 |
+| --- | --- | --- |
+| API | `Paint::blend()` | BlendMethod 저장, Blend 갱신 flag 표시 |
+| Update / Prepare | `ShapeImpl::update()` → `SwRenderer::prepare()` | SwShapeTask에 transform, clipBox, clips, opacity, flags 전달 |
+| Geometry | `SwShapeTask::run()` → `shapeGenRle()` | fastTrack 사각형 또는 SwRle 준비; Blend만 바뀌면 재사용 가능 |
+| 모드 설정 | `SwRenderer::blend()` | Surface의 함수 포인터 선택 |
+| Raster 분기 | `_rasterRect()` / `_rasterRle()` | Mask·Matte → custom Blend → Solid / Translucent |
+| 색 연산 | `surface->blender(surface, color, *dst)` | Source와 현재 Destination 결합 |
+| Coverage 255 | `_rasterBlendingRle()` | Blend 결과 직접 기록 |
+| 부분 Coverage | `INTERPOLATE(B, D, coverage)` | 원래 Destination과 보간 |
+| Scene 합성 | `SwRenderer::endComposite()` | 원래 Surface 복원 → `rasterDirectImage()` |
+
+<Disclosure title="SwRenderer::blend — 모드별 함수 포인터">
+
+[cpu_engine/tvgSwRenderer.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp)
+
+```cpp
+bool SwRenderer::blend(BlendMethod method)
+{
+    if (surface->blendMethod == method) return true;
+    surface->blendMethod = method;
+
+    switch (method) {
+        case BlendMethod::Multiply:
+            surface->blender = blendMultiply;
+            break;
+        case BlendMethod::Screen:
+            surface->blender = blendScreen;
+            break;
+        case BlendMethod::Overlay:
+            surface->blender = blendOverlay;
+            break;
+        case BlendMethod::Darken:
+            surface->blender = blendDarken;
+            break;
+        case BlendMethod::Lighten:
+            surface->blender = blendLighten;
+            break;
+        case BlendMethod::ColorDodge:
+            surface->blender = blendColorDodge;
+            break;
+        case BlendMethod::ColorBurn:
+            surface->blender = blendColorBurn;
+            break;
+        case BlendMethod::HardLight:
+            surface->blender = blendHardLight;
+            break;
+        case BlendMethod::SoftLight:
+            surface->blender = blendSoftLight;
+            break;
+        case BlendMethod::Difference:
+            surface->blender = blendDifference;
+            break;
+        case BlendMethod::Exclusion:
+            surface->blender = blendExclusion;
+            break;
+        case BlendMethod::Hue:
+            surface->blender = blendHue;
+            break;
+        case BlendMethod::Saturation:
+            surface->blender = blendSaturation;
+            break;
+        case BlendMethod::Color:
+            surface->blender = blendColor;
+            break;
+        case BlendMethod::Luminosity:
+            surface->blender = blendLuminosity;
+            break;
+        case BlendMethod::Add:
+            surface->blender = blendAdd;
+            break;
+        default:
+            surface->blender = nullptr;
+            break;
+    }
+    return true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="RLE — 분기, Blend, Coverage">
+
+[cpu_engine/tvgSwRaster.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp)
+
+```cpp
+static bool _rasterRle(SwSurface* surface, SwRle* rle, const RenderRegion& bbox, const RenderColor& c)
+{
+    if (!rle || rle->invalid()) return false;
+
+    if (_compositing(surface)) {
+        if (_matting(surface)) return _rasterMattedRle(surface, rle, bbox, c);
+        return _rasterMaskedRle(surface, rle, bbox, c);
+    }
+    if (_blending(surface)) return _rasterBlendingRle(surface, rle, bbox, c);
+    if (c.a == 255) return _rasterSolidRle(surface, rle, bbox, c);
+    return _rasterTranslucentRle(surface, rle, bbox, c);
+}
+
+static bool _rasterBlendingRle(SwSurface* surface, const SwRle* rle, const RenderRegion& bbox, const RenderColor& c)
+{
+    if (surface->channelSize != sizeof(uint32_t)) {
+        TVGERR("SW_ENGINE", "channel size is not 32bits?");
+        return false;
+    }
+
+    auto color = surface->join(c.r, c.g, c.b, c.a);
+    const SwSpan* end;
+    int32_t x, len;
+
+    for (auto span = rle->fetch(bbox, &end); span < end; ++span) {
+        if (!span->fetch(bbox, x, len)) continue;
+        auto dst = &surface->buf32[span->y * surface->stride + x];
+        if (span->coverage == 255) {
+            for (auto x = 0; x < len; ++x, ++dst) {
+                *dst = surface->blender(surface, color, *dst);
+            }
+        } else {
+            for (auto x = 0; x < len; ++x, ++dst) {
+                *dst = INTERPOLATE(surface->blender(surface, color, *dst), *dst, span->coverage);
+            }
+        }
+    }
+    return true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Normal — Solid RLE alpha blending">
+
+[cpu_engine/tvgSwRaster.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp)
+
+```cpp
+static bool _rasterSolidRle(SwSurface* surface, const SwRle* rle, const RenderRegion& bbox, const RenderColor& c)
+{
+    const SwSpan* end;
+    int32_t x, len;
+
+    //32bit channels
+    if (surface->channelSize == sizeof(uint32_t)) {
+        auto color = surface->join(c.r, c.g, c.b, 255);
+        for (auto span = rle->fetch(bbox, &end); span < end; ++span) {
+            if (!span->fetch(bbox, x, len)) continue;
+            if (span->coverage == 255) rasterPixel32(surface->buf32 + span->y * surface->stride, color, x, len);
+            else {
+                auto dst = &surface->buf32[span->y * surface->stride + x];
+                auto src = ALPHA_BLEND(color, span->coverage);
+                auto ialpha = 255 - span->coverage;
+                for (auto x = 0; x < len; ++x, ++dst) {
+                    *dst = src + ALPHA_BLEND(*dst, ialpha);
+                }
+            }
+        }
+    //8bit grayscale
+    } else if (surface->channelSize == sizeof(uint8_t)) {
+        for (auto span = rle->fetch(bbox, &end); span < end; ++span) {
+            if (!span->fetch(bbox, x, len)) continue;
+            if (span->coverage == 255) rasterGrayscale8(surface->buf8, span->coverage, span->y * surface->stride + x, len);
+            else {
+                auto dst = &surface->buf8[span->y * surface->stride + x];
+                auto ialpha = 255 - span->coverage;
+                for (auto x = 0; x < len; ++x, ++dst) {
+                    *dst = span->coverage + MULTIPLY(*dst, ialpha);
+                }
+            }
+        }
+    }
+    return true;
+}
+```
+
+</Disclosure>
+
+<Disclosure title="정수 픽셀 연산 — MULTIPLY / ALPHA_BLEND / INTERPOLATE">
+
+[cpu_engine/tvgSwCommon.h](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h)
+
+[MULTIPLY — tvgRender.h](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgRender.h#L744)
+
+```cpp
+static inline uint8_t MULTIPLY(uint8_t c, uint8_t a)
+{
+    return (((c) * (a) + 0xff) >> 8);
+}
+
+static inline uint32_t ALPHA_BLEND(uint32_t c, uint32_t a)
+{
+    ++a;
+    return (((((c >> 8) & 0x00ff00ff) * a) & 0xff00ff00) + ((((c & 0x00ff00ff) * a) >> 8) & 0x00ff00ff));
+}
+
+static inline uint32_t INTERPOLATE(uint32_t s, uint32_t d, uint8_t a)
+{
+    return (((((((s >> 8) & 0xff00ff) - ((d >> 8) & 0xff00ff)) * a) + (d & 0xff00ff00)) & 0xff00ff00) + ((((((s & 0xff00ff) - (d & 0xff00ff)) * a) >> 8) + (d & 0xff00ff)) & 0xff00ff));
+}
+```
+
+</Disclosure>
+
+### 3.1 모드별 색 연산
+
+<Disclosure title="Multiply / Darken / ColorBurn">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+uint32_t blendMultiply(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return MULTIPLY(s, d);
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+
+uint32_t blendDarken(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return std::min(s, d);
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+
+uint32_t blendColorBurn(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return d == 255 ? 255 : (s == 0 ? 0 : 255 - std::min((255 - d) * 255 / s, 255));
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Screen / Lighten / ColorDodge / Add">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+uint32_t blendScreen(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto f = [](uint8_t s, uint8_t d) {
+        return s + d - MULTIPLY(s, d);
+    };
+
+    return JOIN(255, f(C1(s), C1(d)), f(C2(s), C2(d)), f(C3(s), C3(d)));
+}
+
+uint32_t blendLighten(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto f = [](uint8_t s, uint8_t d) {
+        return std::max(s, d);
+    };
+
+    return JOIN(255, f(C1(s), C1(d)), f(C2(s), C2(d)), f(C3(s), C3(d)));
+}
+
+uint32_t blendColorDodge(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return d == 0 ? 0 : (s == 255 ? 255 : std::min(d * 255 / (255 - s), 255));
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+
+uint32_t blendAdd(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto f = [](uint8_t s, uint8_t d) {
+        return std::min(s + d, 255);
+    };
+
+    return JOIN(255, f(C1(s), C1(d)), f(C2(s), C2(d)), f(C3(s), C3(d)));
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Overlay / HardLight / SoftLight">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+uint32_t blendOverlay(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return (d < 128) ? std::min(255, 2 * MULTIPLY(s, d)) : (255 - std::min(255, 2 * MULTIPLY(255 - s, 255 - d)));
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+
+uint32_t blendHardLight(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) {
+        return (s < 128) ? std::min(255, 2 * MULTIPLY(s, d)) : (255 - std::min(255, 2 * MULTIPLY(255 - s, 255 - d)));
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+
+uint32_t blendSoftLight(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto f = [](uint8_t s, uint8_t d) -> uint8_t {
+        if (s <= 127) return (d - ((255 - 2 * s) * d * (255 - d)) / 65025);
+
+        // use Look up table for skip sqrt per every pixels.
+        static constexpr uint8_t SQRT_LUT[256] = {
+            0, 15, 22, 27, 31, 35, 39, 42, 45, 47, 50, 52, 55, 57, 59, 61,
+            63, 65, 67, 69, 71, 73, 74, 76, 78, 79, 81, 82, 84, 85, 87, 88,
+            90, 91, 93, 94, 95, 97, 98, 99, 100, 102, 103, 104, 105, 107, 108, 109,
+            110, 111, 112, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126,
+            127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 141,
+            142, 143, 144, 145, 146, 147, 148, 148, 149, 150, 151, 152, 153, 153, 154, 155,
+            156, 157, 158, 158, 159, 160, 161, 162, 162, 163, 164, 165, 165, 166, 167, 168,
+            168, 169, 170, 171, 171, 172, 173, 174, 174, 175, 176, 177, 177, 178, 179, 179,
+            180, 181, 182, 182, 183, 184, 184, 185, 186, 186, 187, 188, 188, 189, 190, 190,
+            191, 192, 192, 193, 194, 194, 195, 196, 196, 197, 198, 198, 199, 200, 200, 201,
+            201, 202, 203, 203, 204, 205, 205, 206, 206, 207, 208, 208, 209, 210, 210, 211,
+            211, 212, 213, 213, 214, 214, 215, 216, 216, 217, 217, 218, 218, 219, 220, 220,
+            221, 221, 222, 222, 223, 224, 224, 225, 225, 226, 226, 227, 228, 228, 229, 229,
+            230, 230, 231, 231, 232, 233, 233, 234, 234, 235, 235, 236, 236, 237, 237, 238,
+            238, 239, 240, 240, 241, 241, 242, 242, 243, 243, 244, 244, 245, 245, 246, 246,
+            247, 247, 248, 248, 249, 249, 250, 250, 251, 251, 252, 252, 253, 253, 254, 255};
+        auto D = (d <= 64) ? (4 * d - (12 * d * d) / 255 + (16 * d * d * d) / 65025) : SQRT_LUT[d];
+        return static_cast<uint8_t>(d + ((2 * s - 255) * (D - d)) / 255);
+    };
+
+    return _premultiply(JOIN(255, f(C1(s), o.r), f(C2(s), o.g), f(C3(s), o.b)), s, o.a);
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Difference / Exclusion">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+uint32_t blendDifference(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto f = [](uint8_t s, uint8_t d) {
+        return (s > d) ? (s - d) : (d - s);
+    };
+
+    return JOIN(255, f(C1(s), C1(d)), f(C2(s), C2(d)), f(C3(s), C3(d)));
+}
+
+uint32_t blendExclusion(TVG_UNUSED const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto f = [](uint8_t s, uint8_t d) {
+        return tvg::clamp(s + d - 2 * MULTIPLY(s, d), 0, 255);
+    };
+
+    return JOIN(255, f(C1(s), C1(d)), f(C2(s), C2(d)), f(C3(s), C3(d)));
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Hue / Saturation / Color / Luminosity">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+uint32_t blendHue(const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto c1 = C1(s);
+    auto c2 = C2(s);
+    auto c3 = C3(s);
+    _saturate(c1, c2, c3, o.r, o.g, o.b);
+    _luminance(c1, c2, c3, surface->luma((c1 << 16 | c2 << 8 | c3)), surface->luma((o.r << 16 | o.g << 8 | o.b)));
+
+    return _premultiply(JOIN(255, c1, c2, c3), s, o.a);
+}
+
+uint32_t blendSaturation(const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto c1 = o.r;
+    auto c2 = o.g;
+    auto c3 = o.b;
+    _saturate(c1, c2, c3, C1(s), C2(s), C3(s));
+    _luminance(c1, c2, c3, surface->luma((c1 << 16 | c2 << 8 | c3)), surface->luma((o.r << 16 | o.g << 8 | o.b)));
+
+    return _premultiply(JOIN(255, c1, c2, c3), s, o.a);
+}
+
+uint32_t blendColor(const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    auto c1 = C1(s);
+    auto c2 = C2(s);
+    auto c3 = C3(s);
+    _luminance(c1, c2, c3, surface->luma(s), surface->luma((o.r << 16 | o.g << 8 | o.b)));
+
+    return _premultiply(JOIN(255, c1, c2, c3), s, o.a);
+}
+
+uint32_t blendLuminosity(const SwSurface* surface, uint32_t s, uint32_t d)
+{
+    auto o = _unpremultiply(d);
+
+    _luminance(o.r, o.g, o.b, surface->luma((o.r << 16 | o.g << 8 | o.b)), surface->luma(s));
+
+    return _premultiply(JOIN(255, o.r, o.g, o.b), s, o.a);
+}
+```
+
+</Disclosure>
+
+<Disclosure title="공통 처리 — alpha / saturation / luminance">
+
+[cpu_engine/tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp)
+
+```cpp
+static uint32_t _premultiply(uint32_t c1, uint32_t c2, uint8_t a)
+{
+    if (a == 255) return c1;
+    else if (a == 0) return c2;
+    return ALPHA_BLEND(c1, a) + ALPHA_BLEND(c2, 255 - a);
+}
+
+static RenderColor _unpremultiply(uint32_t c)
+{
+    RenderColor o = {C1(c), C2(c), C3(c), A(c)};
+    if (o.a > 0 && o.a < 255) {
+        o.r = std::min(o.r * 255u / o.a, 255u);
+        o.g = std::min(o.g * 255u / o.a, 255u);
+        o.b = std::min(o.b * 255u / o.a, 255u);
+    }
+    return o;
+}
+
+static void _saturate(uint8_t& c1, uint8_t& c2, uint8_t& c3, const uint8_t& s1, const uint8_t& s2, const uint8_t& s3)
+{
+    // to saturation
+    auto s = std::max(s1, std::max(s2, s3)) - std::min(s1, std::min(s2, s3));
+
+    uint8_t v[3] = {c1, c2, c3};
+    int lo = 0, mid = 1, hi = 2;
+
+    if (v[lo] > v[mid]) std::swap(lo, mid);
+    if (v[mid] > v[hi]) std::swap(mid, hi);
+    if (v[lo] > v[mid]) std::swap(lo, mid);
+
+    auto minv = v[lo];
+    auto maxv = v[hi];
+
+    if (maxv > minv) {
+        v[mid] = uint8_t((int(v[mid] - minv) * s) / (maxv - minv));
+        v[hi] = s;
+    } else {
+        v[mid] = v[hi] = 0;
+    }
+
+    v[lo] = 0;
+    c1 = v[0];
+    c2 = v[1];
+    c3 = v[2];
+}
+
+static void _luminance(uint8_t& c1, uint8_t& c2, uint8_t& c3, int cl, int l)
+{
+    auto d = l - cl;
+    auto r = int(c1) + d;
+    auto g = int(c2) + d;
+    auto b = int(c3) + d;
+    auto minv = std::min(r, std::min(g, b));
+    auto maxv = std::max(r, std::max(g, b));
+
+    if (minv < 0) {
+        r = l + ((r - l) * l) / (l - minv);
+        g = l + ((g - l) * l) / (l - minv);
+        b = l + ((b - l) * l) / (l - minv);
+        maxv = std::max(r, std::max(g, b));
+    }
+
+    if (maxv > 255) {
+        r = l + ((r - l) * (255 - l)) / (maxv - l);
+        g = l + ((g - l) * (255 - l)) / (maxv - l);
+        b = l + ((b - l) * (255 - l)) / (maxv - l);
+    }
+
+    c1 = static_cast<uint8_t>(r);
+    c2 = static_cast<uint8_t>(g);
+    c3 = static_cast<uint8_t>(b);
+}
+```
+
+</Disclosure>
+
+<Disclosure title="Scene — Surface 복원과 그룹 합성">
+
+[cpu_engine/tvgSwRenderer.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp)
+
+```cpp
+bool SwRenderer::endComposite(RenderCompositor* cmp)
+{
+    if (!cmp) return false;
+
+    auto p = static_cast<SwCompositor*>(cmp);
+
+    //Recover Context
+    surface = p->recoverSfc;
+    surface->compositor = p->recoverCmp;
+
+    //only invalid (currently used) surface can be composited
+    if (p->valid) return true;
+    p->valid = true;
+
+    //Default is alpha blending
+    if (p->method == MaskMethod::None) {
+        return rasterDirectImage(surface, p->image, p->bbox, p->opacity);
+    }
+
+    return true;
+}
+```
+
+</Disclosure>
+
+| 소스 | 참조 |
+| --- | --- |
+| CPU renderer | [tvgSwRenderer.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp) |
+| CPU Raster | [tvgSwRaster.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp) |
+| Blend 연산 | [tvgSwBlendOp.cpp](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwBlendOp.cpp) |
+| 비교 입력 참조 | [thorvg.example / Blending.cpp](https://github.com/thorvg/thorvg.example/blob/8df10a059239b033f82961af9294b3f9bea0a350/src/Blending.cpp) |

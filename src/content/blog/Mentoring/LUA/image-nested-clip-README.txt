@@ -32,19 +32,19 @@ Files
 - The builder derives its initial skeleton from sw-image-clip-tasks.lua to enforce
   continuity. Regenerate the predecessor before regenerating this continuation.
 
-Seven beats
-1. Hold exact previous final frame for2 seconds.
-2. Introduce teal slanted clip B on the same clip grid; task count1 ->2.
-3. Prepare B RLE in the right lower column. Prior Surface still unchanged.
-4. Rebuild image rectangle6 spans; apply circle A to recover26 spans.
-5. Compare rows with B and reveal final24 spans in the same image.rle location.
-6. Rendering: repaint background and read original Bitmap colors through the
-   final RLE. Color copies travel directly from source to Surface.
-7. Hold both clip shapes/RLEs, original Bitmap and narrowed final Surface.
-- Prepare does not erase the prior Surface; rendering redraws it after preparation.
-- Row transitions describe captured RLE results, not per-instruction writes to a
-  live span array or CPU timing. There is no RLE-driven pixel eraser or new bitmap.
-- Begin pixel plus center-origin length line retained; coverage is grayscale.
+Motion semantics
+1. Hold the preceding animation's exact final frame for2 seconds.
+2. Replace the left Clip A geometry/RLE with Clip B geometry/RLE.
+3. Keep the current Image RLE (after A) in the middle and the old Surface right.
+4. Intersect each row with B; replace the Image RLE in the same middle column.
+5. Read original Bitmap colors and write the narrowed Surface on the right.
+6. Hold active Clip B RLE, final Image RLE and rendered Surface.
+- The native engine rebuilds the image footprint and reapplies A during Update.
+  Those preparatory steps are omitted here: the captured post-A RLE is unchanged,
+  and this continuation focuses on B applied to the current image coverage.
+- Clip A data still exists in the engine; only its display is replaced by B.
+- Prepare leaves Surface unchanged. Row scans cover only the two RLE lanes.
+- Coverage uses grayscale; singleton spans have no length line/end cap.
 
 Reproduce (site root)
 meson setup /tmp/thorvg-nested-clip-build thorvg -Dengines=cpu -Dloaders= -Dsavers= -Dbindings= -Dextra= -Dsimd=false -Dthreads=false -Ddefault_library=static -Dtests=false
@@ -56,18 +56,18 @@ node src/content/blog/Mentoring/LUA/build-image-nested-clip.mjs
 node src/content/blog/Mentoring/LUA/render-image-nested-clip.mjs /absolute/path/to/tmath-skills/assets/wasm
 
 Validation
-- Exact uncompressed continuity: zero changed RGBA channels across previous end /
-  next start (13,440,000 channels); source and clip A records also equal.
-- All991 frames:44 standalone Text labels, no text overlap, minimum margin61.21px.
-- 5742 pixel checks: prior Surface retained through Prepare, all row intersections,
-  original source unchanged, moving source copies,24 span commits, final Surface,
-  independent input variant. Span begin and line-length geometry verified.
-- Final coverage never exceeds first circle-clipped coverage at any pixel.
-- Lua32.969978s / encoded33.033333s,30fps. Details:temp/image-nested-clip/review.txt.
-- MP4 decode, MDX compilation, real article playback/seek and final pixel checks.
-- No inline generated raster review: thread review budget already exhausted.
+- Exact preceding-end / current-start continuity: zero changed RGBA channels.
+- 919 frames, 2400x1400, 30fps, 30.56999s Lua duration.
+- All-frame layout audit:43 labels, minimum margin62.34px.
+- 5530 pixel checks: retained Bitmap/Surface, source copies,24 span commits,
+  final pixels, coverage shades and an independent input variant.
+- Active Clip B glyphs stay left, current Image RLE stays middle, and Clip A is
+  hidden after replacement. Scan marks never visit an empty right RLE lane.
+- Final coverage never exceeds the first circle-clipped coverage at any pixel.
+- Generated Lua/WebP are used by the site; --video optionally exports MP4.
+- Review frames are moved outside the source tree after validation.
 
-Cleanup
-Remove temporary native builds and review PNGs, keep small audit records. Existing
-B.2 video is retained; this is a separately embedded continuation with its initial
-state as poster.
+RLE glyph update
+- Coverage remains grayscale on the first pixel. Length segments connect first
+  and last pixel centers: (len - 1) cell intervals. len = 1 has neither a segment
+  nor an end cap. Geometry and coverage pixel samples are checked by the renderer.

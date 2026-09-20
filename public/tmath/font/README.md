@@ -19,7 +19,7 @@ Prepare returns. Draw uses `done()` before consuming the prepared data.
 
 It reuses the existing native path and baseline RLE/pixel fixtures below.
 The unchanged `font-delegation-native-trace.cpp` executable was replayed for x=5
-and x=8.5 using its pinned cdc1c959 build. The first exactly matches the published
+and x=8.5 using the 4d5810cf build. The first exactly matches the published
 baseline; the second is stored in `overview-translated.mjs`. Both native runs
 assert the same internal Shape/task survives Update and Draw, Update leaves the
 Canvas untouched, and an ordinary Shape produces the identical Canvas. The
@@ -48,7 +48,7 @@ these three glyphs have zero positioning offsets.
 Native evidence: `scripts/font-glyphs-native-trace.cpp` includes the unmodified
 `tvgSfntLoader.cpp`, replays `_build()` with native glyph metrics and positioning,
 and compares every prefix with the actual `TextImpl::shape` path. The local
-checkout is `cdc1c9596a5edebc159d5623d726febda7595896`. `_build()` and `wrapNone()`
+checkout is `4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad`. `_build()` and `wrapNone()`
 are unchanged from the article's v1.1.1 baseline. The native checkout is unmodified.
 
 Font: `thorvg/test/resources/PublicSans-Regular.ttf`, SHA256
@@ -94,17 +94,17 @@ before building/publishing the site.
 Refresh native fixtures from the site root:
 
 ```sh
-meson setup /tmp/thorvg-font-native-cdc1c959 thorvg \
+meson setup /tmp/thorvg-font-4d5810cf-build thorvg \
   -Dengines=cpu -Dloaders=ttf -Dsavers= -Dbindings= -Dextra= \
   -Dthreads=true -Dsimd=false -Ddefault_library=static -Dtests=false -Dbuildtype=debug
-meson compile -C /tmp/thorvg-font-native-cdc1c959
+meson compile -C /tmp/thorvg-font-4d5810cf-build
 c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
-  -I/tmp/thorvg-font-native-cdc1c959 -Ithorvg/inc -Ithorvg/src/common \
+  -I/tmp/thorvg-font-4d5810cf-build -Ithorvg/inc -Ithorvg/src/common \
   -Ithorvg/src/renderer -Ithorvg/src/loaders/sfnt \
-  scripts/font-glyphs-native-trace.cpp /tmp/thorvg-font-native-cdc1c959/src/libthorvg-1.a \
-  -lpthread -o /tmp/thorvg-font-native-cdc1c959/trace
-/tmp/thorvg-font-native-cdc1c959/trace thorvg/test/resources/PublicSans-Regular.ttf ABC
-/tmp/thorvg-font-native-cdc1c959/trace thorvg/test/resources/PublicSans-Regular.ttf BAC
+  scripts/font-glyphs-native-trace.cpp /tmp/thorvg-font-4d5810cf-build/src/libthorvg-1.a \
+  -lpthread -o /tmp/thorvg-font-4d5810cf-build/trace
+/tmp/thorvg-font-4d5810cf-build/trace thorvg/test/resources/PublicSans-Regular.ttf ABC
+/tmp/thorvg-font-4d5810cf-build/trace thorvg/test/resources/PublicSans-Regular.ttf BAC
 ```
 
 Place the resulting JSON records under the ABC/BAC keys of `native-trace.mjs`.
@@ -131,12 +131,12 @@ represent execution time or worker scheduling (the native fixture uses 0 workers
 
 ```sh
 c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
-  -I/tmp/thorvg-font-native-cdc1c959 -Ithorvg/inc -Ithorvg/src/common \
+  -I/tmp/thorvg-font-4d5810cf-build -Ithorvg/inc -Ithorvg/src/common \
   -Ithorvg/src/renderer -Ithorvg/src/renderer/cpu_engine \
-  scripts/font-delegation-native-trace.cpp /tmp/thorvg-font-native-cdc1c959/src/libthorvg-1.a \
-  -lpthread -o /tmp/thorvg-font-native-cdc1c959/delegation-trace
-/tmp/thorvg-font-native-cdc1c959/delegation-trace
-/tmp/thorvg-font-native-cdc1c959/delegation-trace translated
+  scripts/font-delegation-native-trace.cpp /tmp/thorvg-font-4d5810cf-build/src/libthorvg-1.a \
+  -lpthread -o /tmp/thorvg-font-4d5810cf-build/delegation-trace
+/tmp/thorvg-font-4d5810cf-build/delegation-trace
+/tmp/thorvg-font-4d5810cf-build/delegation-trace translated
 node scripts/render-font-glyphs.mjs --delegation --still
 node scripts/render-font-glyphs.mjs --delegation
 ```
@@ -164,12 +164,12 @@ controls at indices 3 and 4. No font binary or engine changes are added.
 
 ```sh
 c++ -std=c++17 -O2 -fno-access-control -DTVG_STATIC \
-  -I/tmp/thorvg-font-native-cdc1c959 -Ithorvg/inc -Ithorvg/src/common \
+  -I/tmp/thorvg-font-4d5810cf-build -Ithorvg/inc -Ithorvg/src/common \
   -Ithorvg/src/renderer -Ithorvg/src/loaders/sfnt \
-  scripts/font-curves-native-trace.cpp /tmp/thorvg-font-native-cdc1c959/src/libthorvg-1.a \
-  -lpthread -o /tmp/thorvg-font-native-cdc1c959/curves-trace
-/tmp/thorvg-font-native-cdc1c959/curves-trace B
-/tmp/thorvg-font-native-cdc1c959/curves-trace C
+  scripts/font-curves-native-trace.cpp /tmp/thorvg-font-4d5810cf-build/src/libthorvg-1.a \
+  -lpthread -o /tmp/thorvg-font-4d5810cf-build/curves-trace
+/tmp/thorvg-font-4d5810cf-build/curves-trace B
+/tmp/thorvg-font-4d5810cf-build/curves-trace C
 node scripts/render-font-glyphs.mjs --curves --still
 node scripts/render-font-glyphs.mjs --curves
 ```

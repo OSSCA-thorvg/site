@@ -45,33 +45,29 @@ c++ -std=c++17 -O2 -I thorvg/inc src/content/blog/Mentoring/LUA/image-clip-api.c
 node src/content/blog/Mentoring/LUA/build-image-clip.mjs
 node src/content/blog/Mentoring/LUA/render-image-clip.mjs /absolute/path/to/tmath-skills/assets/wasm
 
-Seven beats / motion semantics
-1. No clip -> unchanged source / full image result; image.rle nullptr.
-2. Rectangle viewport -> reduced result; image.rle remains nullptr.
-3. Circle clip shape + blue image boundary; reset Surface; prepare 32 clip spans.
-4. done() dependency, then six image rectangle spans in the center.
-5. Compare rows and preview the intersection on the right. Surface stays blank.
-6. Clear old image span list; move result into same center image.rle location.
-   The right preview is temporary calculation output, not another retained image.
-7. Select final image span, read source colors, move copies directly to Surface,
-   apply actual coverage-blended colors. Source and clip RLE remain unchanged.
-- Begin pixel plus center-origin length line, grayscale coverage. Active span
-  x/y/len/coverage labels; no colors flowing into or being stored inside RLE.
-- All intermediate reveals/copies are exposition of real data, not CPU timing or
-  an instrumented instruction/scanline schedule. Deterministic workers=0 evidence.
+Motion semantics
+1. Start with the circle clip, retained Bitmap and blank Surface.
+2. Reveal the left clip RLE, then done() and the middle raw Image RLE.
+3. Compare rows and preview the intersection on the right; Surface stays blank.
+4. Move the prepared result into the middle image.rle column.
+5. Read Bitmap colors through those spans and write Surface pixels.
+- No-clip and rectangle/viewport examples remain native fixtures only; neither
+  appears in this animation. The blue outline is the labeled image boundary.
+- Pixel shade encodes coverage; length connects first/last pixel centers.
+  Single-pixel spans have no line or end cap.
+- Reveals and copies explain captured data, not an instruction timing trace.
 
 Validation
-- 1046 frames, 2400x1400, 30fps, 34.82997s Lua duration.
-- All-frame layout bounds and Text/Text gap audit: 48 labels, min margin61.21px.
-- 6044 pixel checks: initial states, all intersection rows keep Surface blank,
-  source retained, source color copies in motion, every actual span commit,
-  final output, independent engine variant.
-- Begin and length glyph geometry verified, final image glyphs in the original
-  image.rle column, original rectangle spans hidden after replacement.
-- MP4 full decode, MDX compile and actual article playback/seek checked.
-- No further inline raster review; prior thread raster budget is exhausted.
-- Detailed audit: temp/image-clip/review.txt; playback: temp/image-paths/playback-review.txt.
+- 918 frames, 2400x1400, 30fps, 30.53999s Lua duration.
+- All-frame layout audit: 42 labels, minimum margin62.34px.
+- 5820 pixel checks: source retained, Prepare leaves Surface untouched, moving
+  color copies, span writes, final output, coverage shade and independent variant.
+- Opening contains the circle and no rectangle/no-clip example objects.
+- Begin/length geometry and singleton suppression verified.
+- Generated Lua and WebP are used by the site; --video optionally exports MP4.
+- Review frames are moved outside the source tree after validation.
 
-Cleanup
-Remove temporary native builds/executables and generated review PNGs. Preserve
-small review text reports. Existing B.1 movie and all other Overview media retained.
+RLE glyph update
+- Coverage remains grayscale on the first pixel. Length segments connect first
+  and last pixel centers: (len - 1) cell intervals. len = 1 has neither a segment
+  nor an end cap. Geometry and coverage pixel samples are checked by the renderer.

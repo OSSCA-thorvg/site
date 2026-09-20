@@ -125,7 +125,6 @@ c++ -std=c++17 -DTVG_STATIC \
   -I"$thorvgSource/src/common" scripts/update-rle-native.cpp \
   "$thorvgBuild/src/libthorvg-1.a" -o /tmp/update-rle-native
 node scripts/update-rle-generate.mjs /tmp/update-rle-native
-node --test tests/update-rle.test.mjs
 ```
 
 The RLE probe uses a curved path and a quarter-pixel translation. It compares the

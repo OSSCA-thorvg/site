@@ -1,6 +1,6 @@
 -- Actual ThorVG clip task dependency and RLE intersection evidence.
--- No clip / viewport rectangle / circle clip are independent Canvas runs.
--- Beats: no clip; rectangle viewport; circle clip Shape RLE; task done;
+-- One circle clip; earlier no-clip/viewport fixtures are not shown.
+-- Beats: circle clip Shape RLE; task done;
 -- raw image RLE; intersection preview then replace image.rle; fetch colors; write.
 -- Completed preparation results are revealed; no CPU timing/scheduler trace claim.
 -- Variant: independent engine run with circle cx=5.5. Text label_* standalone.
@@ -30,22 +30,15 @@ for y=0,trace.h-1 do for x=0,trace.w-1 do
  end
  output[at]=rect(scene,"output_"..at,bases[3]+(x+.5)*cell,gy+(y+.5)*cell,cell-2,cell-2,rgb(trace.cases[3].pixels[at+1]),"#cbd5df")
 end end
-local states={}
-local oldCounts,oldTitles={},{}
-local titles={"clip 없음","사각형 clip → viewport","원형 clip → Clip Task"}
-for i=1,3 do
- states[i]=scene:group{id="state_"..i,opacity=i==3 and 1 or 0}
- oldTitles[i]=label(states[i],"state_"..i,titles[i],130,80,32)
- oldCounts[i]=label(states[i],"count_"..i,"clips.count = "..trace.cases[i].clipTasks,bases[2],660,28)
- if i<3 then label(states[i],"null_"..i,"image.rle = nullptr",bases[3],660,28) end
-end
-rect(states[2],"rect_clip",bases[1]+6*cell,gy+4*cell,6*cell,4*cell,"#00000000","#8858b8",42)
+local states={[3]=scene:group{id="state_3"}}
+local stateTitle=label(states[3],"state_3","Circle Clip → Clip Task",130,80,32)
+local stateCount=label(states[3],"count_3","clips.count = "..trace.cases[3].clipTasks,bases[2],660,28)
 local c=trace.circle
-states[3]:circle{id="circle_clip",center=p(bases[1]+c.cx*cell,gy+c.cy*cell),radius=c.r*cell,fill="#00000000",stroke="#8858b8",width=3,layer=42}
+local circleClip=states[3]:circle{id="circle_clip",center=p(bases[1]+c.cx*cell,gy+c.cy*cell),radius=c.r*cell,fill="#00000000",stroke="#8858b8",width=3,layer=42}
 rect(states[3],"image_bounds",bases[1]+(trace.tx+trace.iw/2)*cell,gy+(trace.ty+trace.ih/2)*cell,trace.iw*cell,trace.ih*cell,"#00000000","#2078dc",40)
 label(states[3],"bounds","파란 사각형 · 이미지 경계",bases[1],660,26)
 local taskLabels=scene:group{id="task_labels",opacity=1}
-label(taskLabels,"clip_task","clip.shape.rle",bases[1],745,27)
+local clipLabel=label(taskLabels,"clip_task","clip.shape.rle",bases[1],745,27)
 label(taskLabels,"before","image.rle",bases[2],745,27)
 local previewLabel=label(scene:group{id="hidden_preview_label",opacity=0},"after","교집합 계산 결과",bases[3],745,27)
 local done=scene:group{id="clip_done",opacity=0}
@@ -53,10 +46,12 @@ label(done,"done","done()",710,1000,24)
 done:arrow{id="dependency",from=p(690,1050),to=p(860,1050),stroke="#526579",width=2,tip=10}
 local function spanGlyph(id,s,base)
  local g=scene:group{id=id,opacity=(string.sub(id,1,10)=="clip_span_" or string.sub(id,1,11)=="final_span_") and 1 or 0}
- local bx=base+(s.x+.5)*cell;local by=ry+(s.y+.5)*cell;local ex=bx+s.len*cell
+ local bx=base+(s.x+.5)*cell;local by=ry+(s.y+.5)*cell;local ex=bx+(s.len-1)*cell
  rect(g,id.."_begin",bx,by,cell-2,cell-2,gray(s.coverage),"#cbd5df",22)
+ if s.len > 1 then
  g:line{id=id.."_len",from=p(bx,by),to=p(ex,by),stroke="#526579",width=2.5,layer=28}
  g:line{id=id.."_end",from=p(ex,by-5),to=p(ex,by+5),stroke="#526579",width=1.5,layer=28}
+ end
  return g
 end
 local data=trace.cases[3]
@@ -70,7 +65,7 @@ label(rendering,"coverage_role","위치 · coverage",900,1280,26)
 local scans={}
 for y=0,trace.h-1 do
  local g=scene:group{id="scan_"..y,opacity=0};scans[y]=g
- for lane=1,3 do rect(g,"scan_row_"..y.."_"..lane,bases[lane]+trace.w*cell/2,ry+(y+.5)*cell,trace.w*cell-3,cell-3,"#00000000","#cf8c30",45) end
+ for lane=1,2 do rect(g,"scan_row_"..y.."_"..lane,bases[lane]+trace.w*cell/2,ry+(y+.5)*cell,trace.w*cell-3,cell-3,"#00000000","#cf8c30",45) end
 end
 for i,s in ipairs(data.clipRle) do clips[i]=spanGlyph("clip_span_"..i,s,bases[1]) end
 for i,s in ipairs(data.rawRle) do raw[i]=spanGlyph("raw_span_"..i,s,bases[2]) end
@@ -87,16 +82,12 @@ for i,s in ipairs(data.imageRle) do
  end
 end
 local counts=scene:group{id="rle_counts",opacity=1}
-label(counts,"clip_count",#data.clipRle.." spans",bases[1],790,24)
+local clipCount=label(counts,"clip_count",#data.clipRle.." spans",bases[1],790,24)
 local priorImageCount=label(counts,"final_count",#data.imageRle.." spans",bases[2],790,24)
-local function paintCase(index)
- local ops={}
- for y=0,trace.h-1 do for x=0,trace.w-1 do local at=y*trace.stride+x;ops[#ops+1]={target=output[at],fill=rgb(trace.cases[index].pixels[at+1])} end end
- scene:play(ops,.35)
-end
 
 -- Continuation: exact previous final frame, then a second clip. Original Bitmap
--- and clip A stay put. Image RLE is rebuilt and both clips are applied in order.
+-- stays put. Show the captured image RLE after A, then intersect with B.
+-- The left lane always shows the currently discussed clip; it changes A -> B.
 local nested={w=12,h=8,stride=16,iw=8,ih=6,tx=2,ty=1,background=4292800762,source={4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4293906576,4282434810,4282434810,4286608722,4293906576,4293906576,4293906576,4293906576,4293906576,4286608722,4286608722,4286608722,4286608722,4293906576,4293906576,4293906576,4286608722,4286608722,4286608722,4286608722,4286608722,4286608722,4293906576,4286608722,4286608722,4286608722,4286608722,4284060993,4284060993,4284060993,4284060993,4284060993,4284060993,4284060993,4284060993},firstPixels={4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292996073,4293645986,4293906576,4293906576,4293711523,4292996073,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800761,4293645986,4293906576,4293906576,4293906576,4293906576,4284337658,4292669690,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291878367,4293906576,4293906576,4293906576,4293906576,4293906576,4286608722,4291878625,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291878367,4286608722,4293906576,4293906576,4293906576,4286608722,4286608722,4291878625,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292734968,4287728496,4286608722,4293906576,4286608722,4286608722,4287794289,4292800505,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291486429,4285638243,4284060993,4284060993,4285703779,4291486686,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762},firstRle={{x=3,y=1,len=1,coverage=39},{x=4,y=1,len=1,coverage=210},{x=5,y=1,len=2,coverage=255},{x=7,y=1,len=1,coverage=209},{x=8,y=1,len=1,coverage=38},{x=2,y=2,len=1,coverage=2},{x=3,y=2,len=1,coverage=210},{x=4,y=2,len=4,coverage=255},{x=8,y=2,len=1,coverage=208},{x=9,y=2,len=1,coverage=2},{x=2,y=3,len=1,coverage=39},{x=3,y=3,len=6,coverage=255},{x=9,y=3,len=1,coverage=37},{x=2,y=4,len=1,coverage=39},{x=3,y=4,len=6,coverage=255},{x=9,y=4,len=1,coverage=37},{x=2,y=5,len=1,coverage=2},{x=3,y=5,len=1,coverage=209},{x=4,y=5,len=4,coverage=255},{x=8,y=5,len=1,coverage=207},{x=9,y=5,len=1,coverage=1},{x=3,y=6,len=1,coverage=38},{x=4,y=6,len=1,coverage=208},{x=5,y=6,len=2,coverage=255},{x=7,y=6,len=1,coverage=207},{x=8,y=6,len=1,coverage=37}},polygon={{0,0},{9,0},{4,8},{0,8}},clipA={{x=4,y=0,len=1,coverage=2},{x=5,y=0,len=2,coverage=39},{x=7,y=0,len=1,coverage=2},{x=3,y=1,len=1,coverage=39},{x=4,y=1,len=1,coverage=210},{x=5,y=1,len=2,coverage=255},{x=7,y=1,len=1,coverage=209},{x=8,y=1,len=1,coverage=38},{x=2,y=2,len=1,coverage=2},{x=3,y=2,len=1,coverage=210},{x=4,y=2,len=4,coverage=255},{x=8,y=2,len=1,coverage=208},{x=9,y=2,len=1,coverage=2},{x=2,y=3,len=1,coverage=39},{x=3,y=3,len=6,coverage=255},{x=9,y=3,len=1,coverage=37},{x=2,y=4,len=1,coverage=39},{x=3,y=4,len=6,coverage=255},{x=9,y=4,len=1,coverage=37},{x=2,y=5,len=1,coverage=2},{x=3,y=5,len=1,coverage=209},{x=4,y=5,len=4,coverage=255},{x=8,y=5,len=1,coverage=207},{x=9,y=5,len=1,coverage=1},{x=3,y=6,len=1,coverage=38},{x=4,y=6,len=1,coverage=208},{x=5,y=6,len=2,coverage=255},{x=7,y=6,len=1,coverage=207},{x=8,y=6,len=1,coverage=37},{x=4,y=7,len=1,coverage=2},{x=5,y=7,len=2,coverage=37},{x=7,y=7,len=1,coverage=1}},clipB={{x=0,y=0,len=8,coverage=255},{x=8,y=0,len=1,coverage=176},{x=0,y=1,len=7,coverage=255},{x=7,y=1,len=1,coverage=243},{x=8,y=1,len=1,coverage=29},{x=0,y=2,len=7,coverage=255},{x=7,y=2,len=1,coverage=111},{x=0,y=3,len=6,coverage=255},{x=6,y=3,len=1,coverage=205},{x=7,y=3,len=1,coverage=4},{x=0,y=4,len=5,coverage=255},{x=5,y=4,len=1,coverage=253},{x=6,y=4,len=1,coverage=51},{x=0,y=5,len=5,coverage=255},{x=5,y=5,len=1,coverage=143},{x=0,y=6,len=4,coverage=255},{x=4,y=6,len=1,coverage=227},{x=5,y=6,len=1,coverage=13},{x=0,y=7,len=4,coverage=255},{x=4,y=7,len=1,coverage=80}},rawRle={{x=2,y=1,len=8,coverage=255},{x=2,y=2,len=8,coverage=255},{x=2,y=3,len=8,coverage=255},{x=2,y=4,len=8,coverage=255},{x=2,y=5,len=8,coverage=255},{x=2,y=6,len=8,coverage=255}},afterCircle={{x=3,y=1,len=1,coverage=39},{x=4,y=1,len=1,coverage=210},{x=5,y=1,len=2,coverage=255},{x=7,y=1,len=1,coverage=209},{x=8,y=1,len=1,coverage=38},{x=2,y=2,len=1,coverage=2},{x=3,y=2,len=1,coverage=210},{x=4,y=2,len=4,coverage=255},{x=8,y=2,len=1,coverage=208},{x=9,y=2,len=1,coverage=2},{x=2,y=3,len=1,coverage=39},{x=3,y=3,len=6,coverage=255},{x=9,y=3,len=1,coverage=37},{x=2,y=4,len=1,coverage=39},{x=3,y=4,len=6,coverage=255},{x=9,y=4,len=1,coverage=37},{x=2,y=5,len=1,coverage=2},{x=3,y=5,len=1,coverage=209},{x=4,y=5,len=4,coverage=255},{x=8,y=5,len=1,coverage=207},{x=9,y=5,len=1,coverage=1},{x=3,y=6,len=1,coverage=38},{x=4,y=6,len=1,coverage=208},{x=5,y=6,len=2,coverage=255},{x=7,y=6,len=1,coverage=207},{x=8,y=6,len=1,coverage=37}},finalRle={{x=3,y=1,len=1,coverage=39},{x=4,y=1,len=1,coverage=210},{x=5,y=1,len=2,coverage=255},{x=7,y=1,len=1,coverage=199},{x=8,y=1,len=1,coverage=5},{x=2,y=2,len=1,coverage=2},{x=3,y=2,len=1,coverage=210},{x=4,y=2,len=3,coverage=255},{x=7,y=2,len=1,coverage=111},{x=2,y=3,len=1,coverage=39},{x=3,y=3,len=3,coverage=255},{x=6,y=3,len=1,coverage=205},{x=7,y=3,len=1,coverage=4},{x=2,y=4,len=1,coverage=39},{x=3,y=4,len=2,coverage=255},{x=5,y=4,len=1,coverage=253},{x=6,y=4,len=1,coverage=51},{x=2,y=5,len=1,coverage=2},{x=3,y=5,len=1,coverage=209},{x=4,y=5,len=1,coverage=255},{x=5,y=5,len=1,coverage=143},{x=3,y=6,len=1,coverage=38},{x=4,y=6,len=1,coverage=185},{x=5,y=6,len=1,coverage=13}},writes={{4292996073},{4293645986},{4293906576,4293906576},{4293646247},{4292800504},{4292800761},{4293645986},{4293906576,4293906576,4293906576},{4293255884},{4291878367},{4293906576,4293906576,4293906576},{4293711524},{4292800760},{4291878367},{4286608722,4293906576},{4293906576},{4292995813},{4292734968},{4287728496},{4286608722},{4293385919},{4291486429},{4286426740},{4292275184}},finalPixels={4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292996073,4293645986,4293906576,4293906576,4293646247,4292800504,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800761,4293645986,4293906576,4293906576,4293906576,4293255884,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291878367,4293906576,4293906576,4293906576,4293711524,4292800760,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291878367,4286608722,4293906576,4293906576,4292995813,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292734968,4287728496,4286608722,4293385919,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4291486429,4286426740,4292275184,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762,4292800762}}
 local newState=scene:group{id="nested_state",opacity=0}
 label(newState,"nested_title","Clip A + Clip B",130,80,32)
@@ -106,14 +97,12 @@ for i=1,4 do local a,b=nested.polygon[i],nested.polygon[i%4+1]
  clipB:line{id="clip_b_edge_"..i,from=p(130+a[1]*cell,gy+a[2]*cell),to=p(130+b[1]*cell,gy+b[2]*cell),stroke="#13877f",width=3,layer=44}
 end
 local secondLabel=scene:group{id="second_labels",opacity=0}
-label(secondLabel,"second_rle","clip B · shape.rle",1670,745,27)
-label(secondLabel,"second_count",#nested.clipB.." spans",1670,790,24)
-local rawLabel=scene:group{id="raw_label",opacity=0}
-label(rawLabel,"raw_count",#nested.rawRle.." spans",900,790,24)
+label(secondLabel,"second_rle","clip B · shape.rle",130,745,27)
+label(secondLabel,"second_count",#nested.clipB.." spans",130,790,24)
 local finalLabel=scene:group{id="nested_final_label",opacity=0}
 label(finalLabel,"nested_final_count",#nested.finalRle.." spans",900,790,24)
 local second,newFinal,newFocus,newCopies={},{},{},{}
-for i,s in ipairs(nested.clipB) do second[i]=spanGlyph("second_span_"..i,s,1670) end
+for i,s in ipairs(nested.clipB) do second[i]=spanGlyph("second_span_"..i,s,130) end
 for i,s in ipairs(nested.finalRle) do
  newFinal[i]=spanGlyph("nested_span_"..i,s,900)
  local g=scene:group{id="nested_focus_"..i,opacity=0};newFocus[i]=g
@@ -125,22 +114,16 @@ for i,s in ipairs(nested.finalRle) do
   rect(copy,"nested_pixel_"..i.."_"..j,900+(s.x+j+.5)*cell,gy+(s.y+.5)*cell,cell-4,cell-4,rgb(trace.source[idx]),"#526579",55)
  end
 end
-local function fadeList(list,value,seconds)
- local ops={};for _,g in ipairs(list) do ops[#ops+1]={target=g,opacity=value} end
- scene:play(ops,seconds)
-end
 scene:wait(2)
-scene:play({{target=oldCounts[3],opacity=0},{target=oldTitles[3],opacity=0}},.15)
+local replaceClip={{target=stateCount,opacity=0},{target=stateTitle,opacity=0},{target=circleClip,opacity=0},{target=clipLabel,opacity=0},{target=clipCount,opacity=0}}
+for _,g in ipairs(clips) do replaceClip[#replaceClip+1]={target=g,opacity=0} end
+scene:play(replaceClip,.15)
 scene:fade(newState,1,.15);scene:fade(clipB,1,.4);scene:wait(.8)
 scene:fade(rendering,0,.15);scene:fade(fetchLabel,0,.01);scene:fade(prepare,1,.15)
 scene:fade(secondLabel,1,.15)
 for _,g in ipairs(second) do scene:fade(g,1,.035) end
 scene:wait(.4)
--- A Clip update rebuilds the image rectangle before applying A then B.
-scene:fade(priorImageCount,0,.1);fadeList(final,0,.15)
-fadeList(raw,1,.25);scene:fade(rawLabel,1,.1);scene:wait(.6)
-scene:fade(rawLabel,0,.1);fadeList(raw,0,.15);fadeList(final,1,.25)
-scene:fade(priorImageCount,1,.1);scene:wait(.6)
+-- The captured result after A is unchanged; apply B to that current Image RLE.
 scene:fade(priorImageCount,0,.1)
 for y=0,trace.h-1 do
  scene:fade(scans[y],1,.08)

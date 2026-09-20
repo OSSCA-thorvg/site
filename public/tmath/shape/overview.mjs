@@ -7,11 +7,11 @@ export function buildShapeOverview(trace,{still=false}={}) {
   const ink='#202020',muted='#626262',blue='#2078dc',orange='#d66b30';
   const scene=tmath.scene({width,height,fps:30,loop:false,camera:{mode:'fixed',view:'2d',height:height/100},
     theme:{preset:'pro_white',background:'#f2f2f2',text:Object.fromEntries(['h1','h2','h3','text','code'].map(r=>[r,{font:'Pretendard',color:ink}]))}});
-  let serial=0,time=0;const textIds=[],textPolicies={},beats=[],states=new Map();
+  let serial=0,time=0;const textIds=[],textPolicies={},beats=[],states=new Map(),objectIds=new WeakMap(),spanLines=new Map();
   const id=()=>`shape-overview-${serial++}`,p=(x,y)=>[(x-width/2)/100,(height/2-y)/100];
-  function text(parent,value,x,y,size=20,color=ink,opacity=1){const key=id();textIds.push(key);textPolicies[key]={standalone:true};return parent.text({id:key,text:value,point:p(x,y),font:'Pretendard',size,fill:color,align:[0,.5],layer:60,opacity});}
-  function box(parent,x,y,w,h,fill,stroke='#00000000',layer=10,opacity=1){return parent.rectangle({id:id(),center:p(x+w/2,y+h/2),size:[w/100,h/100],fill,stroke,width:1,layer,opacity});}
-  function line(parent,a,b,color=blue,lineWidth=2,layer=30,opacity=1){return parent.line({id:id(),from:p(...a),to:p(...b),stroke:color,width:lineWidth,layer,opacity});}
+  function text(parent,value,x,y,size=20,color=ink,opacity=1){const key=id();textIds.push(key);textPolicies[key]={standalone:true};const handle=parent.text({id:key,text:value,point:p(x,y),font:'Pretendard',size,fill:color,align:[0,.5],layer:60,opacity});objectIds.set(handle,key);return handle;}
+  function box(parent,x,y,w,h,fill,stroke='#00000000',layer=10,opacity=1){const key=id(),handle=parent.rectangle({id:key,center:p(x+w/2,y+h/2),size:[w/100,h/100],fill,stroke,width:1,layer,opacity});objectIds.set(handle,key);return handle;}
+  function line(parent,a,b,color=blue,lineWidth=2,layer=30,opacity=1){const key=id(),handle=parent.line({id:key,from:p(...a),to:p(...b),stroke:color,width:lineWidth,layer,opacity});objectIds.set(handle,key);return handle;}
   const group=()=>scene.group({id:id(),opacity:0});
   // Keep transitions above float timeline precision, including the final minute.
   function show(g,d=0){const duration=still?.001:Math.max(.001,d);scene.fade(g,1,duration);time+=duration;}
@@ -29,17 +29,17 @@ export function buildShapeOverview(trace,{still=false}={}) {
   function pixel(parent,g,x,y,c,layer=20,opacity=1){return box(parent,g.x+x*g.u+1,g.y+y*g.u+1,g.u-2,g.u-2,c,'#00000000',layer,opacity);}
   function fullPath(parent,g,color,thickness=2){let i=0,commands=[];for(const c of trace.path.cmds){commands.push(c===0?{type:'close'}:c===3?{type:'cubic',control1:p(...at(g,trace.path.pts[i++])),control2:p(...at(g,trace.path.pts[i++])),to:p(...at(g,trace.path.pts[i++]))}:{type:c===1?'move':'line',to:p(...at(g,trace.path.pts[i++]))});if(c===0){parent.path({id:id(),commands,stroke:color,fill:'#00000000',width:thickness,layer:25});commands=[];}}}
   function heading(value,x,y,w=230){
-    const owner=box(scene,x,y-23,w,46,ink,ink);
-    const label=text(scene,value,x+18,y,22,'#ffffff');
-    textPolicies[label.id]={owner:owner.id,inset:12};
+    const owner=box(scene,x,y-28,w,56,ink,ink);
+    const label=text(scene,value,x+18,y-3,22,'#ffffff');
+    textPolicies[objectIds.get(label)]={owner:objectIds.get(owner),inset:12};
   }
   text(scene,'Shape',60,49,34);text(scene,'Path → Cell → RLE → Surface',800,49,23,muted);
   line(scene,[60,80],[1380,80],'#cccccc',1,3);
   heading('01  RenderPath',60,112);text(scene,'commands[]',570,108,23);text(scene,'points[]',970,108,23);
   heading('02  SwCell',60,589);heading('03  Coverage',800,589);
-  text(scene,'cover < 0',60,626,19,orange);text(scene,'cover ≥ 0',250,626,19,'#387c76');text(scene,'0 → 255',800,626,19,muted);
+  text(scene,'cover < 0',60,636,19,orange);text(scene,'cover ≥ 0',250,636,19,'#387c76');text(scene,'0 → 255',800,636,19,muted);
   heading('04  SwRle',60,1216);heading('05  Surface',800,1216);
-  text(scene,'x · y · len · coverage',60,1254,19,muted);text(scene,'RGBA pixels',800,1254,19,muted);
+  text(scene,'x · y · len · coverage',60,1264,19,muted);text(scene,'RGBA pixels',800,1264,19,muted);
   for(const y of [865,1500])scene.route({id:id(),points:[p(650,y),p(745,y)],stroke:ink,width:1.8,tip:9,layer:30});
   text(scene,'sweep',665,839,16,muted);text(scene,'draw',670,1474,16,muted);
   text(scene,'20 × 16 · EvenOdd',60,1814,19,muted);text(scene,'PREPARE  01–04     DRAW  05',900,1814,19,muted);
@@ -55,7 +55,7 @@ export function buildShapeOverview(trace,{still=false}={}) {
     else commands.push({type:'line',to:p(...at(grids.path,end))});
     const segment=scene.path({id:id(),commands,stroke:blue,fill:'#00000000',width:3,layer:35});draw(segment,cmd===3?.85:.4);current=end;
   });
-  text(scene,'SwOutline',60,547,20,muted);
+  text(scene,'SwOutline: path + out',60,535,20,muted);
   beat('Commands consume points and draw cubic segments, concavity and the inner contour.');
   let previousBand=null,previousRange=null;const rleHandles=new Map(),held=new Set();
   const bandEdges=group();
@@ -93,6 +93,7 @@ export function buildShapeOverview(trace,{still=false}={}) {
         hide(rleHandles.get(e.index));const g=group();rleHandles.set(e.index,g);const s=e.span,geometry=spanGeometry(s);
         pixel(g,grids.rle,s.x,s.y,gray(s.coverage),30);
         const length=line(g,at(grids.rle,geometry.start),at(grids.rle,geometry.end),blue,2,40);
+        spanLines.set(e.index,{id:objectIds.get(length),start:at(grids.rle,geometry.start),end:at(grids.rle,geometry.end)});
         g.point({id:id(),point:p(...at(grids.rle,geometry.start)),radius:2.3,fill:blue,layer:42});
         line(g,at(grids.rle,[geometry.end[0],geometry.end[1]-.17]),at(grids.rle,[geometry.end[0],geometry.end[1]+.17]),blue,1.5,42);
         show(g);draw(length,bi===0?.13:.055);
@@ -112,5 +113,5 @@ export function buildShapeOverview(trace,{still=false}={}) {
   }
   hide(cursor);status('draw','Complete',800,1762,19,muted);
   beat('Draw traverses the completed RLE and composites the native Surface pixels.');wait(1.5);if(still)scene.wait(1);
-  return {scene,textIds,textPolicies,beats,model};
+  return {scene,textIds,textPolicies,beats,model,spanLines:[...spanLines.values()],grids};
 }

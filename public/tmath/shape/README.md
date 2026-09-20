@@ -6,15 +6,15 @@ One-shot, 1440 × 1850, 30 fps. The article loads `overview.lua` and uses
 ```
 node scripts/render-shape-overview.mjs --still
 node scripts/render-shape-overview.mjs
+node scripts/render-shape-overview.mjs --variant
 ```
 
 ## Evidence
 
 `native-trace.mjs` records one 20 × 16 Shape with cubic curves, a concave notch,
 and an inner contour using EvenOdd. A second fixture translates it by 0.25 px.
-Source: ThorVG `cdc1c9596a5edebc159d5623d726febda7595896`,
-`src/renderer/cpu_engine/tvgSwRle.cpp`. This animation's evidence revision is
-explicitly separate from the older analysis revision mentioned in the article.
+Source: ThorVG `4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad`,
+`src/renderer/cpu_engine/tvgSwRle.cpp`. The article and all recorded evidence use this revision.
 
 `scripts/generate-shape-overview-trace.mjs` instruments a temporary COPY of that
 source and compiles `scripts/shape-overview-native.cpp` against a matching static
@@ -67,8 +67,27 @@ runtime. It audits every 30 fps frame plus the exact endpoint for text clipping,
 4 px separation, and explicit text ownership policies. Still builds skip
 the requirement that transient numeric readouts appear in a sampled frame.
 Beat rasters and audit JSON are disposable `temp/` artifacts. Native assertions
-are executed during trace generation; the renderer also replays the variant.
+are executed during trace generation; the renderer audits the complete baseline and variant independently.
 
 Presentation uses the Overview palette: neutral gray background, black node
 labels and thin connectors. All visible labels are English; explanatory prose
 and sweep formulas are omitted. Geometry and trace timing are unchanged.
+
+## Current Outline representation and migration validation
+
+The ordinary Shape Outline borrows a `RenderPath` containing commands and points;
+`utilExport` writes fixed-point `out`. Generated trim/dash/stroke/Image paths use
+pool storage. The native harness now supplies `outline.path`, not removed
+point-tag / contour-end arrays. A Close command consumes no extra point.
+
+Both native fixtures are regenerated at 4d5810cf. Full-frame delivery audits cover
+baseline and translated input. Actual final Surface and explanatory Coverage grids
+are checked at all 640 cell centers, and all retained RLE length lines are checked
+against native span endpoints. Stable WeakMap IDs make heading containment checks
+real; the heading backings leave 12 pixels around the registered font's ink.
+
+Migrated acceptance: baseline 1,693 frames / 56.395302 s / 98 span bounds;
+variant 1,704 frames / 56.747311 s / 101 span bounds. Both check 640 final
+pixel centers and report no text/containment errors. Two model tests replay the
+independent integer sweep, command consumption, variant propagation and corruption
+rejection. Exact final and band-construction rasters were inspected.

@@ -5,7 +5,6 @@
 ```sh
 node scripts/render-picture-overview.mjs
 node scripts/render-picture-overview.mjs --variant
-node --test tests/picture-overview.test.mjs
 ```
 
 The seven beats follow API input, Picture dispatch, pixel normalization, Image Prepare, Clip intersection,

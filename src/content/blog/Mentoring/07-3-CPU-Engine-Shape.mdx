@@ -1,5 +1,5 @@
 ---
-title: "[Core2026] CPU Engine - Shape"
+title: "[Core2026] Shape"
 github: "Nor-s"
 date: 2026-09-05
 summary: "Shape의 RenderPath가 Outline, Cell, coverage와 RLE를 거쳐 Surface에 기록되는 과정을 살펴봅니다."
@@ -9,6 +9,6 @@ draft: false
 
 import TMathPlayer from "../../../components/TMathPlayer.astro";
 
-# Core2026 > Engine > CPU Engine - 12
+# Core2026 > Engine > CPU Engine > Shape - 12
 
 <TMathPlayer scene="shape-overview" source={import.meta.env.BASE_URL + 'tmath/shape/overview.lua'} poster={import.meta.env.BASE_URL + 'tmath/shape/overview.webp'} title="Shape Overview — Path에서 Surface까지" description="곡선·오목한 부분·내부 구멍이 있는 Shape를 Command와 Point로 그린 뒤, Band별 경로 재순회와 Cell의 cover·area 누적, Coverage 계산, RLE append·merge, Surface 기록을 실제 CPU trace로 연결합니다. RLE 시작 픽셀의 밝기는 Coverage, 픽셀 중심에서 뻗는 선분의 길이는 len입니다." width={1440} height={1850} />

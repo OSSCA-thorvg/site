@@ -1,0 +1,67 @@
+---
+title: "[Core2026] ETC - Viewport"
+github: "Nor-s"
+date: 2026-09-20
+summary: "Follow one avatar Scene through Canvas::viewport, task clipBox capture, bounded image and Shape drawing, and clear policy."
+tags: ["ThorVG", "Core", "CPU", "Viewport"]
+draft: false
+---
+
+import TMathPlayer from '../../../../components/TMathPlayer.astro';
+import Disclosure from '../../../../components/Disclosure.astro';
+
+# Core2026 > Engine > CPU Engine > ETC - 13
+
+## Overview
+
+`Canvas::viewport(x, y, w, h)` limits where an avatar Scene's photo and badge are drawn. Their coordinates stay fixed. The same example follows stored bounds, CPU tasks, prepared geometry, clearing, and final pixels.
+
+<TMathPlayer scene="cpu-viewport-overview" source={import.meta.env.BASE_URL + 'tmath/cpu-regions/viewport.lua'} poster={import.meta.env.BASE_URL + 'tmath/cpu-regions/viewport.webp'} title="Viewport · CPU pipeline" description="One avatar Scene follows Canvas::viewport, RenderRegion, per-task clipBox, image bounds and Shape RLE, draw(false)/draw(true), and accumulated drawing. Each section loops locally; the final result stays fixed." width={1440} height={3260} loop autoplay />
+
+<Disclosure title="Example and source references">
+
+```cpp
+// Canvas target: 16 × 12 ABGR8888 pixels, initialized to 0xfff0eae5.
+// photoPixels: decoded opaque 16 × 12 ABGR8888 pixels.
+auto avatar = Scene::gen();
+auto photo = Picture::gen();
+photo->load(photoPixels, 16, 12, ColorSpace::ABGR8888, true);
+auto badge = Shape::gen();
+badge->appendCircle(12, 8.5, 2, 2);
+badge->fill(35, 160, 100);
+avatar->add(photo);
+avatar->add(badge);
+canvas->add(avatar);
+canvas->viewport(4, 2, 8, 7);
+canvas->update();
+canvas->draw(false);
+canvas->sync();
+```
+
+### From Canvas bounds to prepared Tasks
+
+| Owner | Field / type | This example |
+| --- | --- | --- |
+| `CanvasImpl` | `RenderRegion vport` | `min = {4,2}`, `max = {12,9}` |
+| `SwRenderer` | `RenderRegion vport` | The requested region intersected with target bounds |
+| Photo / badge `SwTask` | `RenderRegion clipBox` | Both capture `[4,12) × [2,9)` in `prepareCommon()` |
+| Photo `SwImageTask` | `curBox`, `SwImage image` | Direct image rendering uses bounded coordinates; `image.rle = nullptr` |
+| Badge `SwShapeTask` | `SwShape shape` | `shape.rle` contains only spans within `clipBox` |
+
+`Canvas::viewport(int32_t x, int32_t y, int32_t w, int32_t h)` stores the region and marks the Canvas damaged when it changes. `SceneImpl::update()` traverses the photo and badge; `prepareCommon()` captures the renderer viewport for each task. The Picture keeps its original pixel coordinates, and the Shape keeps its original coverage at included coordinates.
+
+The blue boundary represents the viewport. RLE glyphs use a shaded starting pixel for coverage and a line to the last included pixel center for length; `len = 1` has no line.
+
+The clear-policy comparison uses two independent **first draws on the same initialized target**. `draw(false)` retains pixels outside the viewport. `draw(true)` clears the entire target before drawing inside the viewport. Later partial updates have their own dirty-region clearing behavior.
+
+Native CPU execution at `4d5810cf` verifies both task clipBoxes, direct-image bounds, the null image RLE, badge spans, intermediate photo output, final output, and **zero compositor buffers**. A second fixture moves the viewport's x origin from 4 to 5 while preserving the input pixels and geometry. The last section shows successive states of one Main Surface; the result remains fixed.
+
+- [Public Canvas::viewport API](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L1034)
+- [Canvas viewport state](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h#L131)
+- [Task clipBox capture](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
+- [Image task preparation](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L190)
+- [Full clear and partial updates](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L262)
+
+</Disclosure>
+
+<a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/mask/'}>Mask</a> · <a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/clipping/'}>Clipping</a>

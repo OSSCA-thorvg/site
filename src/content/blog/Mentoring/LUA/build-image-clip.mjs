@@ -2,8 +2,8 @@ import fs from 'node:fs/promises';import path from 'node:path';import {fileURLTo
 const dir=path.dirname(fileURLToPath(import.meta.url));const trace=JSON.parse(await fs.readFile(path.join(dir,'image-clip-trace.txt'),'utf8'));
 const lua=v=>Array.isArray(v)?'{'+v.map(lua).join(',')+'}':v&&typeof v==='object'?'{'+Object.entries(v).map(([k,v])=>`${k}=${lua(v)}`).join(',')+'}':JSON.stringify(v);
 await fs.writeFile(path.join(dir,'sw-image-clip-tasks.lua'),`-- Actual ThorVG clip task dependency and RLE intersection evidence.
--- No clip / viewport rectangle / circle clip are independent Canvas runs.
--- Beats: no clip; rectangle viewport; circle clip Shape RLE; task done;
+-- One circle clip; earlier no-clip/viewport fixtures are not shown.
+-- Beats: circle clip Shape RLE; task done;
 -- raw image RLE; intersection preview then replace image.rle; fetch colors; write.
 -- Completed preparation results are revealed; no CPU timing/scheduler trace claim.
 -- Variant: independent engine run with circle cx=5.5. Text label_* standalone.
@@ -33,21 +33,15 @@ for y=0,trace.h-1 do for x=0,trace.w-1 do
  end
  output[at]=rect(scene,"output_"..at,bases[3]+(x+.5)*cell,gy+(y+.5)*cell,cell-2,cell-2,rgb(trace.background),"#cbd5df")
 end end
-local states={}
-local titles={"clip 없음","사각형 clip → viewport","원형 clip → Clip Task"}
-for i=1,3 do
- states[i]=scene:group{id="state_"..i,opacity=0}
- label(states[i],"state_"..i,titles[i],130,80,32)
- label(states[i],"count_"..i,"clips.count = "..trace.cases[i].clipTasks,bases[2],660,28)
- if i<3 then label(states[i],"null_"..i,"image.rle = nullptr",bases[3],660,28) end
-end
-rect(states[2],"rect_clip",bases[1]+6*cell,gy+4*cell,6*cell,4*cell,"#00000000","#8858b8",42)
+local states={[3]=scene:group{id="state_3"}}
+local stateTitle=label(states[3],"state_3","Circle Clip → Clip Task",130,80,32)
+local stateCount=label(states[3],"count_3","clips.count = "..trace.cases[3].clipTasks,bases[2],660,28)
 local c=trace.circle
-states[3]:circle{id="circle_clip",center=p(bases[1]+c.cx*cell,gy+c.cy*cell),radius=c.r*cell,fill="#00000000",stroke="#8858b8",width=3,layer=42}
+local circleClip=states[3]:circle{id="circle_clip",center=p(bases[1]+c.cx*cell,gy+c.cy*cell),radius=c.r*cell,fill="#00000000",stroke="#8858b8",width=3,layer=42}
 rect(states[3],"image_bounds",bases[1]+(trace.tx+trace.iw/2)*cell,gy+(trace.ty+trace.ih/2)*cell,trace.iw*cell,trace.ih*cell,"#00000000","#2078dc",40)
 label(states[3],"bounds","파란 사각형 · 이미지 경계",bases[1],660,26)
 local taskLabels=scene:group{id="task_labels",opacity=0}
-label(taskLabels,"clip_task","clip.shape.rle",bases[1],745,27)
+local clipLabel=label(taskLabels,"clip_task","clip.shape.rle",bases[1],745,27)
 label(taskLabels,"before","image.rle",bases[2],745,27)
 local previewLabel=label(taskLabels,"after","교집합 계산 결과",bases[3],745,27)
 local done=scene:group{id="clip_done",opacity=0}
@@ -55,10 +49,12 @@ label(done,"done","done()",710,1000,24)
 done:arrow{id="dependency",from=p(690,1050),to=p(860,1050),stroke="#526579",width=2,tip=10}
 local function spanGlyph(id,s,base)
  local g=scene:group{id=id,opacity=0}
- local bx=base+(s.x+.5)*cell;local by=ry+(s.y+.5)*cell;local ex=bx+s.len*cell
+ local bx=base+(s.x+.5)*cell;local by=ry+(s.y+.5)*cell;local ex=bx+(s.len-1)*cell
  rect(g,id.."_begin",bx,by,cell-2,cell-2,gray(s.coverage),"#cbd5df",22)
+ if s.len > 1 then
  g:line{id=id.."_len",from=p(bx,by),to=p(ex,by),stroke="#526579",width=2.5,layer=28}
  g:line{id=id.."_end",from=p(ex,by-5),to=p(ex,by+5),stroke="#526579",width=1.5,layer=28}
+ end
  return g
 end
 local data=trace.cases[3]
@@ -89,18 +85,11 @@ for i,s in ipairs(data.imageRle) do
  end
 end
 local counts=scene:group{id="rle_counts",opacity=0}
-label(counts,"clip_count",#data.clipRle.." spans",bases[1],790,24)
+local clipCount=label(counts,"clip_count",#data.clipRle.." spans",bases[1],790,24)
 label(counts,"final_count",#data.imageRle.." spans",bases[2],790,24)
-local function paintCase(index)
- local ops={}
- for y=0,trace.h-1 do for x=0,trace.w-1 do local at=y*trace.stride+x;ops[#ops+1]={target=output[at],fill=rgb(trace.cases[index].pixels[at+1])} end end
- scene:play(ops,.35)
-end
-scene:fade(states[1],1,.15);paintCase(1);scene:wait(1.3)
-scene:fade(states[1],0,.12);scene:fade(states[2],1,.2);paintCase(2);scene:wait(1.8)
-scene:fade(states[2],0,.12)
-local clear={};for y=0,trace.h-1 do for x=0,trace.w-1 do clear[#clear+1]={target=output[y*trace.stride+x],fill=rgb(trace.background)} end end
-scene:play(clear,.2);scene:fade(states[3],1,.2);scene:fade(taskLabels,1,.15);scene:fade(prepare,1,.15)
+-- BEGIN PLAYBACK
+scene:wait(.5)
+scene:fade(taskLabels,1,.15);scene:fade(prepare,1,.15)
 for _,g in ipairs(clips) do scene:fade(g,1,.035) end
 scene:fade(done,1,.2);scene:wait(.4)
 for _,g in ipairs(raw) do scene:fade(g,1,.10) end

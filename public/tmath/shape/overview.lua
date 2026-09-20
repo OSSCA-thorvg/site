@@ -179,23 +179,23 @@ refs[175] = scene:line {["from"]={0.8,-7.8},["id"]="shape-overview-174",["layer"
 refs[176] = scene:text {["align"]={0,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="shape-overview-175",["layer"]=60,["opacity"]=1,["point"]={-6.6,8.76},["size"]=34,["text"]="Shape"}
 refs[177] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-176",["layer"]=60,["opacity"]=1,["point"]={0.8,8.76},["size"]=23,["text"]="Path → Cell → RLE → Surface"}
 refs[178] = scene:line {["from"]={-6.6,8.45},["id"]="shape-overview-177",["layer"]=3,["opacity"]=1,["stroke"]="#cccccc",["to"]={6.6,8.45},["width"]=1}
-refs[179] = scene:rectangle {["center"]={-5.45,8.13},["fill"]="#202020",["id"]="shape-overview-178",["layer"]=10,["opacity"]=1,["size"]={2.3,0.46},["stroke"]="#202020",["width"]=1}
-refs[180] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-179",["layer"]=60,["opacity"]=1,["point"]={-6.42,8.13},["size"]=22,["text"]="01  RenderPath"}
+refs[179] = scene:rectangle {["center"]={-5.45,8.13},["fill"]="#202020",["id"]="shape-overview-178",["layer"]=10,["opacity"]=1,["size"]={2.3,0.56},["stroke"]="#202020",["width"]=1}
+refs[180] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-179",["layer"]=60,["opacity"]=1,["point"]={-6.42,8.16},["size"]=22,["text"]="01  RenderPath"}
 refs[181] = scene:text {["align"]={0,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="shape-overview-180",["layer"]=60,["opacity"]=1,["point"]={-1.5,8.17},["size"]=23,["text"]="commands[]"}
 refs[182] = scene:text {["align"]={0,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="shape-overview-181",["layer"]=60,["opacity"]=1,["point"]={2.5,8.17},["size"]=23,["text"]="points[]"}
-refs[183] = scene:rectangle {["center"]={-5.45,3.36},["fill"]="#202020",["id"]="shape-overview-182",["layer"]=10,["opacity"]=1,["size"]={2.3,0.46},["stroke"]="#202020",["width"]=1}
-refs[184] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-183",["layer"]=60,["opacity"]=1,["point"]={-6.42,3.36},["size"]=22,["text"]="02  SwCell"}
-refs[185] = scene:rectangle {["center"]={1.95,3.36},["fill"]="#202020",["id"]="shape-overview-184",["layer"]=10,["opacity"]=1,["size"]={2.3,0.46},["stroke"]="#202020",["width"]=1}
-refs[186] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-185",["layer"]=60,["opacity"]=1,["point"]={0.98,3.36},["size"]=22,["text"]="03  Coverage"}
-refs[187] = scene:text {["align"]={0,0.5},["fill"]="#d66b30",["font"]="Pretendard",["id"]="shape-overview-186",["layer"]=60,["opacity"]=1,["point"]={-6.6,2.99},["size"]=19,["text"]="cover < 0"}
-refs[188] = scene:text {["align"]={0,0.5},["fill"]="#387c76",["font"]="Pretendard",["id"]="shape-overview-187",["layer"]=60,["opacity"]=1,["point"]={-4.7,2.99},["size"]=19,["text"]="cover ≥ 0"}
-refs[189] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-188",["layer"]=60,["opacity"]=1,["point"]={0.8,2.99},["size"]=19,["text"]="0 → 255"}
-refs[190] = scene:rectangle {["center"]={-5.45,-2.91},["fill"]="#202020",["id"]="shape-overview-189",["layer"]=10,["opacity"]=1,["size"]={2.3,0.46},["stroke"]="#202020",["width"]=1}
-refs[191] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-190",["layer"]=60,["opacity"]=1,["point"]={-6.42,-2.91},["size"]=22,["text"]="04  SwRle"}
-refs[192] = scene:rectangle {["center"]={1.95,-2.91},["fill"]="#202020",["id"]="shape-overview-191",["layer"]=10,["opacity"]=1,["size"]={2.3,0.46},["stroke"]="#202020",["width"]=1}
-refs[193] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-192",["layer"]=60,["opacity"]=1,["point"]={0.98,-2.91},["size"]=22,["text"]="05  Surface"}
-refs[194] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-193",["layer"]=60,["opacity"]=1,["point"]={-6.6,-3.29},["size"]=19,["text"]="x · y · len · coverage"}
-refs[195] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-194",["layer"]=60,["opacity"]=1,["point"]={0.8,-3.29},["size"]=19,["text"]="RGBA pixels"}
+refs[183] = scene:rectangle {["center"]={-5.45,3.36},["fill"]="#202020",["id"]="shape-overview-182",["layer"]=10,["opacity"]=1,["size"]={2.3,0.56},["stroke"]="#202020",["width"]=1}
+refs[184] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-183",["layer"]=60,["opacity"]=1,["point"]={-6.42,3.39},["size"]=22,["text"]="02  SwCell"}
+refs[185] = scene:rectangle {["center"]={1.95,3.36},["fill"]="#202020",["id"]="shape-overview-184",["layer"]=10,["opacity"]=1,["size"]={2.3,0.56},["stroke"]="#202020",["width"]=1}
+refs[186] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-185",["layer"]=60,["opacity"]=1,["point"]={0.98,3.39},["size"]=22,["text"]="03  Coverage"}
+refs[187] = scene:text {["align"]={0,0.5},["fill"]="#d66b30",["font"]="Pretendard",["id"]="shape-overview-186",["layer"]=60,["opacity"]=1,["point"]={-6.6,2.89},["size"]=19,["text"]="cover < 0"}
+refs[188] = scene:text {["align"]={0,0.5},["fill"]="#387c76",["font"]="Pretendard",["id"]="shape-overview-187",["layer"]=60,["opacity"]=1,["point"]={-4.7,2.89},["size"]=19,["text"]="cover ≥ 0"}
+refs[189] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-188",["layer"]=60,["opacity"]=1,["point"]={0.8,2.89},["size"]=19,["text"]="0 → 255"}
+refs[190] = scene:rectangle {["center"]={-5.45,-2.91},["fill"]="#202020",["id"]="shape-overview-189",["layer"]=10,["opacity"]=1,["size"]={2.3,0.56},["stroke"]="#202020",["width"]=1}
+refs[191] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-190",["layer"]=60,["opacity"]=1,["point"]={-6.42,-2.88},["size"]=22,["text"]="04  SwRle"}
+refs[192] = scene:rectangle {["center"]={1.95,-2.91},["fill"]="#202020",["id"]="shape-overview-191",["layer"]=10,["opacity"]=1,["size"]={2.3,0.56},["stroke"]="#202020",["width"]=1}
+refs[193] = scene:text {["align"]={0,0.5},["fill"]="#ffffff",["font"]="Pretendard",["id"]="shape-overview-192",["layer"]=60,["opacity"]=1,["point"]={0.98,-2.88},["size"]=22,["text"]="05  Surface"}
+refs[194] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-193",["layer"]=60,["opacity"]=1,["point"]={-6.6,-3.39},["size"]=19,["text"]="x · y · len · coverage"}
+refs[195] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-194",["layer"]=60,["opacity"]=1,["point"]={0.8,-3.39},["size"]=19,["text"]="RGBA pixels"}
 refs[196] = scene:route {["id"]="shape-overview-195",["layer"]=30,["points"]={{-0.7,0.6},{0.25,0.6}},["stroke"]="#202020",["tip"]=9,["width"]=1.8}
 refs[197] = scene:route {["id"]="shape-overview-196",["layer"]=30,["points"]={{-0.7,-5.75},{0.25,-5.75}},["stroke"]="#202020",["tip"]=9,["width"]=1.8}
 refs[198] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-197",["layer"]=60,["opacity"]=1,["point"]={-0.55,0.86},["size"]=16,["text"]="sweep"}
@@ -338,7 +338,7 @@ refs[290] = refs[289]:text {["align"]={0,0.5},["fill"]="#202020",["font"]="Prete
 scene:fade(refs[289],1,0.001,"smooth")
 refs[291] = scene:path {["commands"]={{["to"]={-4.9325,5.3925},["type"]="move"},{["to"]={-5.1625,6.3125},["type"]="line"}},["fill"]="#00000000",["id"]="shape-overview-290",["layer"]=35,["stroke"]="#2078dc",["width"]=3}
 scene:create(refs[291],0.4,"smooth",0)
-refs[292] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-291",["layer"]=60,["opacity"]=1,["point"]={-6.6,3.78},["size"]=20,["text"]="SwOutline"}
+refs[292] = scene:text {["align"]={0,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="shape-overview-291",["layer"]=60,["opacity"]=1,["point"]={-6.6,3.9},["size"]=20,["text"]="SwOutline: path + out"}
 scene:wait(0.8)
 refs[293] = scene:group {["id"]="shape-overview-292",["opacity"]=0}
 refs[294] = refs[293]:line {["from"]={-6.6,2.65},["id"]="shape-overview-293",["layer"]=46,["opacity"]=1,["stroke"]="#2078dc",["to"]={-1.2,2.65},["width"]=2}

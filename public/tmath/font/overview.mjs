@@ -5,7 +5,7 @@ import {pathCommands,verifyTrace} from './glyphs.mjs';
 
 // Local b4471844: TextImpl constructor/load/update/render; SfntLoader::_build,
 // wrapNone/request/get; ShapeImpl update/render; SwRenderer prepare/renderShape.
-// Exact Public Sans ABC paths and CPU pixels are the existing cdc1c959 fixtures.
+// Exact Public Sans ABC paths and CPU pixels are the fixtures revalidated byte-for-byte at 4d5810cf.
 // Six beats: text/font; glyph loading; append to one Shape; common Prepare;
 // Draw reads the same rd; native Surface output. Visibility is presentation order,
 // not a worker schedule. Glyphs accumulate in place; no travelling copies.

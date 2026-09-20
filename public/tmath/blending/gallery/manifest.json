@@ -1,0 +1,760 @@
+{
+  "commit": "4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad",
+  "exampleCommit": "8df10a059239b033f82961af9294b3f9bea0a350",
+  "width": 128,
+  "height": 128,
+  "sample": [
+    60,
+    60
+  ],
+  "records": [
+    {
+      "mode": "Normal",
+      "case": "solid",
+      "file": "Normal-solid.webp",
+      "rgba": [
+        0,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Normal",
+      "case": "alpha",
+      "file": "Normal-alpha.webp",
+      "rgba": [
+        63,
+        190,
+        127,
+        190
+      ]
+    },
+    {
+      "mode": "Normal",
+      "case": "gradient",
+      "file": "Normal-gradient.webp",
+      "rgba": [
+        146,
+        92,
+        146,
+        241
+      ]
+    },
+    {
+      "mode": "Normal",
+      "case": "midtone",
+      "file": "Normal-midtone.webp",
+      "rgba": [
+        230,
+        97,
+        33,
+        255
+      ]
+    },
+    {
+      "mode": "Multiply",
+      "case": "solid",
+      "file": "Multiply-solid.webp",
+      "rgba": [
+        0,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "Multiply",
+      "case": "alpha",
+      "file": "Multiply-alpha.webp",
+      "rgba": [
+        0,
+        126,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "Multiply",
+      "case": "gradient",
+      "file": "Multiply-gradient.webp",
+      "rgba": [
+        84,
+        66,
+        84,
+        251
+      ]
+    },
+    {
+      "mode": "Multiply",
+      "case": "midtone",
+      "file": "Multiply-midtone.webp",
+      "rgba": [
+        44,
+        52,
+        27,
+        255
+      ]
+    },
+    {
+      "mode": "Screen",
+      "case": "solid",
+      "file": "Screen-solid.webp",
+      "rgba": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Screen",
+      "case": "alpha",
+      "file": "Screen-alpha.webp",
+      "rgba": [
+        127,
+        190,
+        127,
+        255
+      ]
+    },
+    {
+      "mode": "Screen",
+      "case": "gradient",
+      "file": "Screen-gradient.webp",
+      "rgba": [
+        175,
+        160,
+        175,
+        255
+      ]
+    },
+    {
+      "mode": "Screen",
+      "case": "midtone",
+      "file": "Screen-midtone.webp",
+      "rgba": [
+        234,
+        181,
+        214,
+        255
+      ]
+    },
+    {
+      "mode": "Overlay",
+      "case": "solid",
+      "file": "Overlay-solid.webp",
+      "rgba": [
+        255,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "Overlay",
+      "case": "alpha",
+      "file": "Overlay-alpha.webp",
+      "rgba": [
+        127,
+        190,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "Overlay",
+      "case": "gradient",
+      "file": "Overlay-gradient.webp",
+      "rgba": [
+        124,
+        114,
+        124,
+        251
+      ]
+    },
+    {
+      "mode": "Overlay",
+      "case": "midtone",
+      "file": "Overlay-midtone.webp",
+      "rgba": [
+        88,
+        107,
+        173,
+        255
+      ]
+    },
+    {
+      "mode": "Darken",
+      "case": "solid",
+      "file": "Darken-solid.webp",
+      "rgba": [
+        0,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "Darken",
+      "case": "alpha",
+      "file": "Darken-alpha.webp",
+      "rgba": [
+        0,
+        126,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "Darken",
+      "case": "gradient",
+      "file": "Darken-gradient.webp",
+      "rgba": [
+        113,
+        91,
+        113,
+        251
+      ]
+    },
+    {
+      "mode": "Darken",
+      "case": "midtone",
+      "file": "Darken-midtone.webp",
+      "rgba": [
+        48,
+        97,
+        33,
+        255
+      ]
+    },
+    {
+      "mode": "Lighten",
+      "case": "solid",
+      "file": "Lighten-solid.webp",
+      "rgba": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Lighten",
+      "case": "alpha",
+      "file": "Lighten-alpha.webp",
+      "rgba": [
+        127,
+        127,
+        127,
+        255
+      ]
+    },
+    {
+      "mode": "Lighten",
+      "case": "gradient",
+      "file": "Lighten-gradient.webp",
+      "rgba": [
+        146,
+        107,
+        146,
+        255
+      ]
+    },
+    {
+      "mode": "Lighten",
+      "case": "midtone",
+      "file": "Lighten-midtone.webp",
+      "rgba": [
+        230,
+        136,
+        208,
+        255
+      ]
+    },
+    {
+      "mode": "ColorDodge",
+      "case": "solid",
+      "file": "ColorDodge-solid.webp",
+      "rgba": [
+        255,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "ColorDodge",
+      "case": "alpha",
+      "file": "ColorDodge-alpha.webp",
+      "rgba": [
+        127,
+        190,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "ColorDodge",
+      "case": "gradient",
+      "file": "ColorDodge-gradient.webp",
+      "rgba": [
+        205,
+        194,
+        205,
+        251
+      ]
+    },
+    {
+      "mode": "ColorDodge",
+      "case": "midtone",
+      "file": "ColorDodge-midtone.webp",
+      "rgba": [
+        255,
+        219,
+        238,
+        255
+      ]
+    },
+    {
+      "mode": "ColorBurn",
+      "case": "solid",
+      "file": "ColorBurn-solid.webp",
+      "rgba": [
+        255,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "ColorBurn",
+      "case": "alpha",
+      "file": "ColorBurn-alpha.webp",
+      "rgba": [
+        127,
+        190,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "ColorBurn",
+      "case": "gradient",
+      "file": "ColorBurn-gradient.webp",
+      "rgba": [
+        45,
+        28,
+        45,
+        251
+      ]
+    },
+    {
+      "mode": "ColorBurn",
+      "case": "midtone",
+      "file": "ColorBurn-midtone.webp",
+      "rgba": [
+        26,
+        0,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "HardLight",
+      "case": "solid",
+      "file": "HardLight-solid.webp",
+      "rgba": [
+        0,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "HardLight",
+      "case": "alpha",
+      "file": "HardLight-alpha.webp",
+      "rgba": [
+        0,
+        190,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "HardLight",
+      "case": "gradient",
+      "file": "HardLight-gradient.webp",
+      "rgba": [
+        129,
+        105,
+        129,
+        251
+      ]
+    },
+    {
+      "mode": "HardLight",
+      "case": "midtone",
+      "file": "HardLight-midtone.webp",
+      "rgba": [
+        213,
+        104,
+        54,
+        255
+      ]
+    },
+    {
+      "mode": "SoftLight",
+      "case": "solid",
+      "file": "SoftLight-solid.webp",
+      "rgba": [
+        255,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "SoftLight",
+      "case": "alpha",
+      "file": "SoftLight-alpha.webp",
+      "rgba": [
+        127,
+        190,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "SoftLight",
+      "case": "gradient",
+      "file": "SoftLight-gradient.webp",
+      "rgba": [
+        119,
+        123,
+        119,
+        251
+      ]
+    },
+    {
+      "mode": "SoftLight",
+      "case": "midtone",
+      "file": "SoftLight-midtone.webp",
+      "rgba": [
+        98,
+        121,
+        180,
+        255
+      ]
+    },
+    {
+      "mode": "Difference",
+      "case": "solid",
+      "file": "Difference-solid.webp",
+      "rgba": [
+        255,
+        0,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Difference",
+      "case": "alpha",
+      "file": "Difference-alpha.webp",
+      "rgba": [
+        127,
+        0,
+        127,
+        255
+      ]
+    },
+    {
+      "mode": "Difference",
+      "case": "gradient",
+      "file": "Difference-gradient.webp",
+      "rgba": [
+        77,
+        15,
+        77,
+        255
+      ]
+    },
+    {
+      "mode": "Difference",
+      "case": "midtone",
+      "file": "Difference-midtone.webp",
+      "rgba": [
+        182,
+        39,
+        175,
+        255
+      ]
+    },
+    {
+      "mode": "Exclusion",
+      "case": "solid",
+      "file": "Exclusion-solid.webp",
+      "rgba": [
+        255,
+        0,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Exclusion",
+      "case": "alpha",
+      "file": "Exclusion-alpha.webp",
+      "rgba": [
+        127,
+        126,
+        127,
+        255
+      ]
+    },
+    {
+      "mode": "Exclusion",
+      "case": "gradient",
+      "file": "Exclusion-gradient.webp",
+      "rgba": [
+        135,
+        121,
+        135,
+        255
+      ]
+    },
+    {
+      "mode": "Exclusion",
+      "case": "midtone",
+      "file": "Exclusion-midtone.webp",
+      "rgba": [
+        190,
+        129,
+        187,
+        255
+      ]
+    },
+    {
+      "mode": "Hue",
+      "case": "solid",
+      "file": "Hue-solid.webp",
+      "rgba": [
+        163,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Hue",
+      "case": "alpha",
+      "file": "Hue-alpha.webp",
+      "rgba": [
+        81,
+        190,
+        190,
+        190
+      ]
+    },
+    {
+      "mode": "Hue",
+      "case": "gradient",
+      "file": "Hue-gradient.webp",
+      "rgba": [
+        168,
+        112,
+        168,
+        251
+      ]
+    },
+    {
+      "mode": "Hue",
+      "case": "midtone",
+      "file": "Hue-midtone.webp",
+      "rgba": [
+        212,
+        103,
+        52,
+        255
+      ]
+    },
+    {
+      "mode": "Saturation",
+      "case": "solid",
+      "file": "Saturation-solid.webp",
+      "rgba": [
+        255,
+        255,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "Saturation",
+      "case": "alpha",
+      "file": "Saturation-alpha.webp",
+      "rgba": [
+        122,
+        185,
+        122,
+        190
+      ]
+    },
+    {
+      "mode": "Saturation",
+      "case": "gradient",
+      "file": "Saturation-gradient.webp",
+      "rgba": [
+        113,
+        134,
+        113,
+        251
+      ]
+    },
+    {
+      "mode": "Saturation",
+      "case": "midtone",
+      "file": "Saturation-midtone.webp",
+      "rgba": [
+        31,
+        139,
+        228,
+        255
+      ]
+    },
+    {
+      "mode": "Color",
+      "case": "solid",
+      "file": "Color-solid.webp",
+      "rgba": [
+        163,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Color",
+      "case": "alpha",
+      "file": "Color-alpha.webp",
+      "rgba": [
+        82,
+        190,
+        190,
+        190
+      ]
+    },
+    {
+      "mode": "Color",
+      "case": "gradient",
+      "file": "Color-gradient.webp",
+      "rgba": [
+        167,
+        112,
+        167,
+        251
+      ]
+    },
+    {
+      "mode": "Color",
+      "case": "midtone",
+      "file": "Color-midtone.webp",
+      "rgba": [
+        233,
+        100,
+        36,
+        255
+      ]
+    },
+    {
+      "mode": "Luminosity",
+      "case": "solid",
+      "file": "Luminosity-solid.webp",
+      "rgba": [
+        217,
+        217,
+        0,
+        255
+      ]
+    },
+    {
+      "mode": "Luminosity",
+      "case": "alpha",
+      "file": "Luminosity-alpha.webp",
+      "rgba": [
+        53,
+        116,
+        63,
+        190
+      ]
+    },
+    {
+      "mode": "Luminosity",
+      "case": "gradient",
+      "file": "Luminosity-gradient.webp",
+      "rgba": [
+        92,
+        114,
+        92,
+        251
+      ]
+    },
+    {
+      "mode": "Luminosity",
+      "case": "midtone",
+      "file": "Luminosity-midtone.webp",
+      "rgba": [
+        45,
+        133,
+        205,
+        255
+      ]
+    },
+    {
+      "mode": "Add",
+      "case": "solid",
+      "file": "Add-solid.webp",
+      "rgba": [
+        255,
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "mode": "Add",
+      "case": "alpha",
+      "file": "Add-alpha.webp",
+      "rgba": [
+        127,
+        254,
+        127,
+        255
+      ]
+    },
+    {
+      "mode": "Add",
+      "case": "gradient",
+      "file": "Add-gradient.webp",
+      "rgba": [
+        215,
+        199,
+        215,
+        255
+      ]
+    },
+    {
+      "mode": "Add",
+      "case": "midtone",
+      "file": "Add-midtone.webp",
+      "rgba": [
+        255,
+        233,
+        241,
+        255
+      ]
+    }
+  ]
+}

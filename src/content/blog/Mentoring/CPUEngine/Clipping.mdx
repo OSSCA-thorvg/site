@@ -1,0 +1,81 @@
+---
+title: "[Core2026] ETC - Clipping"
+github: "Nor-s"
+date: 2026-09-20
+summary: "Follow Paint::clip through one avatar Scene: Shape reference, shared CPU clipper task, per-child RLE, and drawing."
+tags: ["ThorVG", "Core", "CPU", "Clipping"]
+draft: false
+---
+
+import TMathPlayer from '../../../../components/TMathPlayer.astro';
+import Disclosure from '../../../../components/Disclosure.astro';
+import imageClipTasksScene from '../LUA/sw-image-clip-tasks.lua?url';
+import imageClipTasksPoster from '../IMAGE/07-SW-Overview/image-clip-tasks.webp';
+import imageNestedClipScene from '../LUA/sw-image-nested-clip.lua?url';
+import imageNestedClipPoster from '../IMAGE/07-SW-Overview/image-nested-clip.webp';
+
+# Core2026 > Engine > CPU Engine > ETC - 12
+
+## Overview
+
+`Paint::clip(Shape* clipper)` clips the photo Picture and status-badge Shape inside a profile card’s avatar Scene. The same objects are traced through every stage below.
+
+<TMathPlayer scene="cpu-clipping-overview" source={import.meta.env.BASE_URL + 'tmath/cpu-regions/clipping.lua'} poster={import.meta.env.BASE_URL + 'tmath/cpu-regions/clipping.webp'} title="Clipping · CPU pipeline" description="One avatar example follows Paint::clip, Paint::Impl::clipper, the shared SwShapeTask, photo and badge RLE intersections, and final drawing. The API section shows inputs and ownership; output appears only in Draw." width={1440} height={3260} loop autoplay />
+
+<TMathPlayer scene="sw-image-clip-tasks" source={imageClipTasksScene} poster={imageClipTasksPoster.src} title="Image RLE — Generate and Intersect" description="Image and clip RLE intersection." width={2400} height={1400} />
+
+<TMathPlayer scene="sw-image-nested-clip" source={imageNestedClipScene} poster={imageNestedClipPoster.src} title="Nested Clip — Sequential Intersection" description="Sequential clipping of image RLE." width={2400} height={1400} />
+
+<Disclosure title="Example and source references">
+
+```cpp
+// photoPixels: decoded 16 × 12 pixels in ABGR8888.
+auto background = Shape::gen();
+background->appendRect(0, 0, 16, 12);
+background->fill(232, 238, 241);
+
+auto avatar = Scene::gen();
+auto photo = Picture::gen();
+photo->load(photoPixels, 16, 12, ColorSpace::ABGR8888, true);
+auto badge = Shape::gen();
+badge->appendCircle(12, 8.5, 2, 2);
+badge->fill(35, 160, 100);
+avatar->add(photo);
+avatar->add(badge);
+
+auto roundClip = Shape::gen();
+roundClip->appendCircle(8, 5.5, 5, 5);
+avatar->clip(roundClip);  // Paint::clip(Shape*)
+
+canvas->add(background);
+canvas->add(avatar);
+canvas->update();
+canvas->draw(true);
+canvas->sync();
+```
+
+### The clipper's data
+
+There is no separate `ClipperData` object in this implementation.
+
+| Owner | Field / type | This example |
+| --- | --- | --- |
+| `avatar`'s `Paint::Impl` | `Shape* clipper` | References `roundClip`; the clip API retains it |
+| `roundClip`'s `Paint::Impl` | `RenderData rd` (`void*`) | Receives the CPU `SwShapeTask` during Update |
+| `SwShapeTask` | `bool clipper`, `SwShape shape` | Clipper mode is true; the circle produces `shape.rle` |
+| `SwRle` | `Array<SwSpan> spans` | Each span stores `x`, `y`, `len`, and `coverage` |
+| Photo / badge `SwTask` | `Array<RenderData> clips` | Both contain the same roundClip Task handle |
+
+`SwShapeTask::clip(SwRle* target)` is the **internal CPU operation**, distinct from the public `Paint::clip(Shape*)`. It selects stroke RLE, a rectangle bounds fast path, or fill RLE. This circle has no stroke and uses fill RLE. The photo's `image.rle` and the badge's `shape.rle` are intersected separately with that shared coverage.
+
+Native CPU execution at `4d5810cf` verifies the task identities, clip counts `[1, 1]`, span values, and output pixels. One badge coverage sample is `(100 × 203 + 255) >> 8 = 80`. No mask compositor is allocated. A second fixture shifts the same clipper's center to x=7.25.
+
+- [Public Paint::clip API](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L540)
+- [Retained Shape reference](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.h#L190)
+- [Clip context push / pop](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgPaint.cpp#L242)
+- [SwTask and SwShapeTask](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L38)
+- [SwSpan and SwRle](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwCommon.h#L116)
+
+</Disclosure>
+
+<a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/mask/'}>Mask</a> · <a href={import.meta.env.BASE_URL + 'blog/mentoring/cpuengine/viewport/'}>Viewport</a>

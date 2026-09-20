@@ -22,18 +22,21 @@ try{
   eq(pixel(b,width,1670+(x+.5)*44,220+(y+.5)*44),rgb(memory[y*trace.stride+x]),name);
   if(x>=trace.tx&&x<trace.tx+trace.iw&&y>=trace.ty&&y<trace.ty+trace.ih)eq(pixel(b,width,900+(x+.5)*44,220+(y+.5)*44),rgb(trace.source[(y-trace.ty)*trace.iw+x-trace.tx]),'retained source');
  }};
- check(0,'initial');memory=trace.cases[0].pixels.slice();check(.55,'no clip');memory=trace.cases[1].pixels.slice();check(2.55,'viewport rectangle');
+ check(0,'circle clip input');
+ const opening=runtime.layoutReport(0,4).objects;
+ assert(opening.some(o=>o.id==='circle_clip'&&o.visible));
+ assert(!opening.some(o=>o.id==='rect_clip'||o.id==='state_1'||o.id==='state_2'));
  const data=trace.cases[2];assert.equal(trace.cases[0].clipTasks,0);assert.equal(trace.cases[1].clipTasks,0);assert.equal(trace.cases[1].fastTrack,true);assert.equal(data.clipTasks,1);
  assert.notDeepEqual(data.clipRle,data.imageRle);
  assert(data.clipRle.some(c=>!data.rawRle.some(r=>r.y===c.y)));
- let t=.15+.35+1.3+.12+.2+.35+1.8+.12+.2+.2+.15+.15;
+ let t=.5+.15+.15;
  memory.fill(trace.background);check(t,'circle Prepare leaves destination blank');
  const clipDone=t+data.clipRle.length*.035;
  const ready=runtime.layoutReport(clipDone+.25,4).objects;
  assert(ready.some(o=>o.id==='label_done'&&o.visible));assert(!ready.some(o=>o.id?.startsWith('raw_span_')&&o.visible));
  t=clipDone+.2+.4+data.rawRle.length*.10+.4;
  const rawReady=runtime.layoutReport(t-.02,4).objects;assert(!rawReady.some(o=>o.id?.startsWith('final_span_')&&o.visible));check(t-.02,'raw image RLE still does not draw');
- const samples=[0,.55,2.55,clipDone+.25,t-.02];
+ const samples=[0,clipDone+.25,t-.02];
  for(let y=0;y<trace.h;y++) {t+=.08+.20+.25+.08;check(t,`intersection row ${y}: no drawing`);}
  const previewTime=t;
  t+=.15+.12+.12+.65+.15+.6+.12+.15;
@@ -50,13 +53,18 @@ try{
  }
  assert.deepEqual(memory,data.pixels);assert(Math.abs(duration-(t+3))<.002);check(duration,'final');samples.push(previewTime,duration);
  for(const [prefix,base,spans,time] of [['clip',130,data.clipRle,duration],['raw',900,data.rawRle,previewTime],['final',900,data.imageRle,duration]])for(const [i,s] of spans.entries()){
-  const b=runtime.bounds(`${prefix}_span_${i+1}_begin`,time),l=runtime.bounds(`${prefix}_span_${i+1}_len`,time);
-  assert(Math.abs(b.x+b.width/2-(base+(s.x+.5)*44))<1);assert(Math.abs(l.width-s.len*44)<3);
+  const key=`${prefix}_span_${i+1}`,b=runtime.bounds(key+'_begin',time);
+  assert(Math.abs(b.x+b.width/2-(base+(s.x+.5)*44))<1);
+  const objects=runtime.layoutReport(time,4).objects;
+  if(s.len===1){assert(!objects.some(o=>o.id===key+'_len'||o.id===key+'_end'));}
+  else{const l=runtime.bounds(key+'_len',time);assert(Math.abs(l.width-(s.len-1)*44)<3);assert(Math.abs(l.x+l.width/2-(base+(s.x+s.len/2)*44))<1);}
+  const rendered=Buffer.from(runtime.render(time,true)),shade=255-Math.floor(s.coverage*195/255);
+  eq(pixel(rendered,width,base+(s.x+.25)*44,840+(s.y+.25)*44),[shade,shade,shade],'span coverage shade');
  }
  runtime.loadLua(source.replace('local trace='+lua(trace),'local trace='+lua(variant)),'clip-variant.lua');const changed=Buffer.from(runtime.render(runtime.duration,true));let differences=0;
  for(let y=0;y<variant.h;y++)for(let x=0;x<variant.w;x++){const at=y*variant.stride+x;eq(pixel(changed,width,1670+(x+.5)*44,220+(y+.5)*44),rgb(variant.cases[2].pixels[at]),'independent clip variant');if(variant.cases[2].pixels[at]!==data.pixels[at])differences++;}assert(differences>10);
  runtime.loadLua(source,'sw-image-clip-tasks.lua');
- const report={width,height,duration,frames,framesAudited:frames,labels:labels.size,minMargin:margin,pixelChecks:checks,clipSpans:data.clipRle.length,rawSpans:data.rawRle.length,finalSpans:data.imageRle.length,variantDifferences:differences};console.log(JSON.stringify(report));await fs.writeFile(path.join(temp,'review.txt'),JSON.stringify(report,null,2)+'\nNo inline generated-raster review; budget exhausted.\n');
+ const report={width,height,duration,frames,framesAudited:frames,labels:labels.size,minMargin:margin,pixelChecks:checks,clipSpans:data.clipRle.length,rawSpans:data.rawRle.length,finalSpans:data.imageRle.length,variantDifferences:differences};console.log(JSON.stringify(report));await fs.writeFile(path.join(temp,'review.txt'),JSON.stringify(report,null,2)+'\n');
  for(const [i,time] of samples.entries())await sharp(Buffer.from(runtime.render(time,true)),{raw:{width,height,channels:4}}).png().toFile(path.join(temp,'review-'+i+'.png'));
  await sharp(Buffer.from(runtime.render(duration,true)),{raw:{width,height,channels:4}}).webp({lossless:true}).toFile(path.join(out,'image-clip-tasks.webp'));
  if(!process.argv.includes('--preview') && process.argv.includes('--video')){
