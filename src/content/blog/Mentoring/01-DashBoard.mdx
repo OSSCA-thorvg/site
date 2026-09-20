@@ -5,7 +5,6 @@ date: "2026-08-13T00:00:00.000Z"
 tags: ["ThorVG", "Core"]
 draft: false
 ---
-
 import CoreProgressDashboard from '../../../components/CoreProgressDashboard.astro';
 import MentoringMemberDetails from './MentoringMemberDetails.astro';
 
@@ -14,13 +13,12 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 <MentoringMemberDetails name="Core 운영 방침 및 일정">
 
 - **온라인 멘토링**
-    - **매 주 진행 상황 공유**
-        - **이야기하고 싶은 주제**
-        - **이슈 Sync**
-    - 멘토링 내용은 녹화 대신 블로그글 게시
+  - **매 주 진행 상황 공유**
+    - **이야기하고 싶은 주제**
+    - **이슈 Sync**
+  - 멘토링 내용은 녹화 대신 블로그글 게시
 - **자율 기여**
-    - **분석/스터디하면서 기여 활동 진행**
-
+  - **분석/스터디하면서 기여 활동 진행**
 
 #### 주요 일정
 
@@ -29,14 +27,27 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 
 </MentoringMemberDetails>
 
-<MentoringMemberDetails name="2026-09-19~20">
+<MentoringMemberDetails name="2026-09-28~">
 
-1. 진행사항 Sync
-2. CPU Engine / GPU Engine 
+- 10/04 오프라인 모임 (전체 트랙)
+- 10/05 최종 보고서 마감 
+- 10/05~10/24 최종 발표 자료
+- 10/24 최종 발표
+
+최종 발표 예시
+- https://www.youtube.com/watch?v=DKDh9kLrXr8
+- https://www.youtube.com/watch?v=LyYXwuAD6_w
 
 </MentoringMemberDetails>
 
-<MentoringMemberDetails name="2026-09-12~13">
+
+<MentoringMemberDetails name="2026-09-20">
+
+1. 진행사항 Sync
+
+</MentoringMemberDetails>
+
+<MentoringMemberDetails name="2026-09-13">
 
 1. 진행사항 Sync
 2. CPU Engine
@@ -48,10 +59,9 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 
 1. 진행사항 Sync
 2. CPU Engine Overview
-3. 작업 사례: Conic Gradient 
+3. 작업 사례: Conic Gradient
 
 </MentoringMemberDetails>
-
 
 <MentoringMemberDetails name="2026-08-29">
 
@@ -62,59 +72,65 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 
 </MentoringMemberDetails>
 
-
 <MentoringMemberDetails name="이슈 추천">
 
-**CPU Engine**
-- Raster 성능 최적화 (Image Direct, Image Rotate...)
-    - [NEON #30](https://github.com/thorvg/thorvg/issues/30)
-    - [AVX #29](https://github.com/thorvg/thorvg/issues/29)
-    - [WEB SIMD](https://github.com/thorvg/thorvg/issues/4094)
-- Curve: https://github.com/thorvg/thorvg/issues/4782
+**GPU Engine**
+- Gradient Repeat AA https://github.com/thorvg/thorvg/issues/4688
 
+
+**CPU Engine**
+
+- Raster 성능 최적화 (Image Direct, Image Rotate...)
+  - [NEON #30](https://github.com/thorvg/thorvg/issues/30)
+  - [AVX #29](https://github.com/thorvg/thorvg/issues/29)
+  - [WEB SIMD](https://github.com/thorvg/thorvg/issues/4094)
+  - https://github.com/thorvg/thorvg/commit/362879fa2d0552e008d3fc1c7748a50af9d36962#diff-d5d1a1fbe17540a9db28a2a5b84377b39b9ddfbe147ec373257fd21af57e55cf
+
+- Curve: [https://github.com/thorvg/thorvg/issues/4782](https://github.com/thorvg/thorvg/issues/4782)
 
 **Infra**
+
 - **workflow**: 
-    - Clang-format test: https://github.com/thorvg/thorvg/issues/4766
-    - Remove Redundant Build Tests: https://github.com/thorvg/thorvg/issues/4756
-
-- **unit test line coverage 측정 & 코드 리팩터링**
-    - 커버리지 낮은 부분에 대한 테스트 코드 추가
-        - meson + lcov + genhtml
-    - 사용되지 않은 코드 정리
-    - 개선할만한 부분 이슈화
-
+  - Remove Redundant Build Tests: [https://github.com/thorvg/thorvg/issues/4756](https://github.com/thorvg/thorvg/issues/4756)
+- **unit test line coverage 측정 &amp; 코드 리팩터링**
+  - 커버리지 낮은 부분에 대한 테스트 코드 추가
+    - meson + lcov + genhtml
+  - 사용되지 않은 코드 정리
+  - 개선할만한 부분 이슈화
+  - 테스트 예시: https://github.com/thorvg/thorvg/pull/4814
 
 **Loader**
-- SVG compliance: https://github.com/thorvg/thorvg.svg-compliance
 
-- 오픈소스 -> 보안 업데이트, 성능 개선, 버그 수정, 커스텀 등등 자율
-    - [#4485 — webp: upgrade the webp decoder with the latest libwebp](https://github.com/thorvg/thorvg/issues/4485)
-    - [#2250 - jerryscript: replace the jerryscript memory allocator](https://github.com/thorvg/thorvg/issues/2250)
-        - JS 인터프리터 JerryScript의 메모리 -> 메모리 System 으로 교체하는작업
-        - 바이너리 사이즈와 유연한 메모리 관리가 가능하도록 개선
-        - Lottie 의 Expression 기능 과 연관
+- SVG compliance: [https://github.com/thorvg/thorvg.svg-compliance](https://github.com/thorvg/thorvg.svg-compliance)
+- 오픈소스 -&gt; 보안 업데이트, 성능 개선, 버그 수정, 커스텀 등등 자율
+  - [#4485 — webp: upgrade the webp decoder with the latest libwebp](https://github.com/thorvg/thorvg/issues/4485)
+  - [#2250 - jerryscript: replace the jerryscript memory allocator](https://github.com/thorvg/thorvg/issues/2250)
+    - JS 인터프리터 JerryScript의 메모리 -&gt; 메모리 System 으로 교체하는작업
+    - 바이너리 사이즈와 유연한 메모리 관리가 가능하도록 개선
+    - Lottie 의 Expression 기능 과 연관
 
 > [!IMPORTANT]
+>
 > - 성능 측정시 수정사항에 알맞는 방법으로 
->    - thorvg.benchmark
->    - thorvg.example (Lottie, Animation ...)
+>   - thorvg.benchmark
+>   - thorvg.example (Lottie, Animation ...)
 > - 여러번 측정, Median, Mean 등 값으로 성능 측정치 PR 에 작성
 
 </MentoringMemberDetails>
 
-<CoreProgressDashboard scope="core" headingLevel="h3">
 
+<CoreProgressDashboard scope="core" headingLevel="h3">
 
 <MentoringMemberDetails slot="alpakaDurumi" name="Note" embedded>
 
 > [!NOTE]
-> 최종 보고서/PPT —> (정량적 수치, 시각 자료)
->   - GIF Saver 고도화/안정화: 문제 → 분할 알고리즘 변화 (before, after) → 최종 수치
->       - 예시
->           - 시각화: KD-Tree, 팔레트
->           - 성능: 최종 결과 vs 최초 상태
->           - 품질: GIF 시각 품질 수치 산출 (Canvas - gif or before - after)
+> 최종 보고서/PPT —&gt; (정량적 수치, 시각 자료)
+>
+> - GIF Saver 고도화/안정화: 문제 → 분할 알고리즘 변화 (before, after) → 최종 수치
+>   - 예시
+>     - 시각화: KD-Tree, 팔레트
+>     - 성능: 최종 결과 vs 최초 상태
+>     - 품질: GIF 시각 품질 수치 산출 (Canvas - gif or before - after)
 
 </MentoringMemberDetails>
 
@@ -123,17 +139,19 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 > [!NOTE]
 > Padding 관련 협업, @tcpark11
 >
-> 최종 보고서/PPT -> (정량적 수치)
->   - Padding: 바이너리 사이즈 감소율 
+> 최종 보고서/PPT -&gt; (정량적 수치)
+>
+> - Padding: 바이너리 사이즈 감소율
 
 </MentoringMemberDetails>
 
 <MentoringMemberDetails slot="Saususge" name="Note" embedded>
 
 > [!NOTE]
-> 최종 보고서/PPT -> (시각 자료, 정량적 수치)
->   - Blur: 개선이 되지 않는 이슈임을 검증, Issue Closed, Blur 시각자료
->   - SIMD: SIMD Image Direct Rendering, Image Rotate Rendering, SIMD 성능개선 수치, SKIA vs ThorVG 성능비교(thorvg.benchmark)
+> 최종 보고서/PPT -&gt; (시각 자료, 정량적 수치)
+>
+> - Blur: 개선이 되지 않는 이슈임을 검증, Issue Closed, Blur 시각자료
+> - SIMD: SIMD Image Direct Rendering, Image Rotate Rendering, SIMD 성능개선 수치, SKIA vs ThorVG 성능비교(thorvg.benchmark)
 
 </MentoringMemberDetails>
 
@@ -151,16 +169,17 @@ import MentoringMemberDetails from './MentoringMemberDetails.astro';
 > 아래 내용은 개인적인 경험을 바탕으로 작성한 의견입니다.
 
 - **특정 기업을 타겟팅하는 방법과 포트폴리오 주제 선정에 관해 질문드립니다.**
-    - 채용 공고를 분석하고, 요구 역량과 연관된 주제를 선정하는 것이 가장 좋은 것 같습니다. (포트폴리오는 일관성 있게 구성)
-    - 채용 공고만으로 부족하다면, LinkedIn을 활용해 해당 기업에 재직 중이거나 이직·퇴직한 분께 커피챗을 신청해 이야기해 보는 것이 좋습니다.
-        - LinkedIn 프로필에는 자신의 성과, GitHub 주소, 포트폴리오, 이력서 등을 공개하는 경우가 많기 때문에 LinkedIn이나 GitHub를 탐색하는 것이 많은 도움이 됩니다.
-    - OSSCA와 같은 프로그램에 참여했다면, 해당 프로그램과 연관된 내용을 포트폴리오에 녹여내면 좋을 것 같습니다.
-        - 예: 실제 공고에 있는 단어와 실제 이슈를 연결한 기여 활동
-            - 수학·정교한 프로그래밍(1px 오차): Gradient AA 이슈
-            - PNG·JPG 등 파일 포맷: WebP Loader 버전 업데이트, PNG Saver
-            - 저수준 개발: 사용 중인 오픈소스 분석, ThorVG 자체 기여, SIMD, GPU Engine/CPU Engine
-            - 성능 최적화: `thorvg.example` 또는 `thorvg.benchmark` 프로파일링 후 개선 제안 및 PR
-            - C++·JavaScript: SIMD와 WebSIMD
-            - 테스트: Unit Test와 Pixel Test에 기여
+  - 채용 공고를 분석하고, 요구 역량과 연관된 주제를 선정하는 것이 가장 좋은 것 같습니다. (포트폴리오는 일관성 있게 구성)
+  - 채용 공고만으로 부족하다면, LinkedIn을 활용해 해당 기업에 재직 중이거나 이직·퇴직한 분께 커피챗을 신청해 이야기해 보는 것이 좋습니다.
+    - LinkedIn 프로필에는 자신의 성과, GitHub 주소, 포트폴리오, 이력서 등을 공개하는 경우가 많기 때문에 LinkedIn이나 GitHub를 탐색하는 것이 많은 도움이 됩니다.
+  - OSSCA와 같은 프로그램에 참여했다면, 해당 프로그램과 연관된 내용을 포트폴리오에 녹여내면 좋을 것 같습니다.
+    - 예: 실제 공고에 있는 단어와 실제 이슈를 연결한 기여 활동
+      - 수학·정교한 프로그래밍(1px 오차): Gradient AA 이슈
+      - PNG·JPG 등 파일 포맷: WebP Loader 버전 업데이트, PNG Saver
+      - 저수준 개발: 사용 중인 오픈소스 분석, ThorVG 자체 기여, SIMD, GPU Engine/CPU Engine
+      - 성능 최적화: `thorvg.example` 또는 `thorvg.benchmark` 프로파일링 후 개선 제안 및 PR
+      - C++·JavaScript: SIMD와 WebSIMD
+      - 테스트: Unit Test와 Pixel Test에 기여
 
 </MentoringMemberDetails>
+

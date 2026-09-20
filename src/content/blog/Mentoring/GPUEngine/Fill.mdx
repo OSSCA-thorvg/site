@@ -1,0 +1,159 @@
+---
+title: "[Core2026] GPU Engine - Fill"
+summary: "Gradient Repeat AA 이슈 #4688의 세 경우를 실제 GL 픽셀과 확대 이미지로 비교하고, 셰이더의 AA 처리 코드를 살펴봅니다."
+github: "Nor-s"
+date: 2026-09-20
+tags: ["ThorVG", "Core", "GPU", "GL", "Gradient"]
+draft: false
+---
+
+import Disclosure from '../../../../components/Disclosure.astro';
+
+# Core2026 > Engine > GPU Engine - 23
+
+## Overview · GL 이슈 결과 비교
+
+같은 512 × 512 출력과 화면 반지름 128 px에서 Fill 축소, Shape 축소, 기준 예제의 실제 GL 결과를 비교합니다.
+
+<img
+  src={import.meta.env.BASE_URL + 'tmath/gl-fill/result.webp'}
+  width={950}
+  height={750}
+  alt="Overview 07: Fill 축소, Shape 축소, 기준 예제의 실제 GL 렌더링과 같은 위치의 8배 픽셀 확대. 반복 경계 직전 AA 폭은 각각 0.125 px, 0.125 px, 2 px."
+  decoding="async"
+/>
+
+<Disclosure title="코드 · 재현 근거">
+
+[`#4688`](https://github.com/thorvg/thorvg/issues/4688) · [분석 소스 `4d5810cf`](https://github.com/thorvg/thorvg/tree/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad) · <a href={import.meta.env.BASE_URL + 'tmath/gl-fill/example.png'}>실제 GL 원본 캡처</a> · <a href={import.meta.env.BASE_URL + 'tmath/gl-fill/README.md'}>재현·검증 기록</a>
+
+```cpp
+// 같은 최종 크기: 512 × 512, 화면 반지름 128.
+// 왼쪽: Fill만 축소
+fill->radial(256, 256, 2048, 256, 256, 0);
+fill->transform({0.0625f, 0, 240, 0, 0.0625f, 240, 0, 0, 1});
+
+// 가운데: Shape와 Fill을 함께 축소
+shape->appendRect(0, 0, 8192, 8192);
+shape->transform({0.0625f, 0, 544, 0, 0.0625f, 16, 0, 0, 1});
+fill->radial(4096, 4096, 2048, 4096, 4096, 0);
+
+// 오른쪽: 기준
+fill->radial(256, 256, 128, 256, 256, 0);
+
+// 세 경우 공통
+fill->spread(tvg::FillSpread::Repeat);
+```
+
+</Disclosure>
+
+## Gradient Repeat AA · 반복 경계 처리
+
+Repeat 경계의 AA는 Linear·Radial 그라디언트가 공유하는 프래그먼트 셰이더 함수 **`gradient(t, d, l)`**에서 처리합니다. 그라디언트가 처음으로 되돌아가는 경계에서 색을 혼합하며, 렌더 타깃의 MSAA 샘플 병합은 그 이후에 수행합니다.
+
+### AA가 호출되는 위치
+
+[`drawPrimitive(Fill*)`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/gpu_engine/gl/tvgGlRenderer.cpp#L349)는 `RT_RadGradient`를 선택하고 `fill->spread()`를 `GradientInfo.nStops[2]`에 담아 업로드합니다. Repeat의 값은 `2`입니다.
+
+GPU에서는 `radialGradientColor(vPos)` → `gradientWrap()` → **`gradient()`** 순으로 호출합니다. `res.x`는 반복 처리를 적용하기 전의 그라디언트 매개변수이고, `l`은 원본 Fill 좌표계에서 측정한 거리입니다. [셰이더 호출부, 304–315행](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/gpu_engine/gl/tvgGlShaderSrc.cpp#L304).
+
+아래 GLSL은 C++ 셰이더 문자열에서 발췌하고 줄바꿈을 복원한 코드입니다.
+
+```glsl
+vec4 radialGradientColor(vec2 pos)
+{
+    vec2 res = compute_radial_t(uGradientInfo.centerPos.xy,
+                                uGradientInfo.radius.x,
+                                uGradientInfo.centerPos.zw,
+                                uGradientInfo.radius.y,
+                                pos);
+    if (res.y < 0.0) return vec4(0.0, 0.0, 0.0, 0.0);
+
+    float t = gradientWrap(res.x);
+    vec4 color = gradient(t, res.x, length(pos - uGradientInfo.centerPos.xy));
+    return vec4(color.rgb * color.a, color.a);
+}
+```
+
+### 경계의 색을 혼합하는 위치
+
+[`gradient()`, 114–156행](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/gpu_engine/gl/tvgGlShaderSrc.cpp#L114)는 먼저 인접한 색상점(stop) 사이의 색을 보간합니다. 이어서 구간을 순회하는 루프 안에서 다음 Repeat 전용 분기를 적용합니다.
+
+```glsl
+float dist = d * 2.0 / l;
+
+// 색상점 구간을 순회하는 루프 내부: 일반적인 색 보간 이후
+if (int(uGradientInfo.nStops[2]) == 2 && abs(d) > dist) {
+    if (i == 0 && (t - stopi) < dist) {
+        float dd = (t - stopi) / dist;
+        float alpha = dd;
+        col *= alpha;
+        vec4 nc = uGradientInfo.stopColors[0] * (1.0 - (t - stopi));
+        nc += uGradientInfo.stopColors[count - 1] * (t - stopi);
+        col += nc * (1.0 - alpha);
+    } else if (i == count - 2 && (1.0 - t) < dist) {
+        float dd = (1.0 - t) / dist;
+        float alpha =  dd;
+        col *= alpha;
+        col += (uGradientInfo.stopColors[0]) * (1.0 - alpha);
+    }
+}
+```
+
+- **마지막 구간:** `1 - t < dist`이면 보간된 `col`에 첫 색상점의 색을 섞습니다. 예제에서 보이는 반복 경계가 여기에 해당합니다.
+- **첫 구간:** 첫 색상점과 마지막 색상점으로 `nc`를 만든 뒤, 그 색을 `col`에 섞습니다. 마지막 구간과는 수식이 다릅니다.
+- **`alpha`는 혼합 가중치:** 여기서는 RGBA 전체에 곱하는 값입니다. 모든 색상점이 불투명하면 혼합 후 픽셀도 불투명합니다.
+
+<Disclosure title="양 끝점 분기와 Linear의 호출부">
+
+양 끝점 분기는 구간 순회 루프보다 먼저 실행됩니다. `t >= lastStop` 분기는 별도로 Repeat를 검사하며, 루프의 **`abs(d) > dist` 조건은 사용하지 않습니다.** 이 예제는 마지막 색상점이 `1`이고 Repeat의 `t`는 `1`보다 작으므로, 선택한 프래그먼트는 구간 순회 루프로 들어갑니다. [소스, 120–129행](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/gpu_engine/gl/tvgGlShaderSrc.cpp#L120).
+
+```glsl
+if (t <= gradientStop(0)) {
+    col = uGradientInfo.stopColors[0];
+} else if (t >= gradientStop(count - 1)) {
+    col = uGradientInfo.stopColors[count - 1];
+    if (int(uGradientInfo.nStops[2]) == 2 && (1.0 - t) < dist) {
+        float dd = (1.0 - t) / dist;
+        float alpha =  dd;
+        col *= alpha;
+        col += uGradientInfo.stopColors[0] * (1. - alpha);
+    }
+} // 이어지는 구간 순회 루프는 생략했습니다.
+```
+
+Linear 그라디언트도 같은 함수를 사용하지만, `d`는 축으로의 투영으로 구합니다. 아래의 `dist = 2 / R`은 방사형 예제에서 단순화한 식이며, 일반적인 Linear 그라디언트에는 적용되지 않습니다. [소스, 189–198행](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/gpu_engine/gl/tvgGlShaderSrc.cpp#L189).
+
+```glsl
+vec4 linearGradientColor(vec2 pos)
+{
+    vec2 st = uGradientInfo.gradStartPos;
+    vec2 ed = uGradientInfo.gradEndPos;
+    vec2 ba = ed - st;
+    float d = dot(pos - st, ba) / dot(ba, ba);
+    float t = gradientWrap(d);
+    vec4 color = gradient(t, d, length(pos - st));
+    return vec4(color.rgb * color.a, color.a);
+}
+```
+
+</Disclosure>
+
+### 배율에 따라 AA 폭이 달라지는 이유
+
+이 예제는 **초점 반지름이 0인 동심원 방사형 그라디언트**이므로 `d = l / R`입니다. 따라서 다음과 같이 정리됩니다.
+
+```text
+dist = 2 * d / l = 2 / R
+반복 경계 직전의 화면상 폭 = dist * 화면 반지름
+```
+
+| 화면 반지름은 모두 128 px | 원본 Fill 반지름 R | dist | 반복 경계 직전의 폭 |
+| --- | ---: | ---: | ---: |
+| Fill을 1/16로 축소 | 2048 | 0.0009765625 | 0.125 px |
+| Shape를 1/16로 축소 | 2048 | 0.0009765625 | 0.125 px |
+| 기준 예제 | 128 | 0.015625 | 2 px |
+
+선택한 프래그먼트는 `1 - t ≈ 0.005616`입니다. 축소한 두 예제에서는 AA 구간 밖에 있고, 기준 예제에서는 AA 구간 안에 있습니다. 이 식은 Fill 좌표계의 거리를 사용하므로 배율에 따라 화면상 폭이 달라집니다. 화면 좌표계의 미분값으로 폭을 계산하지는 않습니다.
+
+이 폭은 반복 경계 **직전** 구간을 뜻하며, 대칭 필터의 폭이나 MSAA 샘플 반지름이 아닙니다. 위 결과는 실제 GL 렌더링을 캡처한 이미지이며, 선택한 픽셀의 색은 현재 셰이더 수식과 대조했습니다.
