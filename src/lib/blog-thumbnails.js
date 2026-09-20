@@ -1,19 +1,23 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const manifestPath = path.resolve(process.cwd(), 'public/blog-thumbnails/manifest.json');
 let manifest;
+let manifestVersion;
 
 export const blogThumbnailKey = (postId, source) =>
   `${postId.toLowerCase()}|${source}`;
 
 const loadManifest = () => {
-  if (manifest) return manifest;
-
   try {
+    const {mtimeMs, size} = statSync(manifestPath);
+    const version = `${mtimeMs}:${size}`;
+    if (manifest && manifestVersion === version) return manifest;
     manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    manifestVersion = version;
   } catch {
     manifest = {};
+    manifestVersion = undefined;
   }
   return manifest;
 };

@@ -42,7 +42,7 @@ export function buildEffectPipeline(input = trace) {
         .toString(16).padStart(2, '0')).join('');
     });
     const id = key('image'); imageRegions.push(id);
-    return parent.image({id, pixels: colors, size: [input.width, input.height],
+    return parent.picture({id, pixels: colors, size: [input.width, input.height],
       center: p(x, y), width: size / 100, filter: 'nearest', layer: 8});
   }
   function snapshot(parent, pixels, x, y, size = 120, offscreen = false) {

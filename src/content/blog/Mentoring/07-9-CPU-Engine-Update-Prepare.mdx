@@ -20,7 +20,7 @@ Canvas의 최상위 Scene부터 자식 Paint를 방문하며 변환·opacity·Cl
 
 - **Shape:** 변환된 Outline → bbox → Rect 또는 RLE, 필요하면 Gradient·Stroke 데이터 준비
 - **Picture:** Bitmap은 Image Task로, SVG 같은 벡터는 내부 Paint 순회로 연결
-- **Scene effect:** 이 단계에서는 효과 파라미터를 준비하고, 실제 Surface 처리는 같은 `draw()` 안에서 자식 Raster 뒤에 수행 — <a href="#appendix-scene-effect--파라미터-준비">준비 경로</a>
+- **Scene effect:** 이 단계에서는 Effect 파라미터를 준비하고, 실제 Surface 처리는 같은 `draw()` 안에서 자식 Raster 뒤에 수행 — <a href="#appendix-scene-effect--파라미터-준비">준비 경로</a>
 - **완료 시점:** `update()` 반환 뒤에도 Task가 실행될 수 있으며, `renderShape()`·`renderImage()`가 `done()`으로 기다린 뒤 결과 사용
 
 <Disclosure title="코드 보기: 02. Canvas Update · Scene 순회 · Task 요청">
@@ -1086,7 +1086,7 @@ if (needComposition(opacity)) {
 
 <Disclosure title="코드 보기: 04. Task 구조 · 요청 · 완료 대기">
 
-**입력과 준비 결과 — 관련 멤버 발췌**
+**입력과 준비 결과**
 
 ```cpp
 using RenderData = void*;
@@ -1310,10 +1310,10 @@ struct SwFill
 
 ## Appendix. Scene Effect — 파라미터 준비
 
-`SceneImpl::update()`는 자식 Paint의 Update 호출 뒤 효과 목록을 순회하고, `renderer->prepare(effect, transform)`으로 누적 Transform을 전달합니다. 실제 픽셀 처리는 다음 `draw()`에서 자식 Raster 이후에 수행합니다.
+`SceneImpl::update()`는 자식 Paint의 Update 호출 뒤 Effect 목록을 순회하고, `renderer->prepare(effect, transform)`으로 누적 Transform을 전달합니다. 실제 픽셀 처리는 다음 `draw()`에서 자식 Raster 이후에 수행합니다.
 
 - **실행:** Effect의 `prepare()`는 호출 스레드에서 직접 실행하며, 별도의 `TaskScheduler::request()`를 사용하지 않습니다. 자식의 Prepare Task는 이때 아직 실행 중일 수 있습니다.
-- **보관:** Blur·Shadow의 `effect->rd`는 커널·offset 같은 효과용 데이터입니다. `SwShapeTask`·`SwImageTask`를 가리키는 Paint의 `rd`와 용도가 다릅니다.
+- **보관:** Blur·Shadow의 `effect->rd`는 커널·offset 같은 Effect용 데이터입니다. `SwShapeTask`·`SwImageTask`를 가리키는 Paint의 `rd`와 용도가 다릅니다.
 
 | Effect | Update에서 준비하는 내용 |
 | --- | --- |
@@ -1365,7 +1365,7 @@ bool update(RenderMethod* renderer, const Matrix& transform,
     //recover the condition
     if (fixed) renderer->partial(recover);
 
-    // 2. 효과 목록을 순회하며 같은 transform으로 파라미터를 직접 준비합니다.
+    // 2. Effect 목록을 순회하며 같은 transform으로 파라미터를 직접 준비합니다.
     if (effects) {
         ARRAY_FOREACH(p, *effects) {
             renderer->prepare(*p, transform);
@@ -1418,8 +1418,8 @@ void SwRenderer::prepare(RenderEffect* effect, const Matrix& transform)
 }
 ```
 
-효과별 준비 함수: [`GaussianBlur`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156), [`DropShadow`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L370), [`Fill`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L475), [`Tint`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L525), [`Tritone`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L591).
+Effect별 준비 함수: [`GaussianBlur`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L156), [`DropShadow`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L370), [`Fill`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L475), [`Tint`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L525), [`Tritone`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L591).
 
 </Disclosure>
 
-이후 `draw()`에서는 Offscreen에 자식을 그린 뒤 `valid`인 효과를 등록 순서대로 실행하고 `endComposite()`로 합성합니다. 효과별 계산과 픽셀 처리 과정은 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-7-cpu-engine-postprocessing#3-effect-details`}>Compositing & Postprocessing의 Effect Details</a>에서 이어집니다.
+이후 `draw()`에서는 Offscreen에 자식을 그린 뒤 `valid`인 Effect를 등록 순서대로 실행하고 `endComposite()`로 합성합니다. Effect별 계산과 픽셀 처리 과정은 <a href={`${import.meta.env.BASE_URL}blog/mentoring/07-7-cpu-engine-postprocessing#3-effect-details`}>Compositing & Postprocessing의 Effect Details</a>에서 이어집니다.

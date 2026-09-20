@@ -1,0 +1,27 @@
+---
+import '../styles/gradient-labs.css';
+
+interface Props {
+  title: string;
+  description: string;
+  icon: 'palette' | 'linear' | 'radial' | 'rle' | 'aa';
+}
+const {title, description, icon} = Astro.props;
+const icons = {
+  palette: 'M4 6h16v12H4z M9 6v12 M15 6v12',
+  linear: 'M5 18 19 6 M5 14v4h4 M15 6h4v4',
+  radial: 'M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M12 2v3 M19 12h3',
+  rle: 'M4 6h16 M4 12h6 M14 12h6 M4 18h12',
+  aa: 'M4 6h7v12H4z M15 6h5 M15 10h5 M15 14h5 M15 18h5',
+};
+---
+<header class="fill-lab__header">
+  <span class="fill-lab__icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d={icons[icon]} /></svg>
+  </span>
+  <div class="fill-lab__heading">
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+  <slot name="badge"><span class="fill-lab__badge">직접 조작</span></slot>
+</header>

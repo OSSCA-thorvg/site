@@ -27,7 +27,7 @@ export function buildOverview(trace=native,{still=false}={}){
  const reveal=(phase,start)=>still?scene:animated(phase,t=>({opacity:smooth((t-start)/.2)}));
  function pixels(parent,values,x,y,u,columns=w,rows=h,layer=20){
   const texels=Array.from({length:columns*rows*16},(_,i)=>values[Math.floor(Math.floor(i/(columns*4))/4)*columns+Math.floor(i%(columns*4)/4)]);
-  parent.image({id:id('pixels'),pixels:texels,size:[columns*4,rows*4],center:p(x+columns*u/2,y+rows*u/2),width:columns*u/100,filter:'nearest',layer});
+  parent.picture({id:id('pixels'),pixels:texels,size:[columns*4,rows*4],center:p(x+columns*u/2,y+rows*u/2),width:columns*u/100,filter:'nearest',layer});
  }
  function field(values,x,y,u,label,{fixed=false,columns=w,rows=h,mark=false}={}){
   if(label)text(label,x+columns*u/2,y-29,22);pixels(scene,values,x,y,u,columns,rows);

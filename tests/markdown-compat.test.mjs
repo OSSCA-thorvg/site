@@ -25,7 +25,8 @@ test('Mermaid fences stay identifiable for lazy browser rendering', async () => 
   const result = await processor.render('```mermaid\ngraph TD\n  A --> B\n```');
 
   assert.match(result.code, /<pre\b[^>]*data-language="mermaid"/);
-  assert.match(result.code, /graph TD/);
+  // MermaidDiagrams reads textContent, independent of syntax highlighting spans.
+  assert.match(result.code.replace(/<[^>]*>/g, ''), /graph TD/);
 });
 
 test('Markdown images render as responsive figures instead of MDX-only placeholders', async () => {
@@ -109,11 +110,19 @@ test('body headings render accessible permalink anchors with their existing IDs'
   assert.match(result.code, /<svg[^>]*aria-hidden="true"[^>]*focusable="false"/);
 });
 
-test('article H2 and H3 headings use hierarchical section dividers', async () => {
+test('article headings separate H2 sections and preserve H2/H3 visual hierarchy', async () => {
   const css = await readSource('src/styles/global.css');
+  const h2 = css.match(/\.prose :where\(h2\)\s*\{([^}]*)\}/)?.[1];
+  const h3 = css.match(/\.prose :where\(h3\)\s*\{([^}]*)\}/)?.[1];
 
-  assert.match(css, /\.prose h2\s*\{[^}]*padding-bottom:\s*var\(--space-sm\)[^}]*border-bottom:\s*1px solid var\(--hairline-strong\)/);
-  assert.match(css, /\.prose h3\s*\{[^}]*padding-bottom:\s*var\(--space-xs\)[^}]*border-bottom:\s*1px solid var\(--hairline\)/);
+  assert.ok(h2, 'H2 styles must keep low specificity for embedded MDX tools');
+  assert.ok(h3, 'H3 styles must keep low specificity for embedded MDX tools');
+  assert.match(h2, /padding-bottom:\s*[\d.]+em/);
+  assert.match(h2, /border-bottom:\s*1px solid var\(--hairline\)/);
+  assert.match(h3, /margin-top:\s*[\d.]+em/);
+  const h2Size = Number(h2.match(/font-size:\s*([\d.]+)px/)?.[1]);
+  const h3Size = Number(h3.match(/font-size:\s*([\d.]+)px/)?.[1]);
+  assert.ok(h2Size > h3Size && h3Size > 0, 'H2 must be larger than H3');
 });
 
 test('Astro config and blog detail enable GitHub Alerts and Mermaid rendering', async () => {

@@ -135,7 +135,7 @@ export function buildOverview(trace = nativeTrace) {
         .map(c => Math.min(255, Math.round(c + bg * (1 - a))).toString(16).padStart(2, '0')).join('');
     });
     const key = id('pixels'); imageRegions.push(key);
-    return parent.image({id: key, pixels: colors, size: [trace.width, trace.height], center: p(x, y), width: size / 100, filter: 'nearest', layer: 5});
+    return parent.picture({id: key, pixels: colors, size: [trace.width, trace.height], center: p(x, y), width: size / 100, filter: 'nearest', layer: 5});
   }
   function slot(index, label, pixels = blank, detail = '', x = index < 4 ? 150 : 1110, size = 176) {
     const g = group(), y = rowsY[index];

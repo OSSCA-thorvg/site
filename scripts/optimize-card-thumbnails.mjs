@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -179,8 +179,13 @@ const optimizeGroup = async (label, outputDirectory, jobs) => {
     await Promise.all(uniqueJobs.slice(index, index + concurrency).map(run));
   }
 
+  const activeFiles = new Set(uniqueJobs.filter(job => results.get(job.outputPath)).map(job => job.fileName));
+  const unusedFiles = (await readdir(outputDirectory))
+    .filter(file => file.endsWith('.webp') && !activeFiles.has(file));
+  await Promise.all(unusedFiles.map(file => rm(path.join(outputDirectory, file))));
+
   console.log(
-    `[${label}] generated ${totals.generated}, cached ${totals.cached}, failed ${totals.failed}`
+    `[${label}] generated ${totals.generated}, cached ${totals.cached}, removed ${unusedFiles.length}, failed ${totals.failed}`
   );
   return results;
 };

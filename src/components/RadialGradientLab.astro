@@ -1,4 +1,8 @@
-<section class="radial-lab" data-radial-lab data-phase="1" aria-label="ThorVG Radial Gradient 실습">
+---
+import GradientLabHeader from './GradientLabHeader.astro';
+---
+<section class="radial-lab fill-lab" data-radial-lab data-phase="1" aria-label="ThorVG Radial Gradient 실습">
+  <GradientLabHeader icon="radial" title="Radial Gradient" description="원과 초점을 움직이고, 세 단계로 샘플 픽셀의 색을 찾아보세요." />
   <span class="sr-only" data-status aria-live="polite">렌더러 준비 중</span>
 
   <div class="radial-lab__steps" role="group" aria-label="P에서 색상을 구하는 순서">
@@ -21,7 +25,7 @@
           <stop data-table-stop="2" offset="1" stop-color="#176bff"></stop>
         </linearGradient>
         <marker id="radial-pad-arrow" data-pad-arrow viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 8 4 L 0 8 Z" fill="#ffd166"></path>
+          <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--animation-warning)"></path>
         </marker>
       </defs>
       <rect class="radial-lab__grid" width="680" height="360" fill="url(#radial-grid)"></rect>
@@ -173,7 +177,7 @@
     <button class="radial-lab__reset" data-reset type="button">초기화</button>
   </div>
 
-  <p>이 예제는 Canvas 전체를 덮는 Shape 에 Radial Gradient 를 적용한 예제입니다.</p>
+  <p class="radial-lab__caption">캔버스 전체를 덮는 Shape에 Radial Gradient를 적용한 결과입니다.</p>
 
   <ul class="radial-lab__note">
     <li><b>P</b>: 샘플 픽셀</li>
@@ -790,45 +794,26 @@
 </script>
 
 <style>
-  .radial-lab {
-    margin: var(--space-lg) 0 var(--space-xl);
-    overflow: hidden;
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-lg);
-    background: var(--surface-1);
-    color: var(--ink);
-  }
-
-
-
-
-
   .radial-lab[data-phase="1"] [data-phase-view="2"],
   .radial-lab[data-phase="1"] [data-phase-view="3"],
   .radial-lab[data-phase="2"] [data-phase-view="1"],
   .radial-lab[data-phase="2"] [data-phase-view="3"],
   .radial-lab[data-phase="3"] [data-phase-view="1"],
   .radial-lab[data-phase="3"] [data-phase-view="2"] { display: none; }
-  .radial-lab__steps { display: flex; flex-wrap: wrap; gap: 8px; padding: var(--space-sm) var(--space-md); }
-  .radial-lab__steps button { flex: 1 1 auto; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink-muted); font: inherit; font-size: 13px; cursor: pointer; }
-  .radial-lab__steps button[aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: var(--surface-2); }
+  .radial-lab__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 var(--lab-padding) 12px; padding: 4px; border-radius: 14px; background: var(--surface-1); }
+  .radial-lab__steps button { min-width: 0; min-height: 44px; padding: 8px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-muted); font: 500 13px var(--font-body); cursor: pointer; }
+  .radial-lab__steps button[aria-pressed="true"] { color: var(--primary); background: var(--primary-subtle); font-weight: 650; }
   .radial-lab__steps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .radial-lab__step-note { margin: 0 !important; padding: 0 var(--space-md) var(--space-sm); font-size: 13px; }
+  .radial-lab__step-note { margin: 0 !important; padding: 0 var(--lab-padding) 16px; color: var(--ink-muted); font-size: 13px; }
   .radial-lab__trial > p { margin: 0 !important; padding: var(--space-sm) var(--space-md) 0; font-family: var(--font-mono); font-size: 13px; }
-  .radial-lab__input-vector { stroke: #8fe3ff; stroke-width: 3; pointer-events: none; }
-  .radial-lab__probe-ring { fill: none; stroke: #ffd166; stroke-width: 2.5; pointer-events: none; }
-  .radial-lab__probe-radius { stroke: #ffd166; stroke-width: 4; pointer-events: none; }
-  .radial-lab__probe-gap { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 4; pointer-events: none; }
-  .radial-lab[data-matched="true"] .radial-lab__probe-ring { stroke: #8fe3ff; }
+  .radial-lab__input-vector { stroke: var(--animation-info); stroke-width: 3; pointer-events: none; }
+  .radial-lab__probe-ring { fill: none; stroke: var(--animation-warning); stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__probe-radius { stroke: var(--animation-warning); stroke-width: 4; pointer-events: none; }
+  .radial-lab__probe-gap { stroke: var(--animation-ink); stroke-width: 2; stroke-dasharray: 4 4; pointer-events: none; }
+  .radial-lab[data-matched="true"] .radial-lab__probe-ring { stroke: var(--animation-info); }
   .radial-lab__handle--sample circle { stroke-width: 3; }
 
-  .radial-lab__stage {
-    position: relative;
-    aspect-ratio: 17 / 9;
-    overflow: hidden;
-    background: #1b1c1f;
-    isolation: isolate;
-  }
+  .radial-lab__stage { position: relative; margin: 0 var(--lab-padding); aspect-ratio: 17 / 9; overflow: hidden; border: 1px solid var(--hairline); border-radius: 16px; background: var(--animation-canvas); isolation: isolate; }
 
   .radial-lab__stage canvas,
   .radial-lab__stage svg {
@@ -840,39 +825,39 @@
 
   .radial-lab__stage svg {
     z-index: 2;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--animation-line);
     touch-action: none;
     user-select: none;
   }
 
-  .radial-lab__grid { opacity: 0.35; pointer-events: none; }
-  .radial-lab[data-phase="2"] .radial-lab__center-line { stroke: #8fe3ff; stroke-width: 3; stroke-dasharray: none; }
-  .radial-lab__center-extension { stroke: #8fe3ff; stroke-width: 2; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__grid { opacity: 0.16; pointer-events: none; }
+  .radial-lab[data-phase="2"] .radial-lab__center-line { stroke: var(--animation-info); stroke-width: 3; stroke-dasharray: none; }
+  .radial-lab__center-extension { stroke: var(--animation-info); stroke-width: 2; stroke-dasharray: 5 5; pointer-events: none; }
   .radial-lab__center-line,
-  .radial-lab__radius-line { stroke: rgba(255, 255, 255, 0.62); stroke-width: 1.25; stroke-dasharray: 5 5; pointer-events: none; }
-  .radial-lab__boundary { fill: none; stroke: rgba(255, 255, 255, 0.92); stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__radius-line { stroke: var(--animation-muted); stroke-width: 1.25; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__boundary { fill: none; stroke: var(--animation-ink); stroke-width: 1.5; pointer-events: none; }
   .radial-lab__boundary--start { stroke-dasharray: 4 4; }
   .radial-lab__stop-ring { fill: none; stroke: var(--stop-color); stroke-width: 3; opacity: 0.9; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.65)); }
-  .radial-lab__sample-ring { fill: none; stroke: rgba(255, 255, 255, 0.75); stroke-width: 1; stroke-dasharray: 3 5; pointer-events: none; }
-  .radial-lab__sample-line { stroke: #8fe3ff; stroke-width: 1.5; pointer-events: none; }
-  .radial-lab__sample-center { fill: #8fe3ff; pointer-events: none; }
+  .radial-lab__sample-ring { fill: none; stroke: var(--animation-muted); stroke-width: 1; stroke-dasharray: 3 5; pointer-events: none; }
+  .radial-lab__sample-line { stroke: var(--animation-info); stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__sample-center { fill: var(--animation-info); pointer-events: none; }
 
-  .radial-lab__table-shadow { stroke: rgba(0, 0, 0, 0.62); stroke-width: 18; stroke-linecap: round; pointer-events: none; }
+  .radial-lab__table-shadow { stroke: var(--animation-canvas); stroke-width: 18; stroke-linecap: round; pointer-events: none; }
   .radial-lab__table-axis { stroke-width: 12; stroke-linecap: round; pointer-events: none; }
-  .radial-lab__table-guide { stroke: rgba(255, 255, 255, 0.88); stroke-width: 1; pointer-events: none; }
-  .radial-lab__table-lookup { fill: none; stroke: #8fe3ff; stroke-width: 2.5; pointer-events: none; }
-  .radial-lab__table-extension { stroke: #8fe3ff; stroke-width: 1.5; stroke-dasharray: 5 5; pointer-events: none; }
-  .radial-lab__pad-link { stroke: #ffd166; stroke-width: 2; pointer-events: none; }
-  .radial-lab__raw-sample { fill: #1b1c1f; stroke: #8fe3ff; stroke-width: 2; pointer-events: none; }
-  .radial-lab__offscreen { fill: none; stroke: #8fe3ff; stroke-width: 2.5; pointer-events: none; }
-  .radial-lab__pad-halo { fill: none; stroke: #ffd166; stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__table-guide { stroke: var(--animation-ink); stroke-width: 1; pointer-events: none; }
+  .radial-lab__table-lookup { fill: none; stroke: var(--animation-info); stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__table-extension { stroke: var(--animation-info); stroke-width: 1.5; stroke-dasharray: 5 5; pointer-events: none; }
+  .radial-lab__pad-link { stroke: var(--animation-warning); stroke-width: 2; pointer-events: none; }
+  .radial-lab__raw-sample { fill: var(--animation-canvas); stroke: var(--animation-info); stroke-width: 2; pointer-events: none; }
+  .radial-lab__offscreen { fill: none; stroke: var(--animation-info); stroke-width: 2.5; pointer-events: none; }
+  .radial-lab__pad-halo { fill: none; stroke: var(--animation-warning); stroke-width: 2.5; pointer-events: none; }
   .radial-lab__stage [hidden] { display: none; }
-  .radial-lab__table-sample { fill: #fff; stroke: rgba(0, 0, 0, 0.7); stroke-width: 2; pointer-events: none; }
+  .radial-lab__table-sample { fill: var(--animation-ink); stroke: var(--animation-canvas); stroke-width: 2; pointer-events: none; }
   .radial-lab__stop-marker { pointer-events: none; }
-  .radial-lab__stop-marker circle { fill: var(--stop-color); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55)); }
+  .radial-lab__stop-marker circle { fill: var(--stop-color); stroke: var(--animation-ink); stroke-width: 2; filter: drop-shadow(0 1px 3px var(--animation-line)); }
   .radial-lab__diagram-label {
-    fill: rgba(255, 255, 255, 0.92);
-    stroke: rgba(15, 16, 18, 0.88);
+    fill: var(--animation-ink);
+    stroke: var(--animation-canvas);
     stroke-width: 3px;
     paint-order: stroke;
     font-family: var(--font-mono);
@@ -882,63 +867,42 @@
     pointer-events: none;
   }
 
-  .radial-lab__label-leader { stroke: rgba(255, 255, 255, 0.6); stroke-width: 1; pointer-events: none; }
-  .radial-lab__math-label { fill: #8fe3ff; }
-  .radial-lab__pad-label { fill: #ffd166; }
+  .radial-lab__label-leader { stroke: var(--animation-muted); stroke-width: 1; pointer-events: none; }
+  .radial-lab__label-leader,
+  .radial-lab__boundary,
+  .radial-lab__sample-line,
+  .radial-lab__table-extension,
+  .radial-lab__center-line,
+  .radial-lab__radius-line {
+    stroke-width: calc(var(--animation-stroke) * 1px);
+    vector-effect: non-scaling-stroke;
+  }
+  .radial-lab__math-label { fill: var(--animation-info); }
+  .radial-lab__pad-label { fill: var(--animation-warning); }
 
   .radial-lab__handle { cursor: grab; outline: none; }
   .radial-lab__handle:active { cursor: grabbing; }
-  .radial-lab__handle circle { fill: rgba(15, 16, 18, 0.82); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45)); }
-  .radial-lab__handle text { fill: #fff; font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-anchor: middle; pointer-events: none; }
-  .radial-lab__handle--sample path { fill: none; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
+  .radial-lab__handle circle { fill: var(--animation-canvas); stroke: var(--animation-ink); stroke-width: 2; filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ink) 18%, transparent)); }
+  .radial-lab__handle text { fill: var(--animation-ink); font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+  .radial-lab__handle--sample path { fill: none; stroke: var(--animation-ink); stroke-width: 1.5; pointer-events: none; }
   .radial-lab__handle--sample text { font-size: 13px; text-anchor: start; }
   .radial-lab__handle:focus circle { stroke-width: 4; }
 
-  .radial-lab__hint {
-    position: absolute;
-    z-index: 3;
-    right: 10px;
-    bottom: 8px;
-    margin: 0;
-    padding: 4px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-sm);
-    background: rgba(15, 16, 18, 0.62);
-    color: rgba(255, 255, 255, 0.8);
-    font-family: var(--font-mono);
-    font-size: 12px;
+  .radial-lab__hint { position: absolute; z-index: 3; right: 12px; bottom: 12px; margin: 0; padding: 6px 10px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--animation-canvas) 94%, transparent); color: var(--animation-muted); font: 12px var(--font-body); }
 
-  }
-
-  .radial-lab__metrics {
-    min-height: 54px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 20px;
-    padding: 9px var(--space-md);
-    border-bottom: 1px solid var(--hairline);
-    background: var(--canvas);
-    font-family: var(--font-mono);
-  }
+  .radial-lab__metrics { min-height: 54px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 20px var(--lab-padding); border-bottom: 1px solid var(--hairline); background: var(--canvas); font-family: var(--font-mono); }
 
   .radial-lab__metrics span { flex: 1 1 max-content; min-width: 0; display: grid; gap: 1px; }
   .radial-lab__metrics small { color: var(--ink-subtle); font-size: 12px; letter-spacing: 0; }
-  .radial-lab__metrics b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: normal; }
+  .radial-lab__metrics b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: normal; }
   .radial-lab__metrics i { width: 22px; height: 22px; margin-left: auto; flex: 0 0 auto; border: 1px solid var(--hairline-strong); border-radius: var(--radius-full); box-shadow: inset 0 0 0 2px var(--canvas); }
 
-  .radial-lab__formulas { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 12px var(--space-md); border-bottom: 1px solid var(--hairline); font-family: var(--font-mono); }
+  .radial-lab__formulas { display: flex; flex-wrap: wrap; gap: 16px 24px; padding: 16px var(--lab-padding); border-bottom: 1px solid var(--hairline); font-family: var(--font-mono); }
   .radial-lab__formulas > span { flex: 1 1 max-content; min-width: 0; display: grid; gap: 3px; }
   .radial-lab__formulas small { font-size: 12px; color: var(--ink-subtle); }
   .radial-lab__formulas b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  .radial-lab__controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: var(--space-md);
-    padding: var(--space-md);
-  }
+  .radial-lab__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 20px; padding: 20px var(--lab-padding) var(--lab-padding); }
 
   .radial-lab__stops {
     min-width: 0;
@@ -950,55 +914,39 @@
   }
 
   .radial-lab__stops { grid-column: 1 / -1; }
-  .radial-lab__spread { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
-  .radial-lab__spread select { min-width: 0; max-width: 100%; padding: 6px 8px; border: 1px solid var(--control-border); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink); font: inherit; }
+  .radial-lab__spread { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-muted); min-width: 0; }
+  .radial-lab__spread select { min-width: 0; max-width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface-1); color: var(--ink); font: inherit; }
 
-  .radial-lab__stop { min-width: 0; display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: end; gap: 6px; }
+  .radial-lab__stop { min-width: 0; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--surface-1); }
   .radial-lab__stop > span { min-width: 0; display: grid; gap: 3px; }
   .radial-lab__stop output { color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
   .radial-lab__stop input[type='range'] { width: 100%; min-width: 0; margin: 0; accent-color: var(--primary); }
 
-  .radial-lab__controls input[type='color'] {
-    width: 34px;
-    height: 30px;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    cursor: pointer;
-  }
+  .radial-lab__controls input[type='color'] { width: 44px; height: 44px; padding: 0; overflow: hidden; border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); cursor: pointer; }
 
   .radial-lab__controls input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
   .radial-lab__controls input[type='color']::-webkit-color-swatch { border: 0; }
 
-  .radial-lab__reset {
-    height: 32px;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: var(--canvas);
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 13px;
-  }
+  .radial-lab__reset { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--primary-subtle); color: var(--primary); font: 600 13px var(--font-body); cursor: pointer; }
 
-  .radial-lab__reset { padding: 0 12px; cursor: pointer; }
-  .radial-lab__reset:hover { border-color: var(--primary); color: var(--primary); }
+  .radial-lab__reset { cursor: pointer; }
+  .radial-lab__reset:hover { background: color-mix(in srgb, var(--primary) 15%, var(--canvas)); }
 
-  .radial-lab__note {
-    margin: 0 !important;
-    padding: var(--space-sm) var(--space-md);
-    border-top: 1px solid var(--hairline);
-    color: var(--ink-subtle);
-    font-size: 13px;
-    line-height: 1.55;
-  }
+  .radial-lab__note { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; margin: 0 !important; padding: 16px var(--lab-padding); border-top: 1px solid var(--hairline); background: var(--surface-1); color: var(--ink-muted); font-size: 12px; line-height: 1.65; }
 
   .radial-lab__note b { color: var(--ink); }
+  .radial-lab__caption { margin: 0 !important; padding: 0 var(--lab-padding) 16px; color: var(--ink-muted); font-size: 13px; line-height: 1.6; }
+
+  @media (max-width: 520px) {
+    .radial-lab__diagram-label { font-size: 22px; }
+    .radial-lab__handle text { font-size: 18px; }
+    .radial-lab__handle--radius text { font-size: 16px; }
+    .radial-lab__handle--sample text { font-size: 20px; }
+  }
 
   @media (max-width: 640px) {
     .radial-lab__controls { grid-template-columns: minmax(0, 1fr) auto; }
-    .radial-lab__stops { grid-column: 1 / -1; }
+    .radial-lab__stops { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); }
     .radial-lab__metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .radial-lab__metrics i { position: absolute; visibility: hidden; }
     .radial-lab__hint { display: none; }

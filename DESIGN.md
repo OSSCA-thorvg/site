@@ -1,4 +1,4 @@
-# OSSCA × ThorVG 디자인 시스템 v2
+# OSSCA × ThorVG 디자인 시스템 v3
 
 `src/styles/global.css`가 구현의 기준이며 이 문서는 유지보수 계약을 요약한다. 화면은 라이트
 기본의 조용하고 실용적인 대시보드다. 중립 표면으로 정보 밀도를 정리하고, 주황색은 링크,
@@ -45,15 +45,79 @@
 
 ## 타이포그래피
 
-- 제목: 자체 호스팅한 `Space Grotesk`, 이후 `SF Pro Display`, `system-ui`, `sans-serif`.
-- 본문과 UI: 자체 호스팅한 `Inter`, 이후 `-apple-system`, `system-ui`, `Segoe UI`,
-  `Roboto`, `sans-serif`.
+- 제목, 본문과 UI: 자체 호스팅한 `Pretendard Variable`, 이후 `-apple-system`,
+  `system-ui`, `Segoe UI`, `sans-serif`.
 - 코드와 식별자: 자체 호스팅한 `JetBrains Mono`, 이후 `ui-monospace`, `SF Mono`,
   `Menlo`, `monospace`.
 
-자체 호스팅 파일은 라틴 글리프를 제공하고 한국어는 운영체제 시스템 글꼴로 폴백한다.
+Pretendard는 한국어와 라틴 글리프를 동적 서브셋으로 제공한다.
 모든 글자 간격은 `0`이다. 음수 자간을 쓰지 않으며 `vw` 같은 뷰포트 비례 글자 크기를
 사용하지 않는다. 제목 크기는 고정값과 반응형 구간의 고정값으로만 조절한다.
+
+### MDX 읽기 화면
+
+기존 `760px` 글 컨테이너와 사이드바 구조를 유지한다. 한국어 단어는 `keep-all`로 줄을
+바꾸고 긴 코드 식별자와 URL은 `overflow-wrap: anywhere`로 처리한다. 본문에는 보조 UI
+글자보다 진한 `--ink-reading`(`#30343A` / `#DBDDE1`)을 사용한다.
+
+| 요소 | 데스크톱 | 520px 이하 |
+|---|---|---|
+| 본문 | `17px`, 행간 `1.85`, 문단 아래 `1.25em` | `16px`, 행간 `1.8` |
+| 글 제목 | `36px`, 행간 `1.35` | `30px`, 행간 `1.4` |
+| 절 제목 h2 | `28px`, 행간 `1.4`, 위 여백 `56px` | `25px`, 위 여백 `48px` |
+| 소절 제목 h3 | `22px`, 행간 `1.45` | `21px` |
+| 코드 블록 | `13.5px`, 행간 `1.75`, 안쪽 여백 `20px 24px` | `13px`, 안쪽 여백 `16px` |
+| 표 | `14.5px`, 행간 `1.65`, 셀 여백 `10px 14px` | 셀 여백 `9px 12px` |
+| 글 메타데이터 | `14px` | `14px`, 날짜는 다음 행 허용 |
+
+인라인 코드는 `0.86em`이며 본문과 구분되는 중립 표면을 쓴다. 긴 코드 블록과 표는 해당
+요소 안에서 가로 스크롤한다. h2는 얇은 구분선을 갖고 h3 이하의 위계는 크기와 여백으로
+표현한다. 인용문과 GitHub 알림은 `2px` 세로 선으로 구분하며 알림의 내용은 본문 색으로
+읽는다. 일반 요소 규칙은 `:where()`를 사용해 MDX 도구의 독립적인 글자 크기를 존중한다.
+
+코드 구문 강조는 Shiki의 `github-light` / `github-dark`를 사용하며 `<html data-theme>`에
+동기화한다. 코드 배경과 경계는 사이트의 `--surface-1` / `--hairline`을 사용한다.
+[Starlight의 MDX 컴포넌트 스타일 방식](https://starlight.astro.build/components/using-components/)과
+[Docusaurus의 코드 블록 테마 방식](https://docusaurus.io/docs/markdown-features/code-blocks)을
+참고해 본문과 삽입 도구의 크기, 코드 구문 강조, 테마 역할을 구분했다.
+
+### 코드 펼치기·접기
+
+`Disclosure.astro`는 기본 `<details>` / `<summary>`의 키보드 동작을 유지한다. 기존
+`코드 보기: …` 제목은 실제 제목과 코드 아이콘을 한 행에 배치하고, 전체 제목은 스크린
+리더에 유지한다. 바탕은 투명하며 상하 `1px` 선으로 본문과 구분한다. 헤더는 최소 `64px`
+높이이며 `15px` / 굵기 `550`의 제목과 오른쪽 `32px`의 +/− 아이콘을 사용한다. 열린
+상태에서는 아이콘의 세로 선이 접히고 내용이 `220ms` 동안 나타난다. hover와 포커스에는
+아이콘만 주요 신호 색을 사용하며, reduced motion에서는 전환과 등장 효과를 끈다.
+내용은 데스크톱에서 제목 시작 위치에 맞추고 모바일에서는 전체 폭을 사용한다. 일반
+Markdown의 클래스 없는 details와 `guide-details`에도 같은 선과 +/− 표시를 적용한다.
+
+## tmath와 다이어그램 테마
+
+사이트 CSS 토큰을 애니메이션의 호스트 팔레트로 전달한다. `/Users/noh/orca/gitpage`의
+`hostTheme → 장면 재로드 → 현재 프레임 그리기` 방식을 참고한다. 테마 전환은 현재 재생
+위치와 상태를 유지하며, 화면에 들어온 장면은 재생 전에도 현재 테마의 정지 화면을 그린다.
+`prefers-reduced-motion`에서는 자동 재생을 하지 않는다.
+
+| 애니메이션 역할 | CSS 토큰 |
+|---|---|
+| 바탕 / 패널 | `--animation-canvas: var(--canvas)` / `--animation-surface: var(--surface-1)` |
+| 글자 / 보조 글자 | `--animation-ink: var(--ink)` / `--animation-muted: var(--ink-subtle)` |
+| 구조 선 | `--animation-line: var(--hairline-strong)` |
+| 활성 / 정보 / 성공 / 경고 | `--primary` / `--cat-azure` / `--cat-teal` / `--cat-amber` |
+| 기본 구조 선 굵기 / 기본 글꼴 | `--animation-stroke: 1.5` / `--animation-font: "Pretendard"` |
+
+공통 `public/tmath/theme.mjs`가 Lua와 JS에서 컴파일한 Lua에 테마를 적용한다. 장면의
+배치, 크기, 시간, 트레이스 데이터는 유지한다. Cell, Image, 실제 픽셀 결과와 그라디언트
+색상처럼 학습 대상 자체의 색은 보존하고 글자, 배경, 구조 선과 UI를 테마에 연결한다.
+씬에 명시한 글꼴·크기·선 굵기는 존중한다. tmath 재생 컨트롤과 전체 화면에도 같은
+사이트 토큰을 사용한다.
+
+Mermaid는 `base` 테마의 역할 색을 사이트 토큰으로 채우고 테마 변경 시 다시 그린다.
+그라디언트 실습의 SVG 글자, 안내 선, 조작 핸들과 배경은 같은 토큰을 사용한다. 사용자가
+선택한 Color Stop과 ThorVG가 계산한 결과는 그대로 표시하며, 그 위의 글자와 핸들은
+중립 배경의 테두리를 갖는다. 얇은 안내 선은 `non-scaling-stroke`로 모바일에서도 굵기를
+유지하고, 520px 이하에서 SVG 라벨은 `22px`, 핸들 글자는 `16–20px`의 장면 크기로 키운다.
 
 ## 형태와 깊이
 

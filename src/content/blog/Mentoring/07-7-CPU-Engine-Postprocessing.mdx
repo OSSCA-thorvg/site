@@ -1301,24 +1301,24 @@ Effect의 공통 준비 경로는 <a href={`${import.meta.env.BASE_URL}blog/ment
 
 <TMathPlayer scene="blur" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/blur.lua'} title="Read front, write back, swap" description="Six box-filter passes and two transposes update Offscreen and Scratch." width={960} height={800} />
 
-<Disclosure title="API & source: GaussianBlur">
+<Disclosure title="API와 소스: GaussianBlur">
 
 ```cpp
-// sigma, direction, border, quality
+// 시그마, 방향, 경계 처리, 품질
 scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
 ```
 
-Prepare computes radii and bounds during `update()`; filtering runs during `draw()`. Here, `sigma = 1.4`, both directions, clamped edges and quality `100` produce three radius-1 passes per axis.
+`update()`에서 필터 반경과 영역을 준비하고 `draw()`에서 필터링합니다. 이 예제는 `sigma = 1.4`, 양방향, 가장자리 제한, 품질 `100`으로 각 축에 반경 1인 필터를 세 번 적용합니다.
 
 ```cpp
-// effectGaussianBlurUpdate(): kernel preparation
+// effectGaussianBlurUpdate(): 커널 준비
 auto scale = sqrt(transform.e11 * transform.e11 +
                   transform.e12 * transform.e12);
 rd->extends = _gaussianInit(rd,
     std::pow(params->sigma * scale, 2), params->quality);
 ```
 
-**Call path**
+**호출 흐름**
 
 ```text
 canvas->draw()
@@ -1330,9 +1330,9 @@ canvas->draw()
 -> rasterXYFlip()
 ```
 
-Each pass reads one buffer and writes the other. Transposition reuses horizontal access for vertical filtering.
+각 단계는 한 버퍼를 읽고 다른 버퍼에 기록합니다. 수직 필터링은 버퍼를 전치해 수평 접근 방식을 재사용합니다.
 
-[SwRenderer::render() — GaussianBlur dispatch](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L779)
+[SwRenderer::render() — GaussianBlur 처리 분기](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L779)
 
 ```cpp
 case SceneEffect::GaussianBlur: {
@@ -1359,14 +1359,14 @@ SwSurface* SwRenderer::request(int channelSize, bool square)
     uint32_t w, h;
 
     if (square) {
-        //Same Dimensional Size is demanded for the Post Processing Fast Flipping
+        // 후처리에서 빠르게 전치하려면 가로와 세로 크기가 같아야 합니다.
         w = h = std::max(surface->w, surface->h);
     } else {
         w = surface->w;
         h = surface->h;
     }
 
-    //Use cached data
+    // 캐시된 데이터 재사용
     ARRAY_FOREACH(p, compositors) {
         auto cur = *p;
         if (cur->compositor->valid && cur->compositor->image.channelSize == channelSize) {
@@ -1377,9 +1377,9 @@ SwSurface* SwRenderer::request(int channelSize, bool square)
         }
     }
 
-    //New Composition
+    // 새 합성 버퍼 생성
     if (!cmp) {
-        //Inherits attributes from main surface
+        // 메인 Surface의 속성 상속
         cmp = new SwSurface(surface);
         cmp->compositor = new SwCompositor;
         cmp->compositor->image.data = tvg::malloc<pixel_t>(channelSize * w * h);
@@ -1393,7 +1393,7 @@ SwSurface* SwRenderer::request(int channelSize, bool square)
         compositors.push(cmp);
     }
 
-    //Sync. This may have been modified by post-processing.
+    // 후처리에서 변경될 수 있는 버퍼 주소를 동기화합니다.
     cmp->data = cmp->compositor->image.data;
 
     return cmp;
@@ -1424,11 +1424,10 @@ bool effectGaussianBlur(SwCompositor* cmp, SwSurface* surface, const RenderEffec
 
     TVGLOG("SW_ENGINE", "GaussianFilter region(%d, %d, %d, %d) params(%f %d %d), level(%d)", bbox.min.x, bbox.min.y, bbox.max.x, bbox.max.y, params->sigma, params->direction, params->border, data->level);
 
-    /* It is best to take advantage of the Gaussian blur’s separable property
-       by dividing the process into two passes. horizontal and vertical.
-       We can expect fewer calculations. */
+    /* 가우시안 블러의 분리 가능성을 이용해 수평·수직 두 단계로
+       나누면 계산량을 줄일 수 있습니다. */
 
-    //horizontal
+    // 수평 방향
     if (params->direction != 2) {
         for (int i = 0; i < data->level; ++i) {
             _gaussianFilter(reinterpret_cast<uint8_t*>(back), reinterpret_cast<uint8_t*>(front), stride, w, h, bbox, data->kernel[i], false);
@@ -1437,7 +1436,7 @@ bool effectGaussianBlur(SwCompositor* cmp, SwSurface* surface, const RenderEffec
         }
     }
 
-    //vertical. x/y flipping and horionztal access is pretty compatible with the memory architecture.
+    // 수직 방향: x/y를 전치해 메모리 접근에 유리한 수평 방식으로 처리합니다.
     if (params->direction != 1) {
         rasterXYFlip(front, back, stride, w, h, bbox, false);
         std::swap(front, back);
@@ -1489,12 +1488,12 @@ static void _gaussianFilter(uint8_t* dst, uint8_t* src, int32_t stride, int32_t 
     #pragma omp parallel for
     for (int y = 0; y < h; ++y) {
         auto p = y * stride;
-        auto i = p * 4;                 //current index
-        auto l = -(dimension + 1);      //left index
-        auto r = dimension;             //right index
-        int acc[4] = {0, 0, 0, 0};      //sliding accumulator
+        auto i = p * 4;                 // 현재 인덱스
+        auto l = -(dimension + 1);      // 왼쪽 인덱스
+        auto r = dimension;             // 오른쪽 인덱스
+        int acc[4] = {0, 0, 0, 0};      // 이동 누적합
 
-        //initial accumulation
+        // 초기 누적합 계산
         for (int x = l; x < r; ++x) {
             auto id = (_gaussianRemap<border>(end, x) + p) * 4;
             acc[0] += src[id++];
@@ -1502,7 +1501,7 @@ static void _gaussianFilter(uint8_t* dst, uint8_t* src, int32_t stride, int32_t 
             acc[2] += src[id++];
             acc[3] += src[id];
         }
-        //perform filtering
+        // 필터링 실행
         for (int x = 0; x < w; ++x, ++r, ++l) {
             auto rid = (_gaussianRemap<border>(end, r) + p) * 4;
             auto lid = (_gaussianRemap<border>(end, l) + p) * 4;
@@ -1510,7 +1509,7 @@ static void _gaussianFilter(uint8_t* dst, uint8_t* src, int32_t stride, int32_t 
             acc[1] += src[rid++] - src[lid++];
             acc[2] += src[rid++] - src[lid++];
             acc[3] += src[rid] - src[lid];
-            //ignored rounding for the performance. It should be originally: acc[idx] * iarr + 0.5f
+            // 성능을 위해 반올림을 생략합니다. 원래 식은 acc[idx] * iarr + 0.5f입니다.
             dst[i++] = static_cast<uint8_t>(acc[0] * iarr);
             dst[i++] = static_cast<uint8_t>(acc[1] * iarr);
             dst[i++] = static_cast<uint8_t>(acc[2] * iarr);
@@ -1526,18 +1525,18 @@ static void _gaussianFilter(uint8_t* dst, uint8_t* src, int32_t stride, int32_t 
 
 <TMathPlayer scene="tint" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/tint.lua'} title="Read → map → mix → write" description="A pixel travels from Offscreen through luma, intensity and alpha back to its address." width={960} height={800} />
 
-<Disclosure title="API & source: Tint">
+<Disclosure title="API와 소스: Tint">
 
 ```cpp
 scene->opacity(128);
 scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
-// black RGB, white RGB, intensity(%)
+// 어두운 쪽 RGB, 밝은 쪽 RGB, 강도(%)
 scene->add(SceneEffect::Tint, 31, 51, 97, 255, 199, 102, 75.0);
 ```
 
-This `Blur → Tint` example uses `direct = false`. Intensity `75%` becomes byte `191`; the pixel loop also applies compositor opacity `128`.
+이 `Blur → Tint` 예제는 `direct = false` 경로를 사용합니다. 강도 `75%`는 8비트 값 `191`이 되며, 픽셀 반복문에서 합성기 불투명도 `128`도 적용합니다.
 
-**Call path**
+**호출 흐름**
 
 ```text
 canvas->draw()
@@ -1545,13 +1544,13 @@ canvas->draw()
 -> SwRenderer::render(effect)
 -> effectTint(direct = false)
 -> luma() / INTERPOLATE()
--> write ALPHA_BLEND() to Offscreen
+-> ALPHA_BLEND() 결과를 Offscreen에 기록
 ```
 
 [`effectTint()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L531), [`luma()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRaster.cpp#L100)
 
 ```cpp
-// effectTint(): non-direct pixel loop
+// effectTint(): 직접 처리하지 않는 픽셀 반복문
 for (size_t x = 0; x < w; ++x, ++dst) {
     auto val = INTERPOLATE(white, black, luma((uint8_t*)dst));
     if (params->intensity < 255) {
@@ -1567,19 +1566,19 @@ for (size_t x = 0; x < w; ++x, ++dst) {
 
 <TMathPlayer scene="tritone" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/tritone.lua'} title="Luma selects the color pair" description="Two selected pixels follow luma-dependent interpolation and write back in place." width={960} height={800} />
 
-<Disclosure title="API & source: Tritone">
+<Disclosure title="API와 소스: Tritone">
 
 ```cpp
 scene->opacity(128);
 scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
-// shadow RGB, midtone RGB, highlight RGB, original mix
+// 어두운 톤 RGB, 중간 톤 RGB, 밝은 톤 RGB, 원본 혼합 비율
 scene->add(SceneEffect::Tritone,
     28, 51, 97, 224, 99, 48, 255, 224, 143, 64);
 ```
 
-The bright-pixel inset is a separate input: opacity `173`, blender `111`. It shows the upper branch without changing the main A·B trace.
+밝은 픽셀의 확대 예제는 불투명도 `173`, 혼합 값 `111`인 별도 입력으로, 메인 A·B trace를 바꾸지 않고 밝은 쪽 분기를 보여줍니다.
 
-**Call path**
+**호출 흐름**
 
 ```text
 canvas->draw()
@@ -1588,13 +1587,13 @@ canvas->draw()
 -> effectTritone(direct = false)
 -> luma() / _trintone()
 -> INTERPOLATE() / ALPHA_BLEND()
--> write to the same Offscreen pixel
+-> 같은 Offscreen 픽셀에 기록
 ```
 
-[`_trintone()` · `effectTritone()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L579), [`SceneEffect API`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L277), [`effect dispatch`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L766)
+[`_trintone()` · `effectTritone()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L579), [`SceneEffect API`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L277), [`효과 처리 분기`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L766)
 
 ```cpp
-// _trintone(): luma branch
+// _trintone(): 휘도에 따른 분기
 if (l < 128) {
     auto a = std::min(l * 2, 255);
     return ALPHA_BLEND(s, 255 - a) + ALPHA_BLEND(m, a);
@@ -1603,7 +1602,7 @@ if (l < 128) {
     return ALPHA_BLEND(m, 255 - a) + ALPHA_BLEND(h, a);
 }
 
-// effectTritone(): non-direct pixel loop, blender != 0
+// effectTritone(): 직접 처리하지 않는 픽셀 반복문, blender != 0
 for (size_t x = 0; x < w; ++x, ++dst) {
     *dst = ALPHA_BLEND(
         INTERPOLATE(*dst,
@@ -1619,15 +1618,15 @@ for (size_t x = 0; x < w; ++x, ++dst) {
 
 <TMathPlayer scene="fill" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/fill.lua'} title="Read alpha, recolor, overwrite" description="Read the stored alpha, compute new RGBA from the Fill color and effect opacity, then overwrite the same Offscreen pixel." width={960} height={800} />
 
-<Disclosure title="API & source: Fill">
+<Disclosure title="API와 소스: Fill">
 
 ```cpp
 scene->add(SceneEffect::GaussianBlur, 1.4, 0, 0, 100);
-// fill RGB, effect opacity
+// 채우기 RGB, 효과 불투명도
 scene->add(SceneEffect::Fill, 49, 150, 123, 255);
 ```
 
-**Call path**
+**호출 흐름**
 
 ```text
 canvas->draw()
@@ -1637,9 +1636,9 @@ canvas->draw()
 -> direct == false
 ```
 
-The non-direct loop uses effect opacity; group opacity is applied later by `endComposite()`.
+직접 처리하지 않는 경로에서는 효과의 불투명도를 사용하고, 그룹 불투명도는 이후 `endComposite()`에서 적용합니다.
 
-[effectFill() — non-direct loop](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L483)
+[effectFill() — 직접 처리하지 않는 반복문](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L483)
 
 ```cpp
 auto opacity = direct ? MULTIPLY(params->color[3], cmp->opacity) : params->color[3];
@@ -1649,7 +1648,7 @@ auto w = size_t(bbox.max.x - bbox.min.x);
 auto h = size_t(bbox.max.y - bbox.min.y);
 auto color = cmp->recoverSfc->join(params->color[0], params->color[1], params->color[2], 255);
 
-// ... intervening code omitted
+// ... 중간 코드 생략
 
 auto dbuffer = cmp->image.buf32 + (bbox.min.y * cmp->image.stride + bbox.min.x);
 for (size_t y = 0; y < h; ++y) {
@@ -1667,19 +1666,19 @@ for (size_t y = 0; y < h; ++y) {
 
 <TMathPlayer scene="shadow" source={import.meta.env.BASE_URL + 'tmath/postprocessing/details/shadow.lua'} title="Filter alpha, shift shadow, restore body" description="The original stays in place while its filtered alpha moves onto Canvas, followed by the body." width={960} height={800} />
 
-<Disclosure title="API & source: DropShadow">
+<Disclosure title="API와 소스: DropShadow">
 
 ```cpp
 scene->opacity(128);
-// shadow RGB, opacity, angle, distance, blur sigma, quality
+// 그림자 RGB, 불투명도, 각도, 거리, 블러 시그마, 품질
 scene->add(SceneEffect::DropShadow,
     32, 40, 52, 180, 135.0, 4.0, 1.4, 100);
 ```
 
-This single-effect example uses `direct = true`: two scratch surfaces preserve the body and filter alpha. The shadow reaches Canvas first; `endComposite()` overlays the body.
+이 단일 효과 예제는 `direct = true` 경로에서 임시 Surface 두 개로 원본을 보존하고 알파를 필터링한 뒤, 그림자를 먼저 그리고 `endComposite()`로 원본을 합성합니다.
 
 ```cpp
-// effectDropShadowUpdate(): integer offset
+// effectDropShadowUpdate(): 정수 좌표 이동량
 auto radian = tvg::deg2rad(90.0f - params->angle)
             - tvg::radian(transform);
 rd->offset = {
@@ -1688,23 +1687,23 @@ rd->offset = {
 };
 ```
 
-**Call path**
+**호출 흐름**
 
 ```text
 canvas->draw()
 -> SceneImpl::render()
--> SwRenderer::render(effect) / request 2 scratch surfaces
+-> SwRenderer::render(effect) / 임시 Surface 두 개 요청
 -> effectDropShadow(direct = true)
 -> _dropShadowFilter() / rasterXYFlip()
--> _dropShadowShift() / restore original image
+-> _dropShadowShift() / 원본 이미지 복원
 -> endComposite()
 -> rasterDirectImage(body)
 ```
 
-[`effectDropShadow()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L389), [`single-effect direct dispatch`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L154)
+[`effectDropShadow()`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwPostEffect.cpp#L389), [`단일 효과의 직접 처리 분기`](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgScene.h#L154)
 
 ```cpp
-// After filtering and inverse transpose: direct path
+// 필터링과 역전치 후 직접 처리 경로
 if (direct) {
     _dropShadowShift(cmp->recoverSfc->buf32, cmp->image.buf32,
         cmp->recoverSfc->stride, cmp->image.stride,
@@ -1713,14 +1712,14 @@ if (direct) {
     std::swap(cmp->image.buf32, buffer[0]->buf32);
     return true;
 }
-// SceneImpl::render() then calls endComposite(cmp).
+// 이후 SceneImpl::render()에서 endComposite(cmp)를 호출합니다.
 ```
 
 </Disclosure>
 
-#### 3.5.1. Effect order
+#### 3.5.1. 효과 적용 순서
 
-Use either sequence on a fresh `Scene(A, B)`. Effects run in registration order.
+각 순서를 새로 만든 `Scene(A, B)`에 적용합니다. 효과는 등록한 순서대로 실행됩니다.
 
 **DropShadow → Fill**
 

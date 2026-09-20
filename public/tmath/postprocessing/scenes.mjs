@@ -78,7 +78,7 @@ export function buildEpisode(id) {
       const b = background || ((xx + yy) % 2 ? [0.91, 0.93, 0.95, 1] : [0.98, 0.985, 0.99, 1]);
       return px % 8 === 7 || py % 8 === 7 ? '#ffffff' : hex(over(image[yy * N + xx], b));
     });
-    g.image({id: key('image'), pixels, size: [resolution, resolution], center: pos(x, y), width: size / 100, filter: 'nearest', layer: 3});
+    g.picture({id: key('image'), pixels, size: [resolution, resolution], center: pos(x, y), width: size / 100, filter: 'nearest', layer: 3});
     rect(g, x, y, size, size, '#00000000', C.line, 2, 5);
     return g;
   }

@@ -14,11 +14,13 @@ import Disclosure from '../../../../components/Disclosure.astro';
 
 ## Overview
 
-`Canvas::viewport(x, y, w, h)` limits where an avatar Scene's photo and badge are drawn. Their coordinates stay fixed. The same example follows stored bounds, CPU tasks, prepared geometry, clearing, and final pixels.
+`Canvas::viewport(x, y, w, h)`
 
 <TMathPlayer scene="cpu-viewport-overview" source={import.meta.env.BASE_URL + 'tmath/cpu-regions/viewport.lua'} poster={import.meta.env.BASE_URL + 'tmath/cpu-regions/viewport.webp'} title="Viewport · CPU pipeline" description="One avatar Scene follows Canvas::viewport, RenderRegion, per-task clipBox, image bounds and Shape RLE, draw(false)/draw(true), and accumulated drawing. Each section loops locally; the final result stays fixed." width={1440} height={3260} loop autoplay />
 
-<Disclosure title="Example and source references">
+<Disclosure title="코드 보기: 뷰포트 예제와 소스">
+
+지정한 뷰포트로 사진과 배지의 렌더 영역을 제한합니다.
 
 ```cpp
 // Canvas target: 16 × 12 ABGR8888 pixels, initialized to 0xfff0eae5.
@@ -38,13 +40,7 @@ canvas->draw(false);
 canvas->sync();
 ```
 
-### From Canvas bounds to prepared Tasks
-
-| Owner | Field / type | This example |
-| --- | --- | --- |
-| `CanvasImpl` | `RenderRegion vport` | `min = {4,2}`, `max = {12,9}` |
-| `SwRenderer` | `RenderRegion vport` | The requested region intersected with target bounds |
-| Photo / badge `SwTask` | `RenderRegion clipBox` | Both capture `[4,12) × [2,9)` in `prepareCommon()` |
+- [4,12) × [2,9)` in `prepareCommon()` |
 | Photo `SwImageTask` | `curBox`, `SwImage image` | Direct image rendering uses bounded coordinates; `image.rle = nullptr` |
 | Badge `SwShapeTask` | `SwShape shape` | `shape.rle` contains only spans within `clipBox` |
 
@@ -57,10 +53,10 @@ The clear-policy comparison uses two independent **first draws on the same initi
 Native CPU execution at `4d5810cf` verifies both task clipBoxes, direct-image bounds, the null image RLE, badge spans, intermediate photo output, final output, and **zero compositor buffers**. A second fixture moves the viewport's x origin from 4 to 5 while preserving the input pixels and geometry. The last section shows successive states of one Main Surface; the result remains fixed.
 
 - [Public Canvas::viewport API](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/inc/thorvg.h#L1034)
-- [Canvas viewport state](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h#L131)
-- [Task clipBox capture](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
-- [Image task preparation](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L190)
-- [Full clear and partial updates](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L262)
+- [Canvas 뷰포트 상태](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/tvgCanvas.h#L131)
+- [Task의 clipBox 설정](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L827)
+- [이미지 Task 준비](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L190)
+- [전체 초기화와 부분 갱신](https://github.com/thorvg/thorvg/blob/4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad/src/renderer/cpu_engine/tvgSwRenderer.cpp#L262)
 
 </Disclosure>
 

@@ -130,7 +130,7 @@ for row=0,resolution-1 do
     end
 end
 local bitmap=scene:group{id="composited_bitmap",matrix=mat(scratch.x,scratch.y),opacity=0}
-bitmap:image{id="composited_image",pixels=pixels,size={resolution,resolution},center={0,0},width=imageWidth,filter="bilinear",layer=40}
+bitmap:picture{id="composited_image",pixels=pixels,size={resolution,resolution},center={0,0},width=imageWidth,filter="bilinear",layer=40}
 local compositeArrow=scene:arrow{id="bitmap_composite_arrow",from=p(1485,target.y),to=p(1595,target.y),stroke="#202020",width=1.8,tip=9,layer=15}
 local compositeLabel=label(scene,"composite_label","opacity × "..groupOpacity.."/255",1270,1895,30)
 -- Corresponding Paints are drawn together, so only the destination differs.

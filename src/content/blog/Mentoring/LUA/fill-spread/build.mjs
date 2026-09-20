@@ -27,7 +27,7 @@ export function buildSpread(stops = [[40, 111, 218], [243, 151, 65]]) {
       const u = spreadT(-1 + (j + 0.5) / (span / 2) * 3, mode);
       return '#' + stops[0].map((v, k) => Math.round(v + (stops[1][k] - v) * u).toString(16).padStart(2, '0')).join('');
     });
-    s.image({id: mode + '-gradient', pixels: Array.from({length: 24}, () => pixels).flat(), size: [span / 2, 24], center: pos(left + span / 2, y), width: span / 100, filter: 'nearest', layer: 10});
+    s.picture({id: mode + '-gradient', pixels: Array.from({length: 24}, () => pixels).flat(), size: [span / 2, 24], center: pos(left + span / 2, y), width: span / 100, filter: 'nearest', layer: 10});
     markers.circle({id: mode + '-sample-outline', center: pos(x(0.5), y), radius: 0.15, fill: '#00000000', stroke: '#293544', width: 6, layer: 30});
     markers.circle({id: mode + '-sample', center: pos(x(0.5), y), radius: 0.15, fill: '#00000000', stroke: '#ffffff', width: 3, layer: 31});
   }

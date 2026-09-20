@@ -131,8 +131,11 @@ const groups = [
             <p class="diff-color-readout" data-diff-color>RGB — 영역 위에 마우스를 올려보세요</p>
           </article>
           <article class="diff-panel" data-diff-renderer="airbnb">
-            <h3>Airbnb lottie-web</h3>
-            <div class="diff-stage" data-diff-surface><div id="diff-airbnb"></div></div>
+            <h3>Airbnb lottie-web (svg)</h3>
+            <div class="diff-stage" data-diff-surface>
+              <canvas id="diff-airbnb-canvas" width="300" height="300"></canvas>
+              <div id="diff-airbnb" class="diff-svg-source" aria-hidden="true"></div>
+            </div>
             <p class="diff-color-readout" data-diff-color>RGB — 영역 위에 마우스를 올려보세요</p>
           </article>
           <article class="diff-panel" data-diff-renderer="pixel-diff">
@@ -164,9 +167,10 @@ const groups = [
     const status = document.querySelector('#diff-status');
     const thorvg = document.querySelector('#diff-thorvg');
     const airbnbContainer = document.querySelector('#diff-airbnb');
+    const airbnbCanvas = document.querySelector('#diff-airbnb-canvas');
     const pixelCanvas = document.querySelector('#diff-pixel-canvas');
     const pixelSummary = document.querySelector('#diff-pixel-summary');
-    if (!(fileInput instanceof HTMLInputElement) || !(playButton instanceof HTMLButtonElement) || !(stopButton instanceof HTMLButtonElement) || !(seek instanceof HTMLInputElement) || !(timeOutput instanceof HTMLOutputElement) || !(status instanceof HTMLElement) || !thorvg || !(airbnbContainer instanceof HTMLElement) || !(pixelCanvas instanceof HTMLCanvasElement) || !(pixelSummary instanceof HTMLElement)) return;
+    if (!(fileInput instanceof HTMLInputElement) || !(playButton instanceof HTMLButtonElement) || !(stopButton instanceof HTMLButtonElement) || !(seek instanceof HTMLInputElement) || !(timeOutput instanceof HTMLOutputElement) || !(status instanceof HTMLElement) || !thorvg || !(airbnbContainer instanceof HTMLElement) || !(airbnbCanvas instanceof HTMLCanvasElement) || !(pixelCanvas instanceof HTMLCanvasElement) || !(pixelSummary instanceof HTMLElement)) return;
 
     const sampleUrl = section.dataset.sampleSrc;
     let animationData = null;
@@ -204,6 +208,35 @@ const groups = [
     const getCanvas = (surface) => {
       if (surface instanceof HTMLCanvasElement) return surface;
       return surface.querySelector('canvas') || surface.shadowRoot?.querySelector('canvas') || null;
+    };
+
+    // lottie-web's default svg renderer draws into DOM, so rasterize the current <svg>
+    // into a canvas for pixel readout and diffing. The canvas renderer is not used
+    // because it skips some geometry (e.g. zero-length strokes) that the svg path does not.
+    const rasterizeAirbnb = async () => {
+      const svg = airbnbContainer.querySelector('svg');
+      const context = airbnbCanvas.getContext('2d', { willReadFrequently: true });
+      if (!(svg instanceof SVGSVGElement) || !context) return;
+      const rect = airbnbCanvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.round((rect.width || airbnbCanvas.width) * ratio));
+      const height = Math.max(1, Math.round((rect.height || airbnbCanvas.height) * ratio));
+      if (airbnbCanvas.width !== width) airbnbCanvas.width = width;
+      if (airbnbCanvas.height !== height) airbnbCanvas.height = height;
+      const clone = svg.cloneNode(true);
+      clone.setAttribute('width', String(width));
+      clone.setAttribute('height', String(height));
+      const blob = new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      try {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        context.clearRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
     };
 
     const warmThorvgFrame = async (nextFrame) => {
@@ -328,7 +361,10 @@ const groups = [
     const renderFrame = async (nextFrame) => {
       frame = Math.max(0, Math.min(totalFrames, nextFrame));
       await warmThorvgFrame(frame);
-      if (airbnbAnimation) airbnbAnimation.goToAndStop(frame, true);
+      if (airbnbAnimation) {
+        airbnbAnimation.goToAndStop(frame, true);
+        await rasterizeAirbnb();
+      }
       await waitForPaint();
       renderPixelDiff();
       updateTime();
@@ -389,7 +425,7 @@ const groups = [
 
       if (airbnbAnimation) airbnbAnimation.destroy();
       airbnbContainer.replaceChildren();
-      airbnbAnimation = window.lottie?.loadAnimation({ container: airbnbContainer, renderer: 'canvas', loop: false, autoplay: false, animationData: nextData });
+      airbnbAnimation = window.lottie?.loadAnimation({ container: airbnbContainer, renderer: 'svg', loop: false, autoplay: false, animationData: nextData });
 
       await renderFrame(0);
       setStatus('두 렌더러가 같은 Lottie 프레임을 표시합니다.');

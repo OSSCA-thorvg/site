@@ -5,14 +5,24 @@ interface Props {
 }
 
 const { title, open = false } = Astro.props;
+const codeTitle = title.match(/^코드 보기\s*[:：]\s*(.+)$/);
 ---
 
 <details class="mdx-disclosure" open={open}>
   <summary>
-    <svg class="mdx-disclosure__chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="m6 3 5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    <svg class="mdx-disclosure__symbol" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
-    <span>{title}</span>
+    <span class="mdx-disclosure__title">
+      {codeTitle && <span class="sr-only">코드 보기: </span>}
+      {codeTitle ? codeTitle[1] : title}
+    </span>
+    <span class="mdx-disclosure__toggle" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        <path class="mdx-disclosure__vertical" d="M8 3v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+      </svg>
+    </span>
   </summary>
   <div class="mdx-disclosure__content">
     <slot />
@@ -22,46 +32,57 @@ const { title, open = false } = Astro.props;
 <style>
   .mdx-disclosure {
     min-width: 0;
-    margin-block: var(--space-md);
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-md);
-    background: var(--surface-1);
+    margin-block: var(--space-xl);
+    border-block: 1px solid var(--hairline);
+    background: transparent;
   }
 
   .mdx-disclosure > summary {
-    display: flex;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 32px;
+    align-items: center;
     gap: var(--space-sm);
-    min-height: 48px;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: inherit;
-    background: var(--surface-2);
+    min-height: 64px;
+    padding: 14px 4px;
+    border-radius: var(--radius-sm);
     color: var(--ink);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    line-height: 1.6;
     cursor: pointer;
     list-style: none;
   }
 
+  .mdx-disclosure > summary::marker { content: ''; }
   .mdx-disclosure > summary::-webkit-details-marker { display: none; }
-  .mdx-disclosure > summary:hover { background: var(--surface-3); }
-  .mdx-disclosure > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: -4px; }
-  .mdx-disclosure > summary > span { min-width: 0; overflow-wrap: anywhere; }
-  .mdx-disclosure__chevron { flex: 0 0 16px; margin-top: 4px; color: var(--ink-subtle); transition: transform var(--dur-micro) var(--ease-out); }
-  .mdx-disclosure[open] > summary { border-bottom: 1px solid var(--hairline); border-radius: var(--radius-md) var(--radius-md) 0 0; }
-  .mdx-disclosure[open] > summary .mdx-disclosure__chevron { transform: rotate(90deg); }
+  .mdx-disclosure > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; }
+  .mdx-disclosure__symbol { color: var(--ink-subtle); transition: color var(--dur-micro) var(--ease-out); }
+  .mdx-disclosure__title { min-width: 0; font-size: 0.9375rem; font-weight: 550; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+  .mdx-disclosure__toggle { display: grid; width: 32px; height: 32px; place-items: center; border-radius: var(--radius-sm); background: var(--surface-1); color: var(--ink-muted); transition: color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out); }
+  .mdx-disclosure__vertical { transform-origin: 8px 8px; transition: transform var(--dur-move) var(--ease-out); }
+  .mdx-disclosure > summary:hover .mdx-disclosure__symbol,
+  .mdx-disclosure[open] .mdx-disclosure__symbol { color: var(--primary); }
+  .mdx-disclosure > summary:hover .mdx-disclosure__toggle,
+  .mdx-disclosure > summary:focus-visible .mdx-disclosure__toggle { background: var(--primary-subtle); color: var(--primary); }
+  .mdx-disclosure[open] .mdx-disclosure__vertical { transform: scaleY(0); }
 
-  .mdx-disclosure__content { padding: var(--space-md); }
+  .mdx-disclosure__content { min-width: 0; padding: 4px 4px 24px 36px; font-size: 1rem; }
+  .mdx-disclosure[open] .mdx-disclosure__content { animation: disclosure-reveal var(--dur-move) var(--ease-out); }
   .mdx-disclosure__content > :global(:first-child) { margin-top: 0; }
   .mdx-disclosure__content > :global(:last-child) { margin-bottom: 0; }
 
+  @keyframes disclosure-reveal {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   @media (max-width: 520px) {
-    .mdx-disclosure > summary { padding-inline: var(--space-sm); gap: var(--space-xs); }
-    .mdx-disclosure__content { padding: var(--space-sm); }
+    .mdx-disclosure > summary { grid-template-columns: 18px minmax(0, 1fr) 28px; gap: 10px; padding-inline: 0; }
+    .mdx-disclosure__symbol { width: 18px; height: 18px; }
+    .mdx-disclosure__title { font-size: 14px; }
+    .mdx-disclosure__toggle { width: 28px; height: 28px; }
+    .mdx-disclosure__content { padding: 4px 0 20px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mdx-disclosure__chevron { transition: none; }
+    .mdx-disclosure__symbol, .mdx-disclosure__toggle, .mdx-disclosure__vertical { transition: none; }
+    .mdx-disclosure[open] .mdx-disclosure__content { animation: none; }
   }
 </style>

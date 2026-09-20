@@ -52,6 +52,43 @@ export interface LayoutObjectInfo {
     readonly familyOutside: boolean;
 }
 
+export type LayoutVisualKind = "stable" | "morph" | "fade-out" | "fade-in";
+
+export interface LayoutVisualInfo {
+    readonly index: number;
+    readonly object: number;
+    /** The other authored identity of a morph or matched fade, when present. */
+    readonly counterpart: number | null;
+    /** The later opaque Scene index that fully covers this visual, when present. */
+    readonly occluder: number | null;
+    readonly kind: LayoutVisualKind;
+    readonly layer: number;
+    readonly paintBounds: BBox | null;
+    readonly visibleBounds: BBox | null;
+    readonly clipBounds: BBox;
+    /** Quantized transition/group multiplier; authored paint alpha is reflected by visible. */
+    readonly opacity: number;
+    /** True when a later fully opaque Scene background covers the whole clipped visual. */
+    readonly occluded: boolean;
+    readonly visible: boolean;
+    readonly clipped: boolean;
+}
+
+export interface LayoutPathInfo {
+    readonly index: number;
+    /** Index of the physical visual that owns this sampled path. */
+    readonly visual: number;
+    /** Conservative root-pixel paint envelope, including the sampled stroke width. */
+    readonly paintBounds: BBox;
+    /** Conservative root-pixel stroke width after Viewport composition. */
+    readonly strokeWidth: number;
+    readonly closed: boolean;
+    readonly filled: boolean;
+    readonly stroked: boolean;
+    /** Renderer-sampled path vertices in root output pixels. */
+    readonly points: readonly Readonly<{x: number; y: number}>[];
+}
+
 export interface LayoutCollisionInfo {
     readonly first: number;
     readonly second: number;
@@ -77,6 +114,8 @@ export interface LayoutReport {
     readonly height: number;
     readonly scenes: readonly LayoutSceneInfo[];
     readonly objects: readonly LayoutObjectInfo[];
+    readonly visuals: readonly LayoutVisualInfo[];
+    readonly paths: readonly LayoutPathInfo[];
     readonly collisions: readonly LayoutCollisionInfo[];
     readonly containments: readonly LayoutContainmentInfo[];
 }
@@ -268,7 +307,6 @@ export interface TMathScene {
     loadLua(source: string, name?: string): number;
     loadScene(scene: SceneBuilder, name?: string): number;
     render(time: number, copy?: boolean): Uint8ClampedArray;
-    lottie(fps?: number): Uint8Array;
     bounds(object: string, time?: number): BBox;
     intersects(first: string, second: string, time?: number, padding?: number): boolean;
     layoutReport(time?: number, padding?: number): LayoutReport;

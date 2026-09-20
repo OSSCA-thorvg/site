@@ -63,7 +63,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
         <div class="container article-container">
       <a class="btn btn--ghost article-back" href={base + section.href}>← {section.label} 목록</a>
       <header class="article-head">
-        <h1 class="page-title">{post.data.title}</h1>
+        <h1 class="page-title article-head__title" id="article-title">{post.data.title}</h1>
         {seriesTrail.length > 1 && <p class="article-series-path" aria-label="시리즈 경로">{seriesTrail.join(" › ")}</p>}
         <div class="article-head__meta">
           <a
@@ -89,9 +89,11 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
           </a>
           <time datetime={post.data.date.toISOString()}>{fmt(post.data.date)}</time>
         </div>
-        <ul class="article-head__tags" aria-label="태그">
-          {post.data.tags.map((t) => <li><span class="chip">#{t}</span></li>)}
-        </ul>
+        {post.data.tags.length > 0 && (
+          <ul class="article-head__tags" aria-label="태그">
+            {post.data.tags.map((t) => <li><span class="chip">#{t}</span></li>)}
+          </ul>
+        )}
       </header>
       {((assignment && series) || hasToc) && (
         <div class="toc-area">
@@ -101,7 +103,7 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
           </div>
         </div>
       )}
-      <article class="prose">
+      <article class="prose" aria-labelledby="article-title">
         <Content />
       </article>
       <GiscusComments discussionNumber={post.data.discussionNumber} />
@@ -112,3 +114,50 @@ const fmt = (date: Date) => date.toLocaleDateString('ko-KR', {
 
   <MermaidDiagrams />
 </Base>
+
+<style>
+  .article-back {
+    margin-bottom: var(--space-xl);
+    font-size: 0.875rem;
+  }
+
+  .article-head {
+    margin-bottom: var(--space-xxl);
+    padding-bottom: var(--space-xl);
+  }
+
+  .article-head__title {
+    margin-bottom: 0;
+    font-size: 2.25rem;
+    font-weight: 700;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+
+  .article-series-path {
+    margin-top: var(--space-sm);
+    font-size: 0.875rem;
+    line-height: 1.7;
+  }
+
+  .article-head__meta {
+    gap: var(--space-sm) var(--space-lg);
+    margin-top: var(--space-lg);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .article-head__tags { gap: var(--space-xs); }
+  .article-head__tags .chip { padding: 3px 8px; font-size: 0.75rem; font-weight: 500; }
+
+  @media (max-width: 760px) {
+    .article-back { margin-bottom: var(--space-lg); }
+    .article-head { margin-bottom: var(--space-xl); padding-bottom: var(--space-lg); }
+    .article-head__title { font-size: 1.875rem; line-height: 1.4; }
+  }
+
+  @media (max-width: 400px) {
+    .article-head__meta { column-gap: var(--space-sm); font-size: 0.8125rem; }
+    .article-head__meta time { margin-left: 0; }
+  }
+</style>

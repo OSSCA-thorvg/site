@@ -22,6 +22,10 @@ export default defineConfig({
   base,
   trailingSlash: 'ignore',
   markdown: {
+    shikiConfig: {
+      themes: { light: 'github-light', dark: 'github-dark' },
+      defaultColor: false,
+    },
     processor: unified({
       remarkPlugins: [remarkAlert, [remarkLottieImages, { base }], remarkGithubVideos, remarkSeriesHeading],
       // Run ID generation before our custom rehype plugin. Astro's built-in pass

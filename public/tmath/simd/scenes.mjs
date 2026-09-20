@@ -31,14 +31,14 @@ export function buildDownscale(){
  const gx=80,gy=208,cell=6,ox=892,oy=280,outCell=18;
  const inputPixels=example.image.pixels.map(color),outputPixels=example.outputs.map(o=>color(o.pixel));
  const input=group(1);
- input.image({id:'downscale-source',center:p(gx+example.image.w*cell/2,gy+example.image.h*cell/2),width:example.image.w*cell/100,size:[example.image.w,example.image.h],pixels:inputPixels,filter:'nearest',layer:15});
+ input.picture({id:'downscale-source',center:p(gx+example.image.w*cell/2,gy+example.image.h*cell/2),width:example.image.w*cell/100,size:[example.image.w,example.image.h],pixels:inputPixels,filter:'nearest',layer:15});
  box(scene,296,352,432,288,'#00000000',ink);
  text(scene,'SOURCE',296,175,18,muted);text(scene,'OUTPUT',1000,240,18,muted);
  box(scene,1000,352,216,144,'#ffffff','#bbbbbb');
  const output=group();
- output.image({id:'downscale-output',center:p(1000,352),width:2.16,size:[example.w,example.h],pixels:outputPixels,filter:'nearest',layer:15});
+ output.picture({id:'downscale-output',center:p(1000,352),width:2.16,size:[example.w,example.h],pixels:outputPixels,filter:'nearest',layer:15});
  const preview=group();
- preview.image({id:'downscale-whole-image-proxy',center:p(296,352),width:4.32,size:[example.image.w,example.image.h],pixels:inputPixels,filter:'nearest',layer:20});
+ preview.picture({id:'downscale-whole-image-proxy',center:p(296,352),width:4.32,size:[example.image.w,example.image.h],pixels:inputPixels,filter:'nearest',layer:20});
  arrow(scene,575,352,817,352);text(scene,'DownScale',695,311,21);
  line(scene,60,538,1220,538);
  const selected=group();

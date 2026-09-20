@@ -39,7 +39,7 @@ export function buildShadowDetail(data = trace) {
     const centers = pixels.map((_, i) => [left + (i % data.width + .5) * cell, top + (Math.floor(i / data.width) + .5) * cell]);
     const cells = mutable ? pixels.map((value, i) => rect(scene, ...centers[i], cell, cell,
       display(value, i % data.width, Math.floor(i / data.width)), '#00000000', 0, 12)) : [];
-    if (!mutable) scene.image({id: key('static-bitmap'), center: p(left + size / 2, top + size / 2), width: size / 100,
+    if (!mutable) scene.picture({id: key('static-bitmap'), center: p(left + size / 2, top + size / 2), width: size / 100,
       size: [data.width, data.height], pixels: pixels.map((value, i) => display(value, i % data.width, Math.floor(i / data.width))), filter: 'nearest', layer: 12});
     rect(scene, left + size / 2, top + size / 2, size, size, '#00000000', ink, 1.4, 20);
     return {left, top, size, cell, centers, cells};
@@ -147,7 +147,7 @@ export function buildShadowDetail(data = trace) {
   const bodyProxy = pixelProxy('restore-body', original, data.original, data.groupOpacity);
   const parentStages = [data.shadowCanvas, data.final].map((pixels, stage) => {
     const owner = group('parent-commit');
-    owner.image({id: key('parent-bitmap'), center: p(canvas.left + canvas.size / 2, canvas.top + canvas.size / 2),
+    owner.picture({id: key('parent-bitmap'), center: p(canvas.left + canvas.size / 2, canvas.top + canvas.size / 2),
       width: canvas.size / 100, size: [data.width, data.height], filter: 'nearest', layer: 13 + stage,
       pixels: pixels.map((value, i) => display(value, i % data.width, Math.floor(i / data.width)))});
     return owner;

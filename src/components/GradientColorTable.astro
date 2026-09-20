@@ -1,4 +1,8 @@
-<section class="gradient-table" data-gradient-table aria-label="Gradient Color Table 실습">
+---
+import GradientLabHeader from './GradientLabHeader.astro';
+---
+<section class="gradient-table fill-lab" data-gradient-table aria-label="Gradient Color Table 실습">
+  <GradientLabHeader icon="palette" title="색상 테이블" description="색상과 위치를 바꾸고, 1,024개 항목에서 보간된 색을 확인하세요." />
   <div class="gradient-table__lookup">
     <div class="gradient-table__canvas-wrap">
       <canvas data-table-canvas width="1024" height="20" aria-hidden="true"></canvas>
@@ -196,44 +200,30 @@
 </script>
 
 <style>
-  .gradient-table {
-    margin: var(--space-lg) 0 var(--space-xl);
-    overflow: hidden;
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-lg);
-    background: var(--surface-1);
-    color: var(--ink);
-  }
-
   .gradient-table__markers span {
     position: absolute;
     z-index: 2;
     top: 50%;
-    width: 18px;
-    height: 18px;
+    width: 24px;
+    height: 24px;
     display: grid;
     place-items: center;
-    border: 1px solid #fff;
+    border: 1px solid var(--animation-ink);
     border-radius: var(--radius-full);
-    background: #171719;
-    color: #fff;
+    background: var(--animation-canvas);
+    color: var(--animation-ink);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 12px;
     font-style: normal;
     line-height: 1;
     pointer-events: none;
     transform: translate(-50%, -50%);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 15%, transparent);
   }
 
-  .gradient-table__lookup { padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .gradient-table__lookup { padding: 0 var(--lab-padding) 20px; }
 
-  .gradient-table__canvas-wrap {
-    position: relative;
-    height: 20px;
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-sm);
-  }
+  .gradient-table__canvas-wrap { position: relative; height: 44px; border: 1px solid var(--hairline); border-radius: 12px; }
 
   .gradient-table__canvas-wrap canvas {
     display: block;
@@ -242,42 +232,14 @@
     border-radius: inherit;
   }
 
-  .gradient-table__table-control {
-    position: absolute;
-    z-index: 3;
-    inset: -4px 0;
-    display: block;
-  }
+  .gradient-table__table-control { position: absolute; z-index: 3; inset: -6px 0; display: block; }
 
-  .gradient-table__table-control input {
-    width: 100%;
-    height: 28px;
-    margin: 0;
-    appearance: none;
-    background: transparent;
-    cursor: ew-resize;
-  }
+  .gradient-table__table-control input { width: 100%; height: 56px; margin: 0; appearance: none; background: transparent; cursor: ew-resize; }
 
-  .gradient-table__table-control input::-webkit-slider-runnable-track { height: 20px; background: transparent; }
-  .gradient-table__table-control input::-webkit-slider-thumb {
-    width: 5px;
-    height: 28px;
-    margin-top: -4px;
-    appearance: none;
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    border-radius: 2px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  }
-  .gradient-table__table-control input::-moz-range-track { height: 20px; background: transparent; }
-  .gradient-table__table-control input::-moz-range-thumb {
-    width: 3px;
-    height: 26px;
-    border: 1px solid rgba(0, 0, 0, 0.55);
-    border-radius: 2px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  }
+  .gradient-table__table-control input::-webkit-slider-runnable-track { height: 44px; background: transparent; }
+  .gradient-table__table-control input::-webkit-slider-thumb { width: 6px; height: 54px; margin-top: -5px; appearance: none; border: 2px solid var(--canvas); border-radius: 4px; background: var(--ink); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 20%, transparent); }
+  .gradient-table__table-control input::-moz-range-track { height: 44px; background: transparent; }
+  .gradient-table__table-control input::-moz-range-thumb { width: 3px; height: 50px; border: 2px solid var(--canvas); border-radius: 4px; background: var(--ink); }
 
   .gradient-table__sample {
     min-height: 36px;
@@ -293,23 +255,15 @@
 
   .gradient-table__sample > span { flex: 0 0 auto; white-space: nowrap; display: flex; align-items: baseline; gap: 5px; }
   .gradient-table__sample small { color: var(--ink-subtle); font-size: 12px; letter-spacing: 0.08em; }
-  .gradient-table__sample b { color: var(--ink); font-weight: 600; }
+  .gradient-table__sample b { color: var(--ink); font-weight: 600; font-size: 15px; }
   .gradient-table__sample .gradient-table__sample-color { width: 18px; height: 18px; flex: none; border: 1px solid var(--hairline-strong); border-radius: var(--radius-xs); }
   .gradient-table__sample .gradient-table__rgb { margin-left: auto; color: var(--ink-subtle); }
 
-  .gradient-table__controls {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    border-top: 1px solid var(--hairline);
-  }
+  .gradient-table__controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 var(--lab-padding) var(--lab-padding); }
 
-  .gradient-stop {
-    min-width: 0;
-    padding: var(--space-md);
-    border: 0;
-  }
+  .gradient-stop { min-width: 0; margin: 0; padding: 14px; border: 0; border-radius: 14px; background: var(--surface-1); }
 
-  .gradient-stop + .gradient-stop { border-left: 1px solid var(--hairline); }
+  .gradient-stop + .gradient-stop { border: 0; }
 
   .gradient-stop label > span {
     color: var(--ink-subtle);
@@ -317,51 +271,25 @@
     font-weight: 600;
   }
 
-  .gradient-stop__color {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
-    align-items: center;
-    gap: 6px;
-  }
+  .gradient-stop__color { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 8px; }
 
   .gradient-stop__color > span { grid-column: 1 / -1; }
 
-  .gradient-stop__color input[type="color"] {
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    cursor: pointer;
-  }
+  .gradient-stop__color input[type="color"] { width: 44px; height: 44px; padding: 0; overflow: hidden; border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); cursor: pointer; }
 
   .gradient-stop__color input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
   .gradient-stop__color input[type="color"]::-webkit-color-swatch { border: 0; }
 
-  .gradient-stop__color input[type="text"] {
-    width: 100%;
-    min-width: 0;
-    height: 30px;
-    padding: 4px 7px;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: var(--canvas);
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    text-transform: uppercase;
-  }
+  .gradient-stop__color input[type="text"] { width: 100%; min-width: 0; height: 44px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); color: var(--ink); font: 13px var(--font-mono); text-transform: uppercase; }
 
   .gradient-stop__offset { display: grid; gap: 5px; margin-top: var(--space-sm); }
   .gradient-stop__offset > span { display: flex; justify-content: space-between; gap: var(--space-sm); }
-  .gradient-stop__offset output { color: var(--ink); font-family: var(--font-mono); }
+  .gradient-stop__offset output { color: var(--ink); font-family: var(--font-mono); padding: 2px 6px; border-radius: 6px; background: var(--canvas); }
   .gradient-stop__offset input { width: 100%; accent-color: var(--primary); }
 
   @media (max-width: 640px) {
     .gradient-table__controls { grid-template-columns: minmax(0, 1fr); }
-    .gradient-stop + .gradient-stop { border-top: 1px solid var(--hairline); border-left: 0; }
+    .gradient-stop + .gradient-stop { border: 0; }
     .gradient-table__sample { flex-wrap: wrap; gap: 6px var(--space-md); }
     .gradient-table__sample .gradient-table__rgb { width: 100%; margin-left: 0; }
   }

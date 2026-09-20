@@ -21,7 +21,7 @@ export function overviewKit(kind,{w=16,h=12,width=1440,height=3260,still=false}=
   function animated(parent,phase,state){const sample=t=>state((t+phase)%8),initial=sample(0);const g=parent.group({id:id('motion'),opacity:initial.opacity??1,...(initial.transform?{matrix:initial.transform}:{})});tracks.push({target:g,state:sample});return g;}
   function loop(phase){return animated(scene,phase,t=>({opacity:still?0:gate(t)}));}
   function bitmap(parent,x,y,ww,rows,pixels,layer){
-    parent.image({id:id('pixels'),center:p(x+ww/2,y+rows*ww/w/2),width:ww/100,size:[w,rows],pixels:pixels.map((pixel,i)=>hex(display(pixel,i))),filter:'nearest',layer});
+    parent.picture({id:id('pixels'),center:p(x+ww/2,y+rows*ww/w/2),width:ww/100,size:[w,rows],pixels:pixels.map((pixel,i)=>hex(display(pixel,i))),filter:'nearest',layer});
   }
   function grid(x,y,pixels,label,{u=18,verify=true}={}){
     const ww=w*u,hh=h*u;imageRegions.push({x,y,width:ww,height:hh});text(label,x,y-27,22);

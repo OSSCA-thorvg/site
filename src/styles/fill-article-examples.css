@@ -1,0 +1,53 @@
+/* Keep the Fill article's demonstrations in the flow of the prose. */
+.prose .fill-article-example .fill-lab {
+  --lab-padding: 0px;
+  margin: 24px 0 32px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.prose .fill-article-example .fill-lab__header { padding: 0 0 16px; }
+.prose .fill-article-example .fill-lab__icon,
+.prose .fill-article-example .fill-lab__badge { display: none; }
+
+.prose .fill-article-example .fill-lab :where(div, fieldset, label, output, button, select, input, canvas, p, ul, span, i) {
+  border-radius: 0;
+  box-shadow: none;
+}
+.prose .fill-article-example .fill-lab svg :where(circle, line) { filter: none; }
+
+.prose .fill-article-example :is(
+  .gradient-stop, .gradient-stop__offset output,
+  .linear-lab__stop, .radial-lab__stop,
+  .linear-lab__metrics, .radial-lab__metrics,
+  .linear-lab__note, .radial-lab__note,
+  .radial-lab__steps, .aa-lab__definition,
+  .aa-lab__table, .aa-lab__metrics, .aa-lab__colors label,
+  .aa-lab__controls output
+) { background: transparent; }
+
+.prose .fill-article-example :is(.gradient-stop, .linear-lab__stop, .radial-lab__stop, .aa-lab__colors label) {
+  padding: 8px 0;
+}
+.prose .fill-article-example .gradient-table__controls { gap: 20px; }
+.prose .fill-article-example .fill-lab :is(button, select, input[type="text"], input[type="color"]) {
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--ink);
+}
+.prose .fill-article-example .fill-lab button:hover { border-color: var(--ink-muted); background: transparent; }
+.prose .fill-article-example .fill-lab button[aria-pressed="true"] {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: transparent;
+}
+.prose .fill-article-example .radial-lab__steps { gap: 8px; padding: 0; }
+.prose .fill-article-example gradient-fill-lab output { background: transparent; }
+
+.prose .fill-article-example .fill-lab input[type="range"]::-webkit-slider-thumb,
+.prose .fill-article-example .fill-lab input[type="range"]:hover::-webkit-slider-thumb,
+.prose .fill-article-example .fill-lab input[type="range"]::-moz-range-thumb { box-shadow: none; }
+.prose .fill-article-example .fill-lab input[type="color"]::-webkit-color-swatch,
+.prose .fill-article-example .fill-lab input[type="color"]::-moz-color-swatch { border-radius: 0; }

@@ -10,6 +10,7 @@ draft: false
 import TMathPlayer from '../../../components/TMathPlayer.astro';
 import spreadScene from './LUA/fill-spread/fill-spread.lua?url';
 import spreadPoster from './LUA/fill-spread/fill-spread.webp';
+import '../../../styles/fill-article-examples.css';
 import GradientFillLab from '../../../components/GradientFillLab.astro';
 import LinearGradientLab from '../../../components/LinearGradientLab.astro';
 import RadialGradientLab from '../../../components/RadialGradientLab.astro';
@@ -67,7 +68,9 @@ Shape는 단색 RGBA를 직접 보관하거나 `Fill` 객체를 참조할 수 �
 - `Color Table`: Color Stop 사이의 색을 미리 보간한 1024개 항목의 lookup table(LUT).
     -  렌더링할 때는 색을 다시 계산하지 않고 이 테이블에서 조회
 
-<GradientColorTable />
+<div class="fill-article-example">
+  <GradientColorTable />
+</div>
 
 위 예제는 ColorStop 이 3개인 ColorTable을 보여줍니다. 실제 생성 흐름은 다음과 같습니다.
 
@@ -143,7 +146,9 @@ Result LinearGradient::linear(float x1, float y1, float x2, float y2) noexcept;
 - `(x1, y1)`: 시작점 `p1`
 - `(x2, y2)`: 끝점 `p2`
 
-<LinearGradientLab />
+<div class="fill-article-example">
+  <LinearGradientLab />
+</div>
 
 
 
@@ -356,7 +361,9 @@ Radial Gradient는 하나의 중심과 반지름만 사용하는 단순한 형�
 - 시작 원은 초점 `(fx, fy)`와 반지름 `fr`로, 끝 원은 중심 `(cx, cy)`와 반지름 `r`로 정의
 - 두 원 사이에서 원의 중심과 반지름이 함께 변하며 색이 보간됨
 
-<RadialGradientLab />
+<div class="fill-article-example">
+  <RadialGradientLab />
+</div>
 
 - 각 픽셀에서 `t`를 구하려면 픽셀이 이 두 원 사이의 어느 지점에 놓이는지 계산이 필요
 - SW Renderer는 이 관계를 이차방정식으로 만들고 해를 구함 
@@ -523,11 +530,15 @@ void fillRadial(const SwFill* fill, uint32_t* dst, uint32_t y, uint32_t x,
 
 ### 1.4. RLE + FillGradient
 
-<GradientFillLab mode="rle" />
+<div class="fill-article-example">
+  <GradientFillLab mode="rle" />
+</div>
 
 ### 1.5 Gradient AA (Repeat)
 
-<GradientAntiAliasingLab />
+<div class="fill-article-example">
+  <GradientAntiAliasingLab />
+</div>
 
 ## 2. Conic Gradient
 

@@ -11,8 +11,6 @@ import Disclosure from '../../../components/Disclosure.astro';
 import apiRelationsDiagram from "./IMAGE/07-SW-Overview/api-relations.webp";
 import sceneCompositionScene from "./LUA/sw-overview-scene-composition.lua?url";
 import sceneCompositionPoster from "./IMAGE/07-SW-Overview/scene-composition.webp";
-import renderingModesScene from "./LUA/sw-overview-rendering-modes.lua?url";
-import renderingModesPoster from "./IMAGE/07-SW-Overview/immediate-retained-mode.webp";
 
 # Core2026 &gt; Engine - 7
 
@@ -22,33 +20,9 @@ import renderingModesPoster from "./IMAGE/07-SW-Overview/immediate-retained-mode
 
 <img src={apiRelationsDiagram.src} width={2400} height={5160} alt="Canvas, Scene, Shape, Picture의 네 섹션으로 나눈 ThorVG API 상속·보유 관계와 Scene·Lottie·SVG 트리 예시" loading="lazy" decoding="async" />
 
-공개 API와 공통 내부 타입의 상속·보유 관계, Scene·Lottie·SVG의 내부 트리 예시입니다. 빈 삼각형은 부모 타입을, 화살표는 보유·참조 대상을 가리킵니다.
+<Disclosure title="코드 보기: Public API와 공통 내부 타입의 관계">
 
-- **Canvas → Canvas::Impl → Scene:** 내부 Main Scene에 Paint들을 추가
-- **Scene → Paint 자식 목록:** Shape·Text·Picture뿐 아니라 다른 Scene도 자식으로 보유
-  - Scene 역시 Paint이므로, Scene 안에 Scene을 넣어 트리 구성
-- **Canvas → Canvas::Impl → RenderMethod:** Canvas가 내부 구현을 통해 renderer 보관
-  - `SwRenderer`, `GlRenderer`, `WgRenderer`가 `RenderMethod` 구현
-  - 각 Canvas의 `gen()`에서 대응하는 renderer 선택
-- **Shape → RenderShape → RenderPath:** `ShapeImpl::rs`가 렌더링 상태 보관
-  - `RenderShape::path`에 `RenderPath`, `RenderShape::fill`에 Fill 보관
-  - `RenderPath::pts`는 `Point` 배열, `RenderPath::cmds`는 `PathCommand` 명령 enum 배열
-- **Picture → ImageLoader / Paint / RenderSurface:** `PictureImpl`이 loader와 콘텐츠 데이터 참조
-  - **Lottie(JSON)·SVG:** `vector`의 Paint 트리로 구성
-  - **JPG/JPEG·WebP·PNG 등:** `bitmap`의 RenderSurface에 원본 이미지 픽셀 보관
-  - `RenderSurface::data`, `buf32`, `buf8`은 같은 픽셀 버퍼를 가리키는 union 멤버
-  - 위 이미지 하단의 Lottie·SVG 구조도는 로드 후의 Paint 트리를 단순화한 예시
-    - Lottie의 레이어와 SVG의 `<g>`는 Scene으로, 도형은 Shape로 표현, 이미지 = Picture로  포함
-    - 실제 트리는 파일 내용과 clip·mask·그룹 처리에 따라 상이
-- **Text → Shape:** `TextImpl::shape`에 내부 Shape 보관, fill·render 처리 위임
-- **LottieAnimation → Animation:** Lottie 확장 타입의 상속 관계
-  - `Animation`은 별도로 `Picture`를 보유하며 `frame()`으로 재생 프레임 지정
-
-
-
-<Disclosure title="코드 보기: 공개 API와 공통 내부 타입의 관계">
-
-[`thorvg.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/inc/thorvg.h)의 관련 선언을 발췌했습니다. 구현 매크로와 관계없는 멤버는 생략했습니다.  
+참고: [`thorvg.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/inc/thorvg.h)
 
 - **Canvas:** 렌더링 진입점, root `Scene`과 `RenderMethod` 보관
   - `SwCanvas`: CPU renderer → 사용자 메모리 버퍼
@@ -111,7 +85,7 @@ struct LottieAnimation final : Animation { /* ... 생략 */ };
 
 <Disclosure title="코드 보기: Shape의 RenderPath와 Text의 내부 Shape">
 
-[`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h), [`tvgShape.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgShape.h), [`tvgText.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgText.h)의 관련 멤버를 발췌했습니다.
+참고: [`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h), [`tvgShape.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgShape.h), [`tvgText.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgText.h)
 
 ```cpp
 struct RenderPath {
@@ -153,7 +127,7 @@ struct TextImpl : Text {
 };
 ```
 
-공개 API `Shape::appendPath()`는 Point 배열을 입력받습니다. 내부에서는 점 배열과 명령 배열을 `RenderPath`로 함께 보관합니다.
+Public API `Shape::appendPath()`는 Point 배열을 입력받습니다. 내부에서는 점 배열과 명령 배열을 `RenderPath`로 함께 보관합니다.
 
 `Text::fill()` 역시 [`tvgText.cpp`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgText.cpp)에서 내부 Shape로 위임합니다. 따라서 그림은 Text–Shape–RenderShape–Fill의 보유 관계를 중심으로 표현했습니다.
 
@@ -175,7 +149,7 @@ Result Text::fill(Fill* f) noexcept
 - **선택 시점:** 각 Canvas의 `gen()`이 구현체를 생성해 `Canvas::Impl::renderer`에 연결
 - **호출 경로:** Canvas → root Scene → Paint → 선택된 renderer
 
-[`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h)의 주요 가상 함수를 발췌했습니다.
+참고: [`tvgRender.h`](https://github.com/thorvg/thorvg/blob/6cf10d47fbe13b45040f2c56feeafa0711f53b2b/src/renderer/tvgRender.h)
 
 ```cpp
 struct RenderMethod
@@ -250,7 +224,7 @@ Scene은 여러 Paint를 보관하는 논리적인 그룹입니다. `add()`로 �
 - `add(paint, at)`: 지정한 `at` 앞에 삽입
 - `draw`: 각 부모의 자식 목록을 앞에서 뒤로 순회
 
-<TMathPlayer scene="sw-overview-scene-composition" source={sceneCompositionScene} poster={sceneCompositionPoster.src} title="Scene의 직접 그리기와 그룹 합성" description="위쪽 Direct와 아래쪽 Group Opacity에서 같은 Scene 트리를 동시에 그리며, 직접 그리기와 Offscreen 그룹 합성을 비교합니다." width={2200} height={2100} />
+<TMathPlayer scene="sw-overview-scene-composition" source={sceneCompositionScene} poster={sceneCompositionPoster.src} title="Scene의 직접 그리기와 그룹 합성" description="위쪽 Direct와 아래쪽 Group Opacity에서 같은 Scene 트리를 동시에 그리며, 직접 그리기와 Offscreen 그룹 합성을 비교합니다." width={2200} height={2100} autoplay />
 
 위쪽 Direct와 아래쪽 Group Opacity는 같은 Paint tree를 사용합니다. 차이는 Scene이라는 자료구조가 아니라 **그룹 전체에 opacity를 적용해야 하는가**에 있습니다.
 
@@ -285,7 +259,9 @@ canvas->sync();
 
 ### 1.3 Immediate vs Retained Mode
 
-<TMathPlayer scene="sw-overview-rendering-modes" source={renderingModesScene} poster={renderingModesPoster.src} title="Immediate vs Retained Mode" description="Immediate Mode sends drawing commands for both shapes every frame. Retained Mode keeps the objects and updates only the changed object." width={1600} height={860} />
+<TMathPlayer scene="engine-rendering-modes" source={import.meta.env.BASE_URL + 'tmath/engine-overview/rendering-modes.lua'} poster={import.meta.env.BASE_URL + 'tmath/engine-overview/rendering-modes.webp'} title="Immediate vs Retained Mode — 명령 전달과 객체 갱신 비교" description="Immediate Mode는 매번 도형의 그리기 명령을 전달하고, Retained Mode는 객체를 보관한 뒤 변경된 원만 갱신합니다." width={1200} height={675} autoplay />
+
+<TMathPlayer scene="engine-retained-frame" source={import.meta.env.BASE_URL + 'tmath/engine-overview/frame-scene.lua'} poster={import.meta.env.BASE_URL + 'tmath/engine-overview/frame-scene.webp'} title="Retained Mode — Scene을 유지하며 객체 속성 갱신" description="Scene은 한 번 구성하고, 매 프레임 원의 위치와 크기만 바꾼 뒤 update·draw·sync로 반영합니다." width={1200} height={675} autoplay loop />
 
 ThorVG는 **Retained Mode** 렌더링 모델을 지원합니다.
 

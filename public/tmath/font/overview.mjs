@@ -143,7 +143,7 @@ export function buildOverview(output=baseline) {
     const pixels=output.pixels.slice(y*w,(y+1)*w).map(pixel=>'#'+[pixel&255,(pixel>>>8)&255,(pixel>>>16)&255]
       .map(v=>Math.min(255,v+255-(pixel>>>24)).toString(16).padStart(2,'0')).join(''));
     const row=outputGroup.group({id:id('pixel-row'),opacity:0});rows.push(row);
-    row.image({id:id('native-pixels'),center:p(1090,gridTop+(y+.5)*cell),width:w*cell/100,
+    row.picture({id:id('native-pixels'),center:p(1090,gridTop+(y+.5)*cell),width:w*cell/100,
       size:[w,1],pixels,filter:'nearest',layer:25});
   }
   text(scene,'One Text · one retained Shape · shared CPU rendering',640,2030,24,muted);

@@ -1,0 +1,92 @@
+/* Material-inspired surfaces are scoped to the gradient teaching tools. */
+.fill-lab, .prose .fill-lab {
+  --lab-padding: 24px;
+  display: block;
+  margin: 28px 0 36px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--hairline) 75%, transparent);
+  border-radius: 24px;
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--ink) 5%, transparent);
+  isolation: isolate;
+}
+
+.fill-lab .fill-lab__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: var(--lab-padding);
+  text-align: left;
+}
+
+.fill-lab__icon {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--primary-subtle);
+  color: var(--primary);
+}
+
+.fill-lab__icon svg { width: 24px; height: 24px; }
+.fill-lab__heading { flex: 1; min-width: 0; }
+.fill-lab .fill-lab__heading h3 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: 650 18px / 1.4 var(--font-body);
+  letter-spacing: -0.025em;
+}
+.fill-lab .fill-lab__heading p { margin: 4px 0 0; font: 400 13px / 1.6 var(--font-body); color: var(--ink-muted); }
+.fill-lab .fill-lab__badge { flex: none; padding: 5px 10px; border-radius: 999px; background: var(--surface-1); color: var(--ink-subtle); font: 500 11px / 1.5 var(--font-body); white-space: nowrap; }
+
+.fill-lab :where(button, select, input) { -webkit-tap-highlight-color: transparent; }
+.fill-lab :where(button, select, input):focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 65%, transparent); outline-offset: 3px; }
+.fill-lab :where(button, select, input[type="text"]) { font-family: var(--font-body); }
+.fill-lab :where(button, select) { min-height: 44px; }
+.fill-lab button { transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+
+.fill-lab input[type="range"]:not([data-index-range]) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+.fill-lab input[type="range"]:not([data-index-range])::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
+.fill-lab input[type="range"]:not([data-index-range])::-moz-range-track { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 16%, var(--surface-2)); }
+.fill-lab input[type="range"]:not([data-index-range])::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--primary); }
+.fill-lab input[type="range"]:not([data-index-range])::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  appearance: none;
+  border: 3px solid var(--canvas);
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+  transition: box-shadow 160ms ease;
+}
+.fill-lab input[type="range"]:not([data-index-range])::-moz-range-thumb { width: 12px; height: 12px; border: 3px solid var(--canvas); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.fill-lab input[type="range"]:not([data-index-range]):hover::-webkit-slider-thumb { box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 12%, transparent); }
+.fill-lab input[type="color"]::-webkit-color-swatch-wrapper { padding: 3px; }
+.fill-lab input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 9px; }
+.fill-lab input[type="color"]::-moz-color-swatch { border: 0; border-radius: 9px; }
+
+@media (max-width: 640px) {
+  .fill-lab, .prose .fill-lab { --lab-padding: 18px; border-radius: 20px; }
+  .fill-lab .fill-lab__header { gap: 12px; }
+  .fill-lab .fill-lab__badge { display: none; }
+  .fill-lab .fill-lab__heading h3 { font-size: 17px; }
+  .fill-lab .fill-lab__heading p { font-size: 12px; }
+}
+@media (pointer: coarse) { .fill-lab input[type="range"]:not([data-index-range]) { height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .fill-lab button, .fill-lab input::-webkit-slider-thumb { transition: none; } }

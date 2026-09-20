@@ -98,7 +98,7 @@ export function buildDelegation({still=false}={}) {
   // Supplying opaque RGB avoids applying alpha twice in the Image API.
   const rgba=output.pixels.map(pixel=>'#'+[pixel&255,(pixel>>>8)&255,(pixel>>>16)&255].map(v=>Math.min(255,v+255-(pixel>>>24)).toString(16).padStart(2,'0')).join('')+'ff');
   rect(pixels,1075,canvasY+output.height*2.5/2,output.width*2.5,output.height*2.5,'#ffffff','#cccccc');
-  pixels.image({id:id('native-output'),center:p(1075,canvasY+output.height*2.5/2),width:output.width*2.5/100,size:[output.width,output.height],pixels:rgba,filter:'nearest',layer:25});
+  pixels.picture({id:id('native-output'),center:p(1075,canvasY+output.height*2.5/2),width:output.width*2.5/100,size:[output.width,output.height],pixels:rgba,filter:'nearest',layer:25});
   const completed=group('shared-pipeline');
   text(completed,'Same Shape · same rd',625,866,23);
   text(completed,'Shared Shape rendering',625,904,20,muted);

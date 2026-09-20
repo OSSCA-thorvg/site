@@ -17,12 +17,18 @@ Source: ThorVG `4d5810cf6f8d1c62dff4d9d3d291d3c2984074ad`,
 `src/renderer/cpu_engine/tvgSwRle.cpp`. The article and all recorded evidence use this revision.
 
 `scripts/generate-shape-overview-trace.mjs` instruments a temporary COPY of that
-source and compiles `scripts/shape-overview-native.cpp` against a matching static
-build. The original engine checkout is unchanged. To regenerate:
+source and compiles `scripts/shape-overview-native.cpp` against a static build of
+the same revision. The original engine checkout is unchanged. To regenerate:
 
 ```
-THORVG_BUILD=/path/to/matching/build node scripts/generate-shape-overview-trace.mjs
+node scripts/generate-shape-overview-trace.mjs
 ```
+
+The generator exports the pinned revision with `git archive` and builds it as a static CPU
+library through `scripts/lib/gpu-native-trace.mjs` (`THORVG_CPU_BUILD` may name an existing build of the
+same revision; `GPU_OVERVIEW_WORK` moves the work directory). The `./thorvg` checkout is only read with
+`git archive`, so its HEAD may move on. Regenerating reproduces
+`native-trace.mjs` byte for byte.
 
 The probe records `_lineTo`, cumulative `_recordCell` updates, final sorted Cells,
 Band success/failure, native RLE spans and ABGR8888 Canvas pixels. Coordinates

@@ -505,9 +505,9 @@ test('blog article Lottie sources are normalized before the player loads', async
 test('article media styles center images without stretching', async () => {
   const css = await readSource('src/styles/global.css');
   assert.match(css, /\.prose\s*\{[^}]*margin-inline:\s*auto/);
-  assert.match(css, /\.prose figure\s*\{[^}]*display:\s*flex/);
-  assert.match(css, /\.prose figure\s*\{[^}]*align-items:\s*center/);
-  assert.match(css, /\.prose figure\s*\{[^}]*text-align:\s*center/);
+  assert.match(css, /\.prose :where\(figure\)\s*\{[^}]*display:\s*flex/);
+  assert.match(css, /\.prose :where\(figure\)\s*\{[^}]*align-items:\s*center/);
+  assert.match(css, /\.prose :where\(figure\)\s*\{[^}]*text-align:\s*center/);
   assert.match(css, /\.prose figure :where\(img,\s*lottie-player\)\s*\{[^}]*margin-inline:\s*auto/);
   assert.match(css, /\.prose img\s*\{[^}]*width:\s*auto[^}]*max-width:\s*100%[^}]*height:\s*auto/);
   assert.match(css, /\.prose figcaption\s*\{[^}]*color:\s*var\(--ink-subtle\)/);
@@ -912,7 +912,8 @@ test('narrow screens preserve Korean headings and keep the Lottie stage compact'
   const css = await readSource('src/styles/global.css');
   const pageTitle = css.match(/\.page-title\s*\{([^}]*)\}/)?.[1];
   const compactNav = css.match(/@media \(max-width:\s*980px\)\s*\{([\s\S]*?)\n\}/)?.[1];
-  const mobile = css.match(/@media \(max-width:\s*520px\)\s*\{([\s\S]*?)\n\}/)?.[1];
+  const mobile = [...css.matchAll(/@media \(max-width:\s*520px\)\s*\{([\s\S]*?)\n\}/g)]
+    .map((match) => match[1]).join('\n');
   const narrowNav = css.match(/@media \(max-width:\s*400px\)\s*\{([\s\S]*?)\n\}/)?.[1];
 
   assert.match(pageTitle, /word-break:\s*keep-all/);

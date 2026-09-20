@@ -1,9 +1,11 @@
 ---
+import GradientLabHeader from './GradientLabHeader.astro';
 interface Props { mode: 'sampling' | 'rle' | 'aa' }
 const {mode} = Astro.props;
 const descriptions={sampling:'픽셀 위치에 따른 Linear, Radial, Conic의 t와 Color Table 조회',rle:'구멍과 오목한 경계가 있는 Shape의 빈 구간을 건너뛰며 RLE span과 픽셀을 순회하는 Gradient fill',aa:'동일한 Conic의 단일 샘플, 고정 LUT 폭, 현재 SW 경계 AA 비교'};
 ---
-<gradient-fill-lab data-mode={mode}>
+<gradient-fill-lab class="fill-lab" data-mode={mode}>
+  <GradientLabHeader icon={mode === 'rle' ? 'rle' : mode === 'aa' ? 'aa' : 'palette'} title={mode === 'rle' ? 'RLE Gradient Fill' : mode === 'aa' ? 'Conic Anti-Aliasing' : 'Gradient 샘플링'} description={mode === 'rle' ? '한 픽셀씩 또는 span 단위로 진행하며 Gradient가 채워지는 과정을 확인하세요.' : mode === 'aa' ? '각도와 회전을 바꾸며 경계의 픽셀 처리 결과를 비교하세요.' : '픽셀 위치를 움직이며 색상 테이블에서 읽는 값을 확인하세요.'} />
   <canvas width="960" height="440" aria-label={descriptions[mode]} role="img"></canvas>
   <div class="controls">
     {mode === 'sampling' && <>
@@ -47,7 +49,7 @@ const descriptions={sampling:'픽셀 위치에 따른 Linear, Radial, Conic의 t
       let ink='',base='';
       const rgb=(c:number[])=>`rgb(${c.map(Math.round).join(',')})`;
       const box=(x:number,y:number,w:number,h:number,c:string)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h);};
-      const text=(s:string,x:number,y:number,size=25)=>{ctx.fillStyle=ink;ctx.font=`${size}px sans-serif`;ctx.fillText(s,x,y);};
+      const text=(s:string,x:number,y:number,size=25)=>{ctx.fillStyle=ink;ctx.font=`500 ${size}px ${css('--font-body')}`;ctx.fillText(s,x,y);};
       const line=(x:number,y:number,x2:number,y2:number,c=ink,w=2)=>{ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x2,y2);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();};
       const dot=(x:number,y:number,c=ink)=>{ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle=base;ctx.lineWidth=2;ctx.stroke();};
       const lut=(x:number,y:number,w:number,h:number)=>{for(let i=0;i<128;i++)box(x+i*w/128,y,w/128+.5,h,rgb(color(i/127)));};
@@ -178,14 +180,16 @@ const descriptions={sampling:'픽셀 위치에 따른 Linear, Radial, Conic의 t
   if(!customElements.get('gradient-fill-lab'))customElements.define('gradient-fill-lab',GradientFillLab);
 </script>
 <style>
-  gradient-fill-lab{display:block;margin:1.5rem 0;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;background:var(--canvas);color:var(--ink)}
-  canvas{display:block;width:100%;height:auto;aspect-ratio:auto}
-  .controls{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;padding:1rem;border-top:1px solid var(--hairline)}
-  label{display:flex;align-items:center;gap:.6rem;font-size:.875rem;flex:1 1 180px;white-space:nowrap}
+  canvas { display: block; width: calc(100% - 2 * var(--lab-padding)); margin: 0 var(--lab-padding); height: auto; aspect-ratio: auto; border: 1px solid var(--hairline); border-radius: 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 20px var(--lab-padding); }
+  label { display: flex; align-items: center; gap: 12px; color: var(--ink-muted); font-size: 13px; flex: 1 1 180px; white-space: nowrap; }
   input{flex:1;width:0;min-width:70px;accent-color:var(--primary)}
-  button,select{font:inherit;color:var(--ink);background:var(--surface-1);border:1px solid var(--control-border);border-radius:6px;padding:.45rem .65rem}
+  button,select { font: 600 13px var(--font-body); min-height: 44px; color: var(--ink); background: var(--surface-1); border: 0; border-radius: 12px; padding: 10px 16px; }
   button{cursor:pointer} button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
-  output{display:block;padding:0 1rem 1rem;font-size:.875rem;font-variant-numeric:tabular-nums}
-  .note{margin:0!important;padding:.8rem 1rem;background:var(--surface-1);color:var(--ink-muted);font-size:.8rem!important;line-height:1.6}
+  output { display: block; padding: 16px var(--lab-padding); background: var(--surface-1); color: var(--ink-muted); font: 12px / 1.7 var(--font-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .note { margin: 0 !important; padding: 16px var(--lab-padding); color: var(--ink-muted); font-size: 12px !important; line-height: 1.65; }
   @media(max-width:600px){label{flex-basis:100%}.controls{gap:.75rem}}
+  button[data-play] { background: var(--primary); color: var(--on-primary); }
+  button:hover { background: var(--surface-2); }
+  button[data-play]:hover { background: var(--primary-hover); }
 </style>

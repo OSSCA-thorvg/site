@@ -25,10 +25,48 @@
         return;
       }
       rendering = true;
+      const styles = getComputedStyle(root);
+      const color = (token: string) => styles.getPropertyValue(token).trim();
       mermaid.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
-        theme: root.dataset.theme === 'dark' ? 'dark' : 'default',
+        theme: 'base',
+        fontFamily: styles.getPropertyValue('--font-body').trim(),
+        themeVariables: {
+          darkMode: root.dataset.theme === 'dark',
+          background: color('--canvas'),
+          primaryColor: color('--surface-1'),
+          primaryTextColor: color('--ink'),
+          primaryBorderColor: color('--hairline-strong'),
+          secondaryColor: color('--surface-2'),
+          tertiaryColor: color('--canvas'),
+          secondaryTextColor: color('--ink'),
+          tertiaryTextColor: color('--ink'),
+          secondaryBorderColor: color('--hairline-strong'),
+          tertiaryBorderColor: color('--hairline'),
+          lineColor: color('--ink-subtle'),
+          textColor: color('--ink'),
+          mainBkg: color('--surface-1'),
+          nodeBorder: color('--hairline-strong'),
+          clusterBkg: color('--canvas'),
+          clusterBorder: color('--hairline'),
+          edgeLabelBackground: color('--canvas'),
+          actorBkg: color('--surface-1'),
+          actorBorder: color('--hairline-strong'),
+          actorTextColor: color('--ink'),
+          actorLineColor: color('--ink-subtle'),
+          signalColor: color('--ink-subtle'),
+          signalTextColor: color('--ink'),
+          labelBoxBkgColor: color('--surface-1'),
+          labelBoxBorderColor: color('--hairline-strong'),
+          labelTextColor: color('--ink'),
+          noteBkgColor: color('--surface-2'),
+          noteBorderColor: color('--hairline'),
+          noteTextColor: color('--ink'),
+          activationBkgColor: color('--primary-subtle'),
+          activationBorderColor: color('--primary'),
+          fontSize: '15px',
+        },
       });
 
       for (const { host, source } of diagrams) {

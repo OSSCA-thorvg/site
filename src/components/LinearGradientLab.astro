@@ -1,4 +1,8 @@
-<section class="linear-lab" data-linear-lab aria-label="ThorVG Linear Gradient 실습">
+---
+import GradientLabHeader from './GradientLabHeader.astro';
+---
+<section class="linear-lab fill-lab" data-linear-lab aria-label="ThorVG Linear Gradient 실습">
+  <GradientLabHeader icon="linear" title="Linear Gradient" description="시작점·끝점·샘플 픽셀을 움직이며 색이 결정되는 과정을 살펴보세요." />
   <span class="sr-only" data-status aria-live="polite">렌더러 준비 중</span>
 
   <div class="linear-lab__stage" data-stage>
@@ -96,17 +100,17 @@
     <button class="linear-lab__reset" data-reset type="button">초기화</button>
   </div>
 
-  <p>이 예제는 Canvas 전체를 덮는 Shape 에 Linear Gradient 를 적용한 예제입니다.</p>
+  <p class="linear-lab__caption">캔버스 전체를 덮는 Shape에 Linear Gradient를 적용한 결과입니다.</p>
 
   <ul class="linear-lab__note">
     <li><b>P1/P2</b>: Gradient 축의 시작점/끝점</li>
     <li><b>P</b>: 샘플 픽셀</li>
     <li><b>축의 색상 띠</b>: Color Table</li>
     <li><b>원형 마커</b>: Color Stop</li>
-    <li><b>청록색 선</b>: <code>p - p1</code></li>
-    <li><b>흰 점선</b>: 축으로의 사영</li>
-    <li><b>흰 점</b>: <code>p1 + t·d</code></li>
-    <li><b>노란 테두리</b>: 범위 처리 후 <code>u</code>의 테이블 위치</li>
+    <li><b>벡터 선</b>: <code>p - p1</code></li>
+    <li><b>점선</b>: 축으로의 사영</li>
+    <li><b>투영점</b>: <code>p1 + t·d</code></li>
+    <li><b>조회 마커</b>: 범위 처리 후 <code>u</code>의 테이블 위치</li>
   </ul>
 </section>
 
@@ -492,26 +496,7 @@
 </script>
 
 <style>
-  .linear-lab {
-    margin: var(--space-lg) 0 var(--space-xl);
-    overflow: hidden;
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-lg);
-    background: var(--surface-1);
-    color: var(--ink);
-  }
-
-
-
-
-
-  .linear-lab__stage {
-    position: relative;
-    aspect-ratio: 17 / 9;
-    overflow: hidden;
-    background: #1b1c1f;
-    isolation: isolate;
-  }
+  .linear-lab__stage { position: relative; margin: 0 var(--lab-padding); aspect-ratio: 17 / 9; overflow: hidden; border: 1px solid var(--hairline); border-radius: 16px; background: var(--animation-canvas); isolation: isolate; }
 
   .linear-lab__stage canvas,
   .linear-lab__stage svg {
@@ -523,23 +508,30 @@
 
   .linear-lab__stage svg {
     z-index: 2;
-    color: rgba(255, 255, 255, 0.2);
+    color: var(--animation-line);
     touch-action: none;
     user-select: none;
   }
 
-  .linear-lab__grid { opacity: 0.35; pointer-events: none; }
-  .linear-lab__axis-shadow { stroke: rgba(0, 0, 0, 0.62); stroke-width: 18; stroke-linecap: round; pointer-events: none; }
+  .linear-lab__grid { opacity: 0.16; pointer-events: none; }
+  .linear-lab__axis-shadow { stroke: var(--animation-canvas); stroke-width: 18; stroke-linecap: round; pointer-events: none; }
   .linear-lab__table-axis { stroke-width: 12; stroke-linecap: round; pointer-events: none; }
-  .linear-lab__axis { stroke: rgba(255, 255, 255, 0.88); stroke-width: 1; pointer-events: none; }
-  .linear-lab__sample-vector { stroke: #8fe3ff; stroke-width: 1.5; pointer-events: none; }
-  .linear-lab__projection { stroke: #fff; stroke-width: 1.5; stroke-dasharray: 5 5; pointer-events: none; }
-  .linear-lab__right-angle { fill: none; stroke: rgba(255, 255, 255, 0.92); stroke-width: 1.25; pointer-events: none; }
-  .linear-lab__lookup-marker { fill: none; stroke: #ffd166; stroke-width: 2; pointer-events: none; }
-  .linear-lab__projected { fill: #fff; stroke: rgba(0, 0, 0, 0.7); stroke-width: 2; pointer-events: none; }
+  .linear-lab__axis { stroke: var(--animation-ink); stroke-width: 1; pointer-events: none; }
+  .linear-lab__sample-vector { stroke: var(--animation-info); stroke-width: 1.5; pointer-events: none; }
+  .linear-lab__projection { stroke: var(--animation-ink); stroke-width: 1.5; stroke-dasharray: 5 5; pointer-events: none; }
+  .linear-lab__right-angle { fill: none; stroke: var(--animation-ink); stroke-width: 1.25; pointer-events: none; }
+  .linear-lab__axis,
+  .linear-lab__sample-vector,
+  .linear-lab__projection,
+  .linear-lab__right-angle {
+    stroke-width: calc(var(--animation-stroke) * 1px);
+    vector-effect: non-scaling-stroke;
+  }
+  .linear-lab__lookup-marker { fill: none; stroke: var(--animation-warning); stroke-width: 2; pointer-events: none; }
+  .linear-lab__projected { fill: var(--animation-ink); stroke: var(--animation-canvas); stroke-width: 2; pointer-events: none; }
   .linear-lab__diagram-label {
-    fill: rgba(255, 255, 255, 0.92);
-    stroke: rgba(15, 16, 18, 0.88);
+    fill: var(--animation-ink);
+    stroke: var(--animation-canvas);
     stroke-width: 3px;
     paint-order: stroke;
     font-family: var(--font-mono);
@@ -548,66 +540,36 @@
     text-anchor: middle;
     pointer-events: none;
   }
-  .linear-lab__diagram-label--t { fill: #fff; }
+  .linear-lab__diagram-label--t { fill: var(--animation-ink); }
   .linear-lab__stop-marker { pointer-events: none; }
   .linear-lab__stop-marker circle {
     fill: var(--stop-color);
-    stroke: #fff;
+    stroke: var(--animation-ink);
     stroke-width: 2;
-    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.55));
+    filter: drop-shadow(0 1px 3px var(--animation-line));
   }
 
   .linear-lab__handle { cursor: grab; outline: none; }
   .linear-lab__handle:active { cursor: grabbing; }
-  .linear-lab__handle circle { stroke: #fff; stroke-width: 2; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45)); }
-  .linear-lab__handle text { fill: #fff; font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-anchor: middle; pointer-events: none; }
+  .linear-lab__handle circle { stroke: var(--animation-ink); stroke-width: 2; filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ink) 18%, transparent)); }
+  .linear-lab__handle text { fill: var(--animation-ink); font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-anchor: middle; pointer-events: none; }
   .linear-lab__handle--start circle,
-  .linear-lab__handle--end circle { fill: rgba(15, 16, 18, 0.82); }
-  .linear-lab__handle--sample circle { fill: rgba(15, 16, 18, 0.8); }
-  .linear-lab__handle--sample path { fill: none; stroke: #fff; stroke-width: 1.5; pointer-events: none; }
+  .linear-lab__handle--end circle { fill: var(--animation-canvas); }
+  .linear-lab__handle--sample circle { fill: var(--animation-canvas); }
+  .linear-lab__handle--sample path { fill: none; stroke: var(--animation-ink); stroke-width: 1.5; pointer-events: none; }
   .linear-lab__handle--sample text { font-size: 13px; text-anchor: start; }
   .linear-lab__handle:focus circle { stroke-width: 4; }
 
-  .linear-lab__hint {
-    position: absolute;
-    z-index: 3;
-    right: 10px;
-    bottom: 8px;
-    margin: 0;
-    padding: 4px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-sm);
-    background: rgba(15, 16, 18, 0.62);
-    color: rgba(255, 255, 255, 0.8);
-    font-family: var(--font-mono);
-    font-size: 12px;
+  .linear-lab__hint { position: absolute; z-index: 3; right: 12px; bottom: 12px; margin: 0; padding: 6px 10px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--animation-canvas) 94%, transparent); color: var(--animation-muted); font: 12px var(--font-body); }
 
-  }
-
-  .linear-lab__metrics {
-    min-height: 54px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px 20px;
-    padding: 9px var(--space-md);
-    border-bottom: 1px solid var(--hairline);
-    background: var(--canvas);
-    font-family: var(--font-mono);
-  }
+  .linear-lab__metrics { min-height: 54px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 20px var(--lab-padding); border-bottom: 1px solid var(--hairline); background: var(--canvas); font-family: var(--font-mono); }
 
   .linear-lab__metrics span { flex: 1 1 max-content; min-width: 0; display: grid; gap: 1px; }
   .linear-lab__metrics small { color: var(--ink-subtle); font-size: 12px; letter-spacing: 0; }
-  .linear-lab__metrics b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .linear-lab__metrics b { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: normal; }
   .linear-lab__metrics i { width: 22px; height: 22px; border: 1px solid var(--hairline-strong); border-radius: var(--radius-full); box-shadow: inset 0 0 0 2px var(--canvas); }
 
-  .linear-lab__controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: var(--space-md);
-    padding: var(--space-md);
-  }
+  .linear-lab__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 20px; padding: 20px var(--lab-padding) var(--lab-padding); }
 
   .linear-lab__stops {
     min-width: 0;
@@ -619,66 +581,45 @@
   }
 
   .linear-lab__stops { grid-column: 1 / -1; }
-  .linear-lab__spread { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; min-width: 0; }
-  .linear-lab__spread select { min-width: 0; max-width: 100%; padding: 6px 8px; border: 1px solid var(--control-border); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink); font: inherit; }
+  .linear-lab__spread { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-muted); min-width: 0; }
+  .linear-lab__spread select { min-width: 0; max-width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface-1); color: var(--ink); font: inherit; }
 
-  .linear-lab__stop {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr);
-    align-items: end;
-    gap: 6px;
-  }
+  .linear-lab__stop { min-width: 0; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--surface-1); }
 
   .linear-lab__stop > span { min-width: 0; display: grid; gap: 3px; }
   .linear-lab__stop output { color: var(--ink-muted); font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
   .linear-lab__stop input[type='range'] { width: 100%; min-width: 0; margin: 0; accent-color: var(--primary); }
 
-  .linear-lab__controls input[type='color'] {
-    width: 34px;
-    height: 30px;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    cursor: pointer;
-  }
+  .linear-lab__controls input[type='color'] { width: 44px; height: 44px; padding: 0; overflow: hidden; border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); cursor: pointer; }
 
   .linear-lab__controls input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
   .linear-lab__controls input[type='color']::-webkit-color-swatch { border: 0; }
 
-  .linear-lab__reset {
-    height: 32px;
-    border: 1px solid var(--control-border);
-    border-radius: var(--radius-sm);
-    background: var(--canvas);
-    color: var(--ink);
-    font-family: var(--font-mono);
-    font-size: 13px;
-  }
+  .linear-lab__reset { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--primary-subtle); color: var(--primary); font: 600 13px var(--font-body); cursor: pointer; }
 
-  .linear-lab__reset { padding: 0 12px; cursor: pointer; }
-  .linear-lab__reset:hover { border-color: var(--primary); color: var(--primary); }
+  .linear-lab__reset { cursor: pointer; }
+  .linear-lab__reset:hover { background: color-mix(in srgb, var(--primary) 15%, var(--canvas)); }
 
-  .linear-lab__note {
-    margin: 0 !important;
-    padding: var(--space-sm) var(--space-md);
-    border-top: 1px solid var(--hairline);
-    color: var(--ink-subtle);
-    font-size: 13px;
-    line-height: 1.55;
-  }
+  .linear-lab__note { display: flex; flex-wrap: wrap; gap: 8px 22px; list-style: none; margin: 0 !important; padding: 16px var(--lab-padding); border-top: 1px solid var(--hairline); background: var(--surface-1); color: var(--ink-muted); font-size: 12px; line-height: 1.65; }
 
   .linear-lab__note b { color: var(--ink); }
 
+  @media (max-width: 520px) {
+    .linear-lab__diagram-label { font-size: 22px; }
+    .linear-lab__diagram-label[data-table-label] { transform: translateX(-20px); }
+    .linear-lab__handle text { font-size: 18px; }
+    .linear-lab__handle--sample text { font-size: 20px; }
+  }
+
   @media (max-width: 640px) {
     .linear-lab__controls { grid-template-columns: minmax(0, 1fr) auto; }
-    .linear-lab__stops { grid-column: 1 / -1; }
+    .linear-lab__stops { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr); }
     .linear-lab__metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
     .linear-lab__equation { grid-column: 1 / -1; flex-basis: 100%; }
     .linear-lab__metrics i { display: none; }
     .linear-lab__metrics small { font-size: 12px; }
     .linear-lab__hint { display: none; }
   }
+  .linear-lab__caption { margin: 0 !important; padding: 0 var(--lab-padding) 16px; color: var(--ink-muted); font-size: 13px; line-height: 1.6; }
+  .linear-lab__note li { margin: 0; padding: 0; }
 </style>

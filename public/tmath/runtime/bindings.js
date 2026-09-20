@@ -12,9 +12,7 @@ const OBJECTS = [
     "curve",
     "surface",
     "text",
-    "ruler",
-    "svg",
-    "image",
+    "picture",
     "cell",
 ];
 
@@ -22,7 +20,6 @@ const FACTORIES = ["group", "space", ...OBJECTS];
 const PLAY_PROPERTIES = ["shift", "transform", "opacity", "stroke", "fill", "dash_offset", "tail", "tip"];
 const CREATE_DIRECTIONS = new Set(["forward", "reverse", "clockwise", "counterclockwise"]);
 const GROWTH_EDGES = new Set(["left", "right", "bottom", "top"]);
-const STYLE_CHANNELS = new Set(["stroke", "fill", "both"]);
 const AUDIO_BUSES = new Set(["music", "effect", "ui"]);
 const ANIM_CURVE_PRESETS = new Set([
     "linear",
@@ -66,6 +63,40 @@ function _string(value) {
         return `\\${character.charCodeAt(0).toString().padStart(3, "0")}`;
     });
     return `"${escaped}"`;
+}
+
+const GRADIENT_KEYS = Object.freeze({
+    linear: ["type", "stops", "from", "to"],
+    radial: ["type", "stops", "center", "radius", "focal", "focalRadius"],
+    conic: ["type", "stops", "center", "angle"],
+});
+
+// Maps the camelCase JS gradient description onto the Lua `gradient` table.
+// Booleans and end-stop colors keep the legacy two-stop linear form.
+function _gradient(value) {
+    if (value === undefined || typeof value === "boolean" || typeof value === "string") return value;
+    if (!value || (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) {
+        throw new TypeError("gradient must be a boolean, color, or gradient options object");
+    }
+    const keys = GRADIENT_KEYS[value.type];
+    if (!keys) throw new TypeError('gradient.type must be "linear", "radial", or "conic"');
+    const output = {};
+    for (const key of Object.keys(value)) {
+        if (!keys.includes(key)) throw new TypeError(`Unknown ${value.type} gradient option: ${key}`);
+        if (value[key] === undefined) continue;
+        output[key === "focalRadius" ? "focal_radius" : key] = value[key];
+    }
+    if (output.stops !== undefined) {
+        if (!Array.isArray(output.stops) || output.stops.length < 2 || output.stops.length > 8) {
+            throw new TypeError("gradient.stops must contain 2 to 8 stops");
+        }
+    }
+    return output;
+}
+
+function _styleOptions(options) {
+    if (!options || typeof options !== "object" || !Object.hasOwn(options, "gradient")) return options;
+    return {...options, gradient: _gradient(options.gradient)};
 }
 
 function _lua(value) {
@@ -332,14 +363,6 @@ class Handle {
     }
 }
 
-export class StyleGroupHandle {
-    constructor(owner, name) {
-        this.owner = owner;
-        this.name = name;
-        Object.freeze(this);
-    }
-}
-
 export class AudioCueHandle {
     constructor(owner, name) {
         this.owner = owner;
@@ -501,7 +524,7 @@ function _makeHandle(owner, name, method, options) {
 export class SceneBuilder {
     constructor(config = {}) {
         SCENE_STATES.set(this, {
-            config: _lua(config), lines: [], handles: 0, styles: 0, audio: 0,
+            config: _lua(config), lines: [], handles: 0, audio: 0,
             transition: false, sampleActive: false,
         });
         Object.freeze(this);
@@ -518,7 +541,7 @@ export class SceneBuilder {
         this._assertMutable();
         const state = SCENE_STATES.get(this);
         const name = `object${++state.handles}`;
-        const value = _lua(options);
+        const value = _lua(_styleOptions(options));
         state.lines.push((scene) => `local ${name} = ${parent ? parent.name : scene}:${method} ${value}`);
         return _makeHandle(this, name, method, options);
     }
@@ -577,9 +600,10 @@ export class SceneBuilder {
         if (Object.hasOwn(options, "from") || Object.hasOwn(options, "to")) {
             throw new TypeError("Connector endpoints must be passed as handles");
         }
-        const fields = Object.keys(options)
+        const styled = _styleOptions(options);
+        const fields = Object.keys(styled)
             .sort()
-            .map((key) => `[${_string(key)}]=${_lua(options[key])}`);
+            .map((key) => `[${_string(key)}]=${_lua(styled[key])}`);
         const state = SCENE_STATES.get(this);
         const name = `object${++state.handles}`;
         const value = `{from=${fromName},to=${toName}${fields.length ? `,${fields.join(",")}` : ""}}`;
@@ -674,65 +698,6 @@ export class SceneBuilder {
     _handle(value) {
         if (value instanceof Handle && value.owner === this) return value.name;
         throw new TypeError("Object references must be handles from the same scene");
-    }
-
-    _styleHandle(value) {
-        if (value instanceof StyleGroupHandle && value.owner === this) return value.name;
-        throw new TypeError("Style group must be a handle from the same scene");
-    }
-
-    styleGroup(options) {
-        this._assertMutable();
-        if (!options || (Object.getPrototypeOf(options) !== Object.prototype
-            && Object.getPrototypeOf(options) !== null)) {
-            throw new TypeError("Style group options must be a plain object");
-        }
-        const unknown = Object.keys(options).find((key) => key !== "color" && key !== "members");
-        if (unknown) throw new TypeError(`Unknown StyleGroup option: ${unknown}`);
-        if (!Array.isArray(options.members) || !options.members.length) {
-            throw new TypeError("Style group requires at least one member");
-        }
-        const members = options.members.map((member) => {
-            if (!member || (Object.getPrototypeOf(member) !== Object.prototype
-                && Object.getPrototypeOf(member) !== null)) {
-                throw new TypeError("Style group members must be plain objects");
-            }
-            const memberUnknown = Object.keys(member).find((key) => key !== "target" && key !== "channel");
-            if (memberUnknown) throw new TypeError(`Unknown StyleGroup member option: ${memberUnknown}`);
-            const target = this._handle(member.target);
-            const channel = member.channel ?? "both";
-            if (!STYLE_CHANNELS.has(channel)) {
-                throw new TypeError("Style channel must be stroke, fill, or both");
-            }
-            return `{target=${target},channel=${_lua(channel)}}`;
-        });
-        const state = SCENE_STATES.get(this);
-        const name = `style${++state.styles}`;
-        const color = Object.hasOwn(options, "color") ? `color=${_lua(options.color)},` : "";
-        state.lines.push((scene) =>
-            `local ${name}=${scene}:style_group{${color}members={${members.join(",")}}}`,
-        );
-        return new StyleGroupHandle(this, name);
-    }
-
-    styleBind(group, target, channel = "both") {
-        this._assertMutable();
-        if (!STYLE_CHANNELS.has(channel)) throw new TypeError("Style channel must be stroke, fill, or both");
-        const groupName = this._styleHandle(group);
-        const targetName = this._handle(target);
-        SCENE_STATES.get(this).lines.push(
-            (scene) => `${scene}:style_bind(${groupName},${targetName},${_lua(channel)})`,
-        );
-        return this;
-    }
-
-    style(group, color, duration = 1, curve = "smooth") {
-        this._assertMutable();
-        const groupName = this._styleHandle(group);
-        SCENE_STATES.get(this).lines.push(
-            (scene) => `${scene}:style(${groupName},${_lua(color)},${_lua(duration)},${_lua(curve)})`,
-        );
-        return this;
     }
 
     _assertTransformable(value) {

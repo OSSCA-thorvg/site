@@ -8,6 +8,7 @@ draft: false
 ---
 
 import TMathPlayer from '../../../components/TMathPlayer.astro';
+import '../../../styles/fill-article-examples.css';
 import GradientFillLab from '../../../components/GradientFillLab.astro';
 import conicScene from './LUA/conic-series/_conicT.lua?url';
 import pixelScene from './LUA/conic-series/_conicPixel.lua?url';
@@ -50,4 +51,6 @@ for (uint32_t i = 0; i < len; ++i, ++dst) {
 
 <TMathPlayer scene="conic-pixel-fill" source={pixelScene} poster={pixelPoster.src} crop={[0, 170, 720, 1040]} end={27.45} hold={1.6} title="conic-pixel-fill" description="원본 _conicPixel: NORMAL AA NO AA 첫 사례의 전체 경로를 추적하고 48개 픽셀을 순회해 surface에 Conic Gradient를 완성" />
 
-<GradientFillLab mode="aa" />
+<div class="fill-article-example">
+  <GradientFillLab mode="aa" />
+</div>

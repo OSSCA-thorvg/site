@@ -39,7 +39,7 @@ export function buildMaskPipeline(input = native) {
       return '#' + c.slice(0, 3).map(channel => Math.min(255, Math.round(channel + bg * (1 - c[3] / 255))).toString(16).padStart(2, '0')).join('');
     });
     const id = key('image'); imageRegions.push(id);
-    return parent.image({id, pixels, size: [input.width, input.height], center: p(x, y), width: size / 100, filter: 'nearest', layer: 5});
+    return parent.picture({id, pixels, size: [input.width, input.height], center: p(x, y), width: size / 100, filter: 'nearest', layer: 5});
   }
   function wait(seconds) {scene.wait(seconds); time += seconds;}
   function show(target, seconds = .35) {scene.fadeIn(target, {duration: seconds}); time += seconds;}

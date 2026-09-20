@@ -306,21 +306,6 @@ export async function createTMath(source, name = "scene.lua", moduleOptions = {}
     };
     const render = (time, copy = false) => renderFrame(time, copy, 1);
 
-    const lottie = (fps = 0) => {
-        assertAlive();
-        if (!Number.isInteger(fps) || fps < 0 || fps > 0xffffffff) {
-            throw new RangeError("Lottie FPS must be an integer from 0 to 4294967295");
-        }
-        const result = module._tmath_lottie(engine, fps);
-        if (result !== 0) {
-            throw new Error(module.UTF8ToString(module._tmath_last_error(engine)) || `Lottie export failed (${result})`);
-        }
-        const pointer = module._tmath_lottie_data(engine);
-        const size = module._tmath_lottie_size(engine);
-        if (!pointer || !size) throw new Error("Lottie export returned no data");
-        return module.HEAPU8.slice(pointer, pointer + size);
-    };
-
     const encodedObject = (value, label) => {
         if (typeof value !== "string") throw new TypeError(`${label} must be an object ID`);
         const encoded = new TextEncoder().encode(value);
@@ -1002,7 +987,6 @@ export async function createTMath(source, name = "scene.lua", moduleOptions = {}
         loadLua,
         loadScene,
         render,
-        lottie,
         bounds,
         intersects,
         layoutReport,

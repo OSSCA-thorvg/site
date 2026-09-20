@@ -136,12 +136,41 @@ export type SceneTransitionOptions = SceneTransitionBaseOptions & (
     {easing?: AnimCurve; curve?: never} | {easing?: never; curve: AnimCurve}
 );
 
+/** A color stop: a bare color (evenly spaced) or an `[offset, color]` pair with offset in 0..1. */
+export type GradientStop = Color | readonly [number, Color];
+/** 2 to 8 stops; offsets must be non-decreasing. Omit to keep the paint-color to end-stop ramp. */
+export type GradientStops = readonly GradientStop[];
+/** Explicit geometry is in the object's local coordinates; omitted geometry follows the shape. */
+export interface LinearGradientOptions {
+    type: "linear";
+    stops?: GradientStops;
+    from?: WorldVector;
+    to?: WorldVector;
+}
+export interface RadialGradientOptions {
+    type: "radial";
+    stops?: GradientStops;
+    center?: WorldVector;
+    radius?: number;
+    focal?: WorldVector;
+    focalRadius?: number;
+}
+export interface ConicGradientOptions {
+    type: "conic";
+    stops?: GradientStops;
+    center?: WorldVector;
+    /** Start angle in degrees, clockwise from local +x as seen on screen. */
+    angle?: number;
+}
+export type GradientOptions = LinearGradientOptions | RadialGradientOptions | ConicGradientOptions;
+
 export interface Style {
     id?: string;
     color?: Color;
     stroke?: Color;
     fill?: Color;
-    gradient?: boolean | Color;
+    /** `true`/end-stop color keep the legacy two-stop linear ramp. */
+    gradient?: boolean | Color | GradientOptions;
     width?: number;
     radius?: number;
     dash?: StrokeDash;
@@ -215,14 +244,9 @@ export interface SurfaceOptions extends Style {
     mode?: "solid" | "mesh" | "solid_mesh";
     shading?: boolean;
 }
-export interface RulerOptions extends Style {from: WorldVector; to: WorldVector; step?: number; tick?: number}
 export interface ConnectorOptions extends Style {padding?: number; tail?: number; tip?: number}
-export type SvgOptions = Omit<Style, "color" | "stroke" | "fill" | "radius"> & {
-    path: string;
-    center?: WorldVector;
-    width?: number;
-};
-export type ImageOptions = Omit<Style, "color" | "stroke" | "fill" | "radius"> & ({
+/** Picture from a registered asset (SVG stays vector; PNG/JPG/WebP are raster) or inline RGBA pixels. */
+export type PictureOptions = Omit<Style, "color" | "stroke" | "fill" | "radius"> & ({
     asset: string;
     pixels?: never;
     size?: never;
@@ -271,9 +295,7 @@ export interface ObjectFactory {
     curve(options: CurveOptions): ObjectHandle;
     surface(options: SurfaceOptions): ObjectHandle;
     text(options: TextOptions): ObjectHandle;
-    ruler(options: RulerOptions): ObjectHandle;
-    svg(options: SvgOptions): ObjectHandle;
-    image(options: ImageOptions): ObjectHandle;
+    picture(options: PictureOptions): ObjectHandle;
     cell(options: CellOptions): ObjectHandle;
     connector(from: ObjectHandle, to: ObjectHandle, options?: ConnectorOptions): ObjectHandle;
 }
@@ -294,14 +316,6 @@ export interface SpaceHandle extends ObjectHandle {
     cell(options: CellOptions): ObjectHandle;
     cell(callback: CellSampler, options?: CellSampleOptions): GroupHandle;
     voxel(callback: VoxelSampler, options?: VoxelSampleOptions): GroupHandle;
-}
-
-declare const styleGroupHandle: unique symbol;
-export interface StyleGroupHandle {readonly [styleGroupHandle]: true}
-export type StyleChannel = "stroke" | "fill" | "both";
-export interface StyleGroupOptions {
-    color?: Color;
-    members: readonly {target: ObjectHandle; channel?: StyleChannel}[];
 }
 
 declare const audioCueHandle: unique symbol;
@@ -354,9 +368,6 @@ export class SceneBuilder {
     viewport(child: SceneBuilder, bounds: ViewportBounds): this;
     sceneTransition(stages: readonly SceneBuilder[], options?: SceneTransitionOptions): this;
     sound(options: SoundOptions): AudioCueHandle;
-    styleGroup(options: StyleGroupOptions): StyleGroupHandle;
-    styleBind(group: StyleGroupHandle, target: ObjectHandle, channel?: StyleChannel): this;
-    style(group: StyleGroupHandle, color: Color, duration?: number, curve?: AnimCurve): this;
     create(target: Handle | readonly Handle[], duration?: number, curve?: AnimCurve, lag?: number, direction?: CreateDirection): this;
     uncreate(target: Handle | readonly Handle[], duration?: number, curve?: AnimCurve, lag?: number, direction?: CreateDirection): this;
     fillReveal(target: Handle | readonly Handle[], duration?: number, curve?: AnimCurve, lag?: number): this;

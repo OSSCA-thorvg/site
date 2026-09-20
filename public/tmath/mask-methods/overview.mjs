@@ -28,7 +28,7 @@ export function buildOverview(trace=native,{still=false}={}){
  // keep magnified native cells stable at interior sample points.
  function pixels(parent,values,x,y,u,columns=w,rows=h,layer=20){
   const scale=4,texels=Array.from({length:columns*rows*scale*scale},(_,i)=>values[Math.floor(Math.floor(i/(columns*scale))/scale)*columns+Math.floor(i%(columns*scale)/scale)]);
-  parent.image({id:id('pixels'),pixels:texels,size:[columns*scale,rows*scale],center:p(x+columns*u/2,y+rows*u/2),width:columns*u/100,filter:'nearest',layer});
+  parent.picture({id:id('pixels'),pixels:texels,size:[columns*scale,rows*scale],center:p(x+columns*u/2,y+rows*u/2),width:columns*u/100,filter:'nearest',layer});
  }
  function grid(values,x,y,u,label,{fixed=false,probe=true}={}){
   text(label,x+w*u/2,y-29,22);imageRegions.push({x,y,width:w*u,height:h*u});

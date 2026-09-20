@@ -119,8 +119,6 @@ return PAINT(shape)->render(renderer);
 
 </Disclosure>
 
-이 두 호출이 Text 전용 처리와 공통 Shape 처리의 경계입니다. Glyph 해석·배치와 `RenderPath` 구성까지는 Font가 맡고, outline·coverage·RLE·stroke와 Surface 기록은 <a href={import.meta.env.BASE_URL + 'blog/mentoring/07-3-cpu-engine-shape'}>Shape의 Update·Prepare</a>에서 이어집니다.
-
 
 ## Appendix. TTF의 곡선 → Shape의 CubicTo
 
@@ -148,7 +146,7 @@ Canvas::update()
 -> TtfReader::convert()
 ```
 
-[tvgTtfReader.cpp — TtfReader::convert](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgTtfReader.cpp#L242-L263)의 일부 발췌입니다. 긴 수식의 줄바꿈만 조정했습니다.
+참고: [`tvgTtfReader.cpp`](https://github.com/thorvg/thorvg/blob/f9a618047bc31360d921dd05dcc0979c01fc8cf8/src/loaders/sfnt/tvgTtfReader.cpp#L242-L263)
 
 ```cpp
 if (flags[begin + x] & ON_CURVE) {

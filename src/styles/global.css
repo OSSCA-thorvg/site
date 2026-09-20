@@ -17,6 +17,7 @@
   --primary-subtle: #FFF0E7;
 
   --ink: #202124;
+  --ink-reading: #30343A;
   --ink-muted: #555B64;
   --ink-subtle: #6A717C;
   --ink-faint: #858B94;
@@ -67,6 +68,24 @@
   --font-body: "Pretendard Variable", -apple-system, system-ui, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Pretendard Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
+  --text-reading: 17px;
+  --leading-reading: 1.85;
+  --text-code: 13.5px;
+  --leading-code: 1.75;
+
+  /* Shared by the tmath host, scene authors, and interactive diagram overlays. */
+  --animation-canvas: var(--canvas);
+  --animation-ink: var(--ink);
+  --animation-muted: var(--ink-subtle);
+  --animation-line: var(--hairline-strong);
+  --animation-surface: var(--surface-1);
+  --animation-stroke: 1.5;
+  --animation-font: "Pretendard";
+  --animation-accent: var(--primary);
+  --animation-info: var(--cat-azure);
+  --animation-success: var(--cat-teal);
+  --animation-warning: var(--cat-amber);
+
   --dur-micro: 140ms;
   --dur-move: 220ms;
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -84,6 +103,7 @@
   --primary-subtle: #3A2418;
 
   --ink: #F5F5F6;
+  --ink-reading: #DBDDE1;
   --ink-muted: #C0C1C5;
   --ink-subtle: #9A9DA4;
   --ink-faint: #72757D;
@@ -170,21 +190,24 @@ main { display: block; }
 .lede { font-size: 17px; color: var(--ink-muted); max-width: 62ch; line-height: 1.55; }
 .section-title { font-size: 1.75rem; margin-bottom: var(--space-lg); }
 
-/* No ch-based cap: ch tracks Latin digit width, which cuts Korean text to ~37 chars per line.
-   The article container (760px) sets the measure instead — about 47 Korean chars. */
-.prose { margin-inline: auto; color: var(--ink-muted); overflow-wrap: anywhere; }
-.prose h2 { margin-top: var(--space-xl); margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--hairline-strong); color: var(--ink); font-size: 1.6rem; }
-.prose h3 { margin-top: var(--space-lg); margin-bottom: var(--space-sm); padding-bottom: var(--space-xs); border-bottom: 1px solid var(--hairline); color: var(--ink); font-size: 1.25rem; }
+/* The existing 760px article container sets a comfortable Hangul measure.
+   Low-specificity element rules let embedded MDX tools keep their own UI scale. */
+.prose { margin-inline: auto; color: var(--ink-reading); font-size: var(--text-reading); line-height: var(--leading-reading); word-break: keep-all; overflow-wrap: anywhere; }
+.prose :where(h2) { margin-top: 56px; margin-bottom: 1em; padding-bottom: 0.55em; border-bottom: 1px solid var(--hairline); color: var(--ink); font-size: 28px; font-weight: 650; line-height: 1.4; }
+.prose :where(h3) { margin-top: 2em; margin-bottom: 0.85em; color: var(--ink); font-size: 22px; font-weight: 650; line-height: 1.45; }
+.prose :where(h4, h5, h6) { margin-top: 1.7em; margin-bottom: 0.75em; color: var(--ink); font-size: 18px; font-weight: 650; line-height: 1.5; }
+.prose > :first-child { margin-top: 0; }
+.prose :where(h2, h3, h4) + :where(h3, h4, h5) { margin-top: 1.25em; }
 .prose :is(h2, h3, h4, h5, h6)[id] { position: relative; }
 .prose .heading-anchor { position: absolute; top: 50%; right: 100%; display: grid; width: 1em; height: 1.5em; place-items: center; color: var(--ink-subtle); text-decoration: none; opacity: 0; transform: translateY(-50%); transition: color var(--dur-micro) var(--ease-out), opacity var(--dur-micro) var(--ease-out); }
 .prose .heading-anchor svg { width: 0.72em; height: 0.72em; }
 .prose :is(h2, h3, h4, h5, h6):hover > .heading-anchor, .prose .heading-anchor:focus-visible { opacity: 1; }
 .prose .heading-anchor:hover { color: var(--primary); }
-.prose p { margin-bottom: var(--space-md); line-height: 1.7; }
-.prose p:has(+ :where(ul, ol)) { margin-bottom: var(--space-xxs); }
-.prose :where(ul, ol) { margin: 0 0 var(--space-md); padding-left: 1.5em; }
+.prose :where(p) { margin-bottom: 1.25em; line-height: inherit; }
+.prose :where(p):has(+ :where(ul, ol)) { margin-bottom: 0.55em; }
+.prose :where(ul, ol) { margin: 0 0 1.4em; padding-left: 1.5em; }
 .prose :where(ul, ol) :where(ul, ol) { margin: 0.35em 0 0.15em; padding-left: 1.35em; }
-.prose li { margin: 0 0 0.35em; padding-left: 0.1em; line-height: 1.7; }
+.prose :where(li) { margin: 0 0 0.5em; padding-left: 0.15em; line-height: inherit; }
 .prose li:last-child { margin-bottom: 0; }
 .prose li > p { margin-bottom: 0.35em; }
 .prose ul > li { list-style: disc; }
@@ -193,30 +216,48 @@ main { display: block; }
 .prose ol > li { list-style: decimal; }
 .prose ul > li::marker { color: var(--primary); }
 .prose ul ul > li::marker { color: var(--ink-subtle); }
-.prose a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+.prose :where(a) { color: var(--primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .prose a:hover { color: var(--primary-hover); }
-.prose code { background: var(--surface-2); padding: 1px 6px; border-radius: var(--radius-sm); font-size: 0.9em; }
-.prose pre { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: var(--space-md); overflow-x: auto; margin-bottom: var(--space-md); }
-.prose pre code { background: none; padding: 0; }
-.prose blockquote { border-left: 3px solid var(--primary); padding-left: var(--space-md); color: var(--ink-subtle); margin-bottom: var(--space-md); }
+.prose :where(strong) { color: var(--ink); font-weight: 650; }
+.prose :where(code) { background: var(--surface-2); color: var(--ink); padding: 2px 5px; border-radius: var(--radius-xs); font-size: 0.86em; word-break: normal; overflow-wrap: anywhere; }
+.prose :where(pre) { background: var(--surface-1); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 20px 24px; overflow-x: auto; margin-block: 1.5em; font-size: var(--text-code); line-height: var(--leading-code); tab-size: 4; word-break: normal; overflow-wrap: normal; scrollbar-width: thin; scrollbar-color: var(--hairline-strong) transparent; }
+.prose pre code { display: block; background: none; color: inherit; padding: 0; border-radius: 0; font-size: inherit; line-height: inherit; overflow-wrap: normal; }
+.prose :where(blockquote) { border-left: 2px solid var(--hairline-strong); padding: 4px 0 4px 20px; color: var(--ink-muted); margin-block: 1.5em; }
+.prose blockquote > :last-child { margin-bottom: 0; }
+.prose :where(hr) { margin-block: var(--space-xxl); border: 0; border-top: 1px solid var(--hairline); }
+.prose :where(kbd) { padding: 2px 6px; border: 1px solid var(--hairline-strong); border-bottom-width: 2px; border-radius: var(--radius-xs); background: var(--surface-1); font-size: 0.8em; }
+.astro-code, .astro-code span { color: var(--shiki-light); font-style: var(--shiki-light-font-style, normal); font-weight: var(--shiki-light-font-weight, 400); text-decoration: var(--shiki-light-text-decoration, none); }
+:root[data-theme="dark"] .astro-code, :root[data-theme="dark"] .astro-code span { color: var(--shiki-dark); font-style: var(--shiki-dark-font-style, normal); font-weight: var(--shiki-dark-font-weight, 400); text-decoration: var(--shiki-dark-text-decoration, none); }
 @media (hover: none) {
   .prose .heading-anchor { opacity: 0.55; }
 }
 /* display:block + max-width: tables wider than the content scroll themselves instead of the page. */
-.prose table { display: block; width: max-content; max-width: 100%; margin-bottom: var(--space-md); overflow-x: auto; border-collapse: collapse; font-size: 14px; line-height: 1.5; overflow-wrap: break-word; }
-.prose th, .prose td { padding: 6px 12px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; }
-.prose th { background: var(--surface-1); color: var(--ink); font-weight: 600; }
+.prose :where(table) { display: block; width: max-content; max-width: 100%; margin-block: 1.5em; overflow-x: auto; border-collapse: collapse; font-size: 14.5px; line-height: 1.65; overflow-wrap: break-word; scrollbar-width: thin; }
+.prose :where(th, td) { padding: 10px 14px; border: 1px solid var(--hairline); text-align: left; vertical-align: top; }
+.prose :where(th) { background: var(--surface-1); color: var(--ink); font-weight: 600; }
+.prose :where(tbody tr:nth-child(even)) { background: var(--surface-1); }
+.prose td :where(p, ul, ol):last-child { margin-bottom: 0; }
 .prose img { width: auto; max-width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--hairline); margin-block: var(--space-md); }
 .prose video { display: block; width: 100%; height: auto; border-radius: var(--radius-lg); border: 1px solid var(--hairline); margin-block: var(--space-md); background: #000; }
 .prose lottie-player { display: block; width: min(100%, 480px); aspect-ratio: 1; margin-block: var(--space-md); background: transparent; }
-.prose figure { display: flex; flex-direction: column; align-items: center; margin: var(--space-lg) auto; text-align: center; }
+.prose :where(figure) { display: flex; flex-direction: column; align-items: center; margin: var(--space-xl) auto; text-align: center; }
 .prose figure :where(img, lottie-player) { display: block; margin-block: 0; margin-inline: auto; }
 .prose figcaption { margin-top: var(--space-xs); font-size: 0.9rem; line-height: 1.5; color: var(--ink-subtle); }
-.prose .guide-details { width: 100%; margin: var(--space-xl) auto 0; border-block: 1px solid var(--line); }
-.guide-details > summary { padding: var(--space-md) 0; color: var(--ink); font-weight: 600; cursor: pointer; }
-.guide-details[open] > summary { border-bottom: 1px solid var(--line); }
-.guide-details > :not(summary) { margin-inline: var(--space-sm); }
-.markdown-alert { --alert-color: var(--ink-muted); margin: var(--space-lg) 0; padding: var(--space-sm) var(--space-md); border-left: 4px solid var(--alert-color); color: var(--ink-muted); }
+.prose :where(details:not([class]), details.guide-details) { margin-block: var(--space-xl); border-block: 1px solid var(--hairline); background: transparent; }
+.prose :where(details:not([class]), details.guide-details) > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); min-height: 64px; padding: 14px 4px; color: var(--ink); font-size: 15px; font-weight: 550; line-height: 1.6; cursor: pointer; list-style: none; border-radius: var(--radius-sm); }
+.prose :where(details:not([class]), details.guide-details) > summary::marker { content: ''; }
+.prose :where(details:not([class]), details.guide-details) > summary::-webkit-details-marker { display: none; }
+.prose :where(details:not([class]), details.guide-details) > summary::after { content: '+'; display: grid; flex: 0 0 32px; width: 32px; height: 32px; place-items: center; border-radius: var(--radius-sm); background: var(--surface-1); color: var(--ink-muted); font: 20px var(--font-mono); transition: background-color var(--dur-micro), color var(--dur-micro); }
+.prose :where(details:not([class]), details.guide-details)[open] > summary::after { content: '−'; }
+.prose :where(details:not([class]), details.guide-details) > summary:hover::after,
+.prose :where(details:not([class]), details.guide-details) > summary:focus-visible::after { background: var(--primary-subtle); color: var(--primary); }
+.prose :where(details:not([class]), details.guide-details) > summary :where(strong, b) { font-weight: inherit; }
+.prose :where(details:not([class]), details.guide-details) > summary:focus-visible { outline-offset: 4px; }
+.prose :where(details:not([class]), details.guide-details)[open] { padding-bottom: 24px; }
+.prose :where(details:not([class]), details.guide-details) > :not(summary) { margin-inline: 4px; }
+.prose :where(details:not([class]), details.guide-details) > summary + :not(summary) { margin-top: 4px; }
+.prose :where(details:not([class]), details.guide-details) > :last-child:not(summary) { margin-bottom: 0; }
+.markdown-alert { --alert-color: var(--ink-muted); margin: var(--space-lg) 0; padding: var(--space-md) 20px; border-left: 2px solid var(--alert-color); background: var(--surface-1); color: var(--ink-reading); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 16px; line-height: 1.75; }
 .markdown-alert > :last-child { margin-bottom: 0; }
 .markdown-alert-title { display: flex; align-items: center; gap: var(--space-xs); margin-bottom: var(--space-xs); color: var(--alert-color); font-size: 14px; font-weight: 600; }
 .markdown-alert-title .octicon { flex: none; fill: currentColor; }
@@ -227,12 +268,24 @@ main { display: block; }
 .markdown-alert-caution { --alert-color: var(--status-closed); }
 .mermaid-diagram { width: 100%; margin: var(--space-lg) auto; overflow-x: auto; text-align: center; }
 .mermaid-diagram svg { display: block; max-width: 100%; height: auto; margin-inline: auto; }
+/* Mermaid measures SVG transforms during layout. Even the reduced-motion
+   0.01ms transition can make those measurements read an intermediate position. */
+.mermaid-diagram svg * { transition: none !important; }
 .mermaid-diagram--error { padding: var(--space-md); background: var(--surface-1); color: var(--status-closed); font-family: var(--font-mono); font-size: 13px; text-align: left; white-space: pre-wrap; }
-.article-comments { width: 100%; margin: var(--space-xl) auto 0; padding-top: var(--space-lg); border-top: 1px solid var(--line); }
+.article-comments { width: 100%; margin: var(--space-xl) auto 0; padding-top: var(--space-lg); border-top: 1px solid var(--hairline); }
 .article-comments__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); margin-bottom: var(--space-md); }
 .article-comments__head h2 { margin: 0; font-size: 1.25rem; }
 .article-comments__head a, .article-comments__fallback a { color: var(--primary); }
 .article-comments__fallback { color: var(--ink-muted); }
+
+@media (max-width: 520px) {
+  :root { --text-reading: 16px; --text-code: 13px; --leading-reading: 1.8; }
+  .prose :where(h2) { font-size: 25px; margin-top: 48px; }
+  .prose :where(h3) { font-size: 21px; }
+  .prose :where(pre) { padding: 16px; }
+  .prose :where(th, td) { padding: 9px 12px; }
+  .markdown-alert { padding: 12px 16px; font-size: 15px; }
+}
 
 /* ---- Navigation --------------------------------------------------------- */
 .nav {
@@ -426,7 +479,8 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .issue-row__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
 .issue-row__side { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); flex: none; }
 .issue-row__assignee { color: var(--ink-subtle); font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
-.label { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 500; background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--hairline-strong); }
+/* Issue badges must not restyle Mermaid's SVG g.label elements. */
+span.label { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--radius-sm); font-size: 11px; font-weight: 500; background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--hairline-strong); }
 
 /* ---- Blog cards --------------------------------------------------------- */
 .post-card { position: relative; min-width: 0; display: flex; flex-direction: column; gap: 10px; transition: transform 280ms var(--ease-out); }
@@ -658,6 +712,7 @@ a.issue-row:hover .issue-row__title { color: var(--primary); }
 .diff-stage { position: relative; display: grid; min-width: 0; aspect-ratio: 1; place-items: center; overflow: hidden; border: 1px solid var(--hairline); border-radius: var(--radius-md); background-color: var(--surface-1); background-image: linear-gradient(45deg, var(--surface-2) 25%, transparent 25%), linear-gradient(-45deg, var(--surface-2) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--surface-2) 75%), linear-gradient(-45deg, transparent 75%, var(--surface-2) 75%); background-position: 0 0, 0 8px, 8px -8px, -8px 0; background-size: 16px 16px; }
 .diff-stage lottie-player, .diff-stage canvas, .diff-stage > div { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; }
 .diff-stage lottie-player { background: transparent; }
+.diff-stage .diff-svg-source { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
 .diff-color-readout { min-height: 20px; margin-top: var(--space-xs); color: var(--ink-subtle); font-family: var(--font-mono); font-size: 12px; }
 .diff-status { margin-top: var(--space-md); color: var(--ink-subtle); font-size: 13px; }
 

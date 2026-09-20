@@ -23,3 +23,6 @@ thorvg
 
 # Generated blog card thumbnails
 /public/blog-thumbnails/
+
+# Local unpublished blog drafts
+/temp/

@@ -50,7 +50,7 @@ export function buildPipeline(id) {
       return '#' + channels.slice(0, 3).map(c => Math.min(255, Math.round(c + bg * (1 - a))).toString(16).padStart(2, '0')).join('');
     });
     const name = key('image'); imageRegions.push(name);
-    return parent.image({id: name, pixels: colors, size: [trace.width, trace.height], center: p(x, y), width: size / 100,
+    return parent.picture({id: name, pixels: colors, size: [trace.width, trace.height], center: p(x, y), width: size / 100,
       filter: 'nearest', layer: 5});
   }
   function buffer(label, pixels, x, y, size = 220, note = '') {

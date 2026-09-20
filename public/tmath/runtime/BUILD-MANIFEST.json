@@ -2,15 +2,18 @@
   "schemaVersion": 1,
   "project": "tmath",
   "projectVersion": "0.1.0",
-  "sourceCommit": "38d8576a5edb",
-  "sourceDirty": true,
-  "buildDate": "2026-08-27",
+  "sourceCommit": "5f39b16049ae",
+  "sourceDirty": false,
+  "buildDate": "2026-10-10",
   "toolchain": {
     "emscripten": "4.0.19",
     "buildType": "minsize",
-    "optimization": ["-Oz", "-flto"],
+    "optimization": [
+      "-Oz",
+      "-flto"
+    ],
     "renderer": "ThorVG CPU engine",
-    "thorvg": "1.1.1",
+    "thorvg": "1.2.0 (87b2684)",
     "lua": "5.4.8"
   },
   "features": {
@@ -18,47 +21,45 @@
     "luaRuntime": true,
     "retainedLuaRuntime": true,
     "canvasRgba": true,
-    "lottieSaver": true,
     "glRenderer": false,
     "renderEngineSelection": true,
-    "latex": false,
     "interactiveUi": true,
     "interactiveInput": true,
     "audio": true,
     "runtimeSoundEvents": true,
-    "diagramAuthoring": true,
-    "chartAuthoring": true
+    "semanticMotion": true,
+    "diagramAuthoring": true
   },
   "artifacts": [
     {
       "path": "tmath-wasm.js",
-      "bytes": 25462,
-      "sha256": "60bcb5842dc197cfb0666e9fd4931ce24425a2ad013db60a5a0bf65ea0d05161"
+      "bytes": 25222,
+      "sha256": "553736c1eca81e089b162b3eb448329d305f8bd2946ed43537fc47e7ed747b71"
     },
     {
       "path": "tmath-wasm.wasm",
-      "bytes": 902940,
-      "sha256": "54f5ba5cd18b7ace58b61eb6eb2af5c113db9bf0d7e5057b767a9e8778462f8e"
+      "bytes": 920609,
+      "sha256": "59256baa0daf28bbab20b7ebd46905afe1830ab07632022b04cdf8795410fce4"
     },
     {
       "path": "client.js",
-      "bytes": 47062,
-      "sha256": "e68af8c8803451e735fde0b12c53859530adabb387b8b4b372272324f4b1e438"
+      "bytes": 46338,
+      "sha256": "8ef086a817d77ecc692339e7c114f2f2e3e47868d6c1787fef3ad4b2b1a52b74"
     },
     {
       "path": "client.d.ts",
-      "bytes": 11132,
-      "sha256": "e3459a9e5b881fd65d613c9c2e9b67baa6f51946014216e12a21b8bbc900e502"
+      "bytes": 12712,
+      "sha256": "31b799808991f6686fe83b57fb5e4b67244a5108c8e8cf0e91436f355429950f"
     },
     {
       "path": "bindings.js",
-      "bytes": 41996,
-      "sha256": "682348d2d46bcb37a8aa8cd359cdc1869d5856b7d86bbcb915f23a1cf4e1cbaa"
+      "bytes": 40561,
+      "sha256": "64c8246c1967777a87fd12461a409ffde1f6026ba6924f0cb46a03008e4eb8b5"
     },
     {
       "path": "bindings.d.ts",
-      "bytes": 14368,
-      "sha256": "022c3384280f927cc2f77040a270d871185cb49cdd2177eec6ae5a6b997333a8"
+      "bytes": 14717,
+      "sha256": "994ccefba36aef887d71e8dcbec248e1b0b2a80fe33ef6ea16b3809acb49ec18"
     },
     {
       "path": "Pretendard.ttf",

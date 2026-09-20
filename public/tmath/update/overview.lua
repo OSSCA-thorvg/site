@@ -63,7 +63,7 @@ refs[59] = refs[53]:text {["align"]={0.5,0.5},["fill"]="#1f66c4",["font"]="Prete
 refs[60] = refs[53]:rectangle {["center"]={1.52,10.04},["dash"]={6,5},["fill"]="#00000000",["id"]="update-overview-scene-scope-59",["layer"]=8,["size"]={2.32,1.48},["stroke"]="#999999",["width"]=1}
 refs[61] = refs[53]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-60",["layer"]=40,["point"]={1.52,9.17},["size"]=16,["text"]="Scene(A, B)"}
 refs[62] = refs[53]:group {["id"]="update-overview-image-input-61"}
-refs[63] = refs[62]:image {["center"]={4.5,10.15},["filter"]="nearest",["id"]="update-overview-bitmap-62",["layer"]=20,["pixels"]={"#e66121","#1f66c4","#1f66c4","#e66121"},["size"]={2,2},["width"]=0.72}
+refs[63] = refs[62]:picture {["center"]={4.5,10.15},["filter"]="nearest",["id"]="update-overview-bitmap-62",["layer"]=20,["pixels"]={"#e66121","#1f66c4","#1f66c4","#e66121"},["size"]={2,2},["width"]=0.72}
 refs[64] = refs[53]:text {["align"]={0.5,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="update-overview-text-63",["layer"]=40,["point"]={4.5,9.5},["size"]=18,["text"]="Picture"}
 refs[65] = scene:group {["id"]="update-overview-inherited-64",["opacity"]=0}
 refs[66] = refs[65]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-65",["layer"]=40,["point"]={0.1,8.02},["size"]=16,["text"]="Transform"}
@@ -248,7 +248,7 @@ refs[244] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pre
 refs[245] = refs[122]:text {["align"]={0.5,0.5},["fill"]="#626262",["font"]="Pretendard",["id"]="update-overview-text-244",["layer"]=40,["point"]={0.1,-7.25},["size"]=18,["text"]="+ fillPrepare() / SwFill"}
 refs[246] = scene:group {["id"]="update-overview-image-artifacts-245",["opacity"]=0}
 refs[247] = refs[246]:group {["id"]="update-overview-raw-image-246"}
-refs[248] = refs[247]:image {["center"]={3.38,-4.24},["filter"]="nearest",["id"]="update-overview-raw-quad-247",["layer"]=20,["pixels"]={"#e66121","#1f66c4","#1f66c4","#e66121"},["size"]={2,2},["width"]=0.28}
+refs[248] = refs[247]:picture {["center"]={3.38,-4.24},["filter"]="nearest",["id"]="update-overview-raw-quad-247",["layer"]=20,["pixels"]={"#e66121","#1f66c4","#1f66c4","#e66121"},["size"]={2,2},["width"]=0.28}
 refs[249] = refs[246]:group {["id"]="update-overview-transformed-extent-248",["opacity"]=0}
 refs[250] = refs[249]:rectangle {["center"]={4.1,-4.6},["fill"]="#00000000",["id"]="update-overview-rect-249",["layer"]=25,["size"]={0.56,0.56},["stroke"]="#1f66c4",["width"]=2}
 refs[251] = refs[246]:text {["align"]={0.5,0.5},["fill"]="#202020",["font"]="Pretendard",["id"]="update-overview-text-250",["layer"]=40,["point"]={4.1,-3.7},["size"]=20,["text"]="imagePrepare()"}

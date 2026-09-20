@@ -59,41 +59,44 @@ const base = import.meta.env.BASE_URL;
 </script>
 
 <style>
-  tmath-player { position: relative; display: block; margin: 1.5rem 0; background: #fff; isolation: isolate; }
+  tmath-player { position: relative; display: block; margin: 2rem 0; background: var(--animation-canvas, var(--canvas)); color: var(--ink); isolation: isolate; }
   tmath-player[data-scene="overview"]:not(:fullscreen) { width: 100%; margin-inline: auto; }
-  .tmath-stage { position: relative; }
+  .tmath-stage { position: relative; background: var(--animation-canvas, var(--canvas)); }
   .tmath-stage img, .tmath-stage canvas { display: block; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; object-fit: contain; }
   .tmath-stage [hidden] { display: none; }
   .tmath-screen { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; background: transparent; border: 0; cursor: pointer; }
   .tmath-screen:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
-  .tmath-controls-zone { position: absolute; inset: auto 0 0; height: 76px; display: flex; align-items: end; padding: 0 8px 8px; pointer-events: none; }
+  .tmath-controls-zone { position: absolute; inset: auto 0 0; height: 80px; display: flex; align-items: end; padding: 0 10px 10px; pointer-events: none; }
   .tmath-controls-zone::before { content: ''; position: absolute; inset: 0; pointer-events: auto; }
-  .tmath-controls { position: relative; z-index: 1; display: flex; align-items: center; gap: 9px; width: 100%; padding: 5px 8px; background: rgb(22 24 27 / 92%); color: #fff; border-radius: 5px; opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .15s, transform .15s, visibility .15s; pointer-events: auto; }
+  .tmath-controls { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; width: 100%; padding: 5px 8px; background: var(--canvas); color: var(--ink); border: 1px solid var(--hairline-strong); border-radius: var(--radius-sm); opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity var(--dur-micro), transform var(--dur-micro), visibility var(--dur-micro); pointer-events: auto; }
   .tmath-controls-zone:hover .tmath-controls,
   tmath-player:has(:focus-visible) .tmath-controls,
   tmath-player[data-controls="visible"] .tmath-controls,
   tmath-player:has(details[open]) .tmath-controls { opacity: 1; visibility: visible; transform: none; }
-  .tmath-controls button, .tmath-controls summary { display: grid; place-items: center; flex: 0 0 30px; width: 30px; height: 32px; border: 0; padding: 4px; background: none; color: inherit; cursor: pointer; border-radius: 3px; }
-  .tmath-controls button:hover, .tmath-controls summary:hover { background: rgb(255 255 255 / 13%); }
+  .tmath-controls button, .tmath-controls summary { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border: 0; padding: 6px; background: none; color: inherit; cursor: pointer; border-radius: var(--radius-xs); }
+  .tmath-controls button:hover, .tmath-controls summary:hover { background: var(--surface-2); color: var(--primary); }
+  .tmath-controls button:disabled { color: var(--ink-subtle); cursor: wait; }
+  .tmath-controls [data-play] { color: var(--primary); }
   .tmath-controls svg { width: 21px; height: 21px; }
   .tmath-controls summary { list-style: none; }
   .tmath-controls summary::-webkit-details-marker { display: none; }
-  .tmath-controls input { flex: 1; width: 0; min-width: 28px; margin: 0; accent-color: #fff; cursor: pointer; }
-  .tmath-controls output { font: 11px var(--font-mono, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .tmath-controls :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+  .tmath-controls input { flex: 1; width: 0; min-width: 28px; min-height: 36px; margin: 0; accent-color: var(--primary); cursor: pointer; }
+  .tmath-controls output { color: var(--ink-muted); font: 12px var(--font-mono, monospace); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tmath-controls :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .tmath-controls [data-icon="pause"], tmath-player[data-state="playing"] [data-icon="play"] { display: none; }
   tmath-player[data-state="playing"] [data-icon="pause"] { display: block; }
   .tmath-settings { position: relative; margin: 0; padding: 0; border: 0; }
-  .tmath-speed-menu { position: absolute; bottom: 43px; right: 0; display: flex; align-items: center; gap: 16px; padding: 12px; border-radius: 5px; background: #202226; color: #fff; font-size: 12px; white-space: nowrap; }
-  .tmath-speed-menu select { background: #303237; color: #fff; border: 1px solid #73777c; border-radius: 3px; padding: 4px; font: inherit; }
+  .tmath-speed-menu { position: absolute; bottom: 47px; right: 0; display: flex; align-items: center; gap: 16px; padding: 12px; border: 1px solid var(--hairline-strong); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink-muted); font-size: 13px; line-height: 1.4; white-space: nowrap; }
+  .tmath-speed-menu select { background: var(--surface-1); color: var(--ink); border: 1px solid var(--control-border); border-radius: var(--radius-xs); padding: 5px 7px; font: inherit; }
   .tmath-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .tmath-error { position: absolute; inset: auto 12px 65px; margin: 0 !important; padding: 10px; font-size: 13px; background: var(--canvas); color: var(--status-closed); }
-  .tmath-loading { display: none; position: absolute; left: calc(50% - 13px); top: calc(50% - 13px); width: 26px; height: 26px; border: 2px solid #cbd0d5; border-top-color: #323941; border-radius: 50%; animation: tmath-spin .8s linear infinite; pointer-events: none; }
+  .tmath-error { position: absolute; inset: auto 12px 65px; margin: 0 !important; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; background: var(--canvas); color: var(--status-closed); }
+  .tmath-loading { display: none; position: absolute; left: calc(50% - 13px); top: calc(50% - 13px); width: 26px; height: 26px; border: 2px solid var(--hairline-strong); border-top-color: var(--primary); border-radius: 50%; animation: tmath-spin .8s linear infinite; pointer-events: none; }
   tmath-player[data-state="loading"] .tmath-loading { display: block; }
-  tmath-player:fullscreen { display: grid; place-items: center; margin: 0; background: #fff; }
+  tmath-player:fullscreen { display: grid; place-items: center; margin: 0; background: var(--animation-canvas, var(--canvas)); }
   tmath-player:fullscreen .tmath-stage { width: 100%; height: 100%; aspect-ratio: auto; }
   @keyframes tmath-spin { to { transform: rotate(360deg); } }
   @media (max-width: 480px) { .tmath-controls { gap: 5px; padding: 5px; } .tmath-controls-zone { padding: 0 5px 5px; } }
-  @media (hover: none) { tmath-player[data-state="paused"] .tmath-controls { opacity: 1; visibility: visible; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { .tmath-controls { transition: none; } }
+  @media (max-width: 360px) { .tmath-controls { gap: 3px; padding-inline: 3px; } .tmath-controls input { min-width: 16px; } .tmath-controls output { font-size: 11px; } }
+  @media (pointer: coarse) { .tmath-controls button, .tmath-controls summary { flex-basis: 44px; width: 44px; height: 44px; } .tmath-controls input { min-height: 44px; } }
+  @media (prefers-reduced-motion: reduce) { .tmath-controls { transition: none; } .tmath-loading { animation: none; } }
 </style>

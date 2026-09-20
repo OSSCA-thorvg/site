@@ -81,7 +81,7 @@ export function buildOverview() {
   text(inputs,'Scene(A, B)',792,333,16,muted);
   const pixels=['#e66121','#1f66c4','#1f66c4','#e66121'];
   const imageInput=inputs.group({id:id('image-input')});
-  imageInput.image({id:id('bitmap'),center:p(1090,235),width:.72,size:[2,2],pixels,filter:'nearest',layer:20});
+  imageInput.picture({id:id('bitmap'),center:p(1090,235),width:.72,size:[2,2],pixels,filter:'nearest',layer:20});
   text(inputs,'Picture',1090,300,18);
 
   const context=group('inherited');
@@ -167,7 +167,7 @@ export function buildOverview() {
   const imageOutput=group('image-artifacts');
   const origin=[964,1660],scale=2,size=28;
   const raw=imageOutput.group({id:id('raw-image')});
-  raw.image({id:id('raw-quad'),center:p(origin[0]+size/2,origin[1]+size/2),width:size/100,size:[2,2],pixels,filter:'nearest',layer:20});
+  raw.picture({id:id('raw-quad'),center:p(origin[0]+size/2,origin[1]+size/2),width:size/100,size:[2,2],pixels,filter:'nearest',layer:20});
   const quad=imageOutput.group({id:id('transformed-extent'),opacity:0});
   rect(quad,1050,1710,size*scale,size*scale,'#00000000',blue,2,25);
   text(imageOutput,'imagePrepare()',1050,1620,20);

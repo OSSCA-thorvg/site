@@ -63,7 +63,7 @@ export function alphaStage(id, width = 960, height = 720) {
     }
     // FadeIn animates the owner to opacity 1. Keep the source-over multiplier
     // on its image so revealing or moving the proxy cannot replace it.
-    owner.image({id: name, pixels, size: [n,n], center: [0,0], width: 1, filter: 'nearest', layer, opacity});
+    owner.picture({id: name, pixels, size: [n,n], center: [0,0], width: 1, filter: 'nearest', layer, opacity});
     owner.rectangle({id: key('image-border'), center: [0,0], size: [1,1],
       fill: '#00000000', stroke: colors.line, width: 2, layer: layer + 1});
     return owner;

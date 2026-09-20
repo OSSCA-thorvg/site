@@ -46,7 +46,7 @@ export function buildOverview(model = buildPictureModel(), sample = normalizatio
   const beat=(label,hold=1.2)=>{beats.push({time:+time.toFixed(3),label});wait(hold);};
   const packedColor=v=>'#'+[v&255,(v>>>8)&255,(v>>>16)&255].map(c=>c.toString(16).padStart(2,'0')).join('');
   function bitmap(parent,pixels,w,h,x,y,cell=20) {
-    parent.image({id:id('bitmap'),pixels:pixels.map(packedColor),size:[w,h],center:p(x,y),width:w*cell/100,filter:'nearest',layer:20});
+    parent.picture({id:id('bitmap'),pixels:pixels.map(packedColor),size:[w,h],center:p(x,y),width:w*cell/100,filter:'nearest',layer:20});
   }
   function grid(parent,x,y,w,h,cell=18,bg='#ffffff') {
     rect(parent,x,y,w*cell,h*cell,bg,line,1,9);
